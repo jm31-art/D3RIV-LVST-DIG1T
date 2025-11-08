@@ -1,0 +1,16 @@
+{
+  "name": "deriv-last-digit",
+  "version": "0.1.0",
+  "description": "Fetch last-digit signals for volatility indices from Deriv's public WebSocket API every 15s",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "dotenv": "^17.2.3",
+    "localtunnel": "^2.0.2",
+    "ws": "^8.13.0"
+  }
+}

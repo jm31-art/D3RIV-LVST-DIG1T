@@ -1,0 +1,440 @@
+#!/usr/bin/env node
+require('dotenv').config();
+const WebSocket = require('ws');
+
+// Load configuration from env (can be set in a local .env)
+const APP_ID = process.env.DERIV_APP_ID || '1089'; // example public app_id
+const DERIV_APP_NAME = process.env.DERIV_APP_NAME || 'PURP_MATCH_31';
+const WS_URL = process.env.DERIV_WS_URL || `wss://ws.binaryws.com/websockets/v3?app_id=${APP_ID}`;
+const POLL_INTERVAL_MS = 15_000; // 15 seconds
+const DISPLAY_DURATION_MS = Number(process.env.DISPLAY_DURATION_MS) || 7000; // how long to display the signal (ms)
+
+// Optional credentials (only used if provided)
+const DEMO_ACCOUNT_ID = process.env.DEMO_ACCOUNT_ID;
+const DEMO_TOKEN = process.env.DEMO_TOKEN;
+const REAL_ACCOUNT_ID = process.env.REAL_ACCOUNT_ID;
+const REAL_TOKEN = process.env.REAL_TOKEN;
+
+// Startup check: require a demo token to be present (safety: we do not use
+// the real token from the local .env by default; keep real tokens out of
+// working directories). If you intentionally need to use a real token,
+// set it at runtime instead of storing it locally.
+if (!DEMO_TOKEN) {
+  console.error('Missing required environment variable: DEMO_TOKEN.\nPlease add DEMO_TOKEN to your local .env or export it in your shell.');
+  process.exit(1);
+}
+
+// We'll store the latest tick per symbol here
+const latestTicks = new Map();
+let subscribedSymbols = [];
+
+// current Deriv WS connection (used by admin reload)
+let currentDerivWS = null;
+
+// Simulation mode state
+let simulate = false;
+const simulateTimers = new Map();
+
+function startSimulation() {
+  if (simulate) return;
+  simulate = true;
+  log('Starting simulation mode');
+  subscribedSymbols.forEach(sym => {
+    if (simulateTimers.has(sym)) return;
+    // emit a simulated tick at randomized intervals (3-8s)
+    const timer = setInterval(() => {
+      // generate a pseudo-random quote
+      const base = 100 + Math.random() * 100; // arbitrary base
+      const quote = (base + Math.random()).toFixed(5);
+      latestTicks.set(sym, { quote, epoch: Date.now() });
+      // occasionally emit an error event
+      if (Math.random() < 0.03) {
+        broadcastToClients({ type: 'error', symbol: sym, message: 'simulated error' });
+      }
+      // notify clients of a tick (optional)
+      broadcastToClients({ type: 'tick', symbol: sym, quote });
+    }, 3000 + Math.floor(Math.random() * 5000));
+    simulateTimers.set(sym, timer);
+  });
+}
+
+function stopSimulation() {
+  if (!simulate) return;
+  simulate = false;
+  log('Stopping simulation mode');
+  simulateTimers.forEach((t) => clearInterval(t));
+  simulateTimers.clear();
+}
+
+
+// Per-symbol cycle state (countdown + display timers)
+const cycles = new Map(); // symbol -> { countdownInterval, displayTimeout, remainingMs }
+
+// Simple static file server + WebSocket server for a browser UI
+const http = require('http');
+const fs = require('fs');
+const path = require('path');
+const child_process = require('child_process');
+const PORT = Number(process.env.PORT) || 3000;
+const publicDir = path.join(__dirname, 'public');
+const LOG_PATH = path.join(__dirname, 'logs');
+
+if (!fs.existsSync(LOG_PATH)) fs.mkdirSync(LOG_PATH, { recursive: true });
+const logStream = fs.createWriteStream(path.join(LOG_PATH, 'server.log'), { flags: 'a' });
+function log(...args) {
+  const line = `[${new Date().toISOString()}] ` + args.map(a => (typeof a === 'string' ? a : JSON.stringify(a))).join(' ');
+  console.log(line);
+  logStream.write(line + '\n');
+}
+
+const server = http.createServer((req, res) => {
+  let urlPath = req.url === '/' ? '/index.html' : req.url;
+  // Simple logs endpoint to inspect recent server logs
+  if (urlPath === '/logs') {
+    const file = path.join(LOG_PATH, 'server.log');
+    if (!fs.existsSync(file)) {
+      res.writeHead(200, { 'Content-Type': 'text/plain' });
+      res.end('No logs yet');
+      return;
+    }
+    const tail = fs.readFileSync(file, 'utf8').split('\n').slice(-200).join('\n');
+    res.writeHead(200, { 'Content-Type': 'text/plain' });
+    res.end(tail);
+    return;
+  }
+  const filePath = path.join(publicDir, urlPath);
+  fs.readFile(filePath, (err, data) => {
+    if (err) {
+      res.writeHead(404);
+      res.end('Not found');
+      return;
+    }
+    const ext = path.extname(filePath).toLowerCase();
+    const type = ext === '.js' ? 'application/javascript' : 'text/html';
+    res.writeHead(200, { 'Content-Type': type });
+    res.end(data);
+  });
+});
+
+const clientWSS = new WebSocket.Server({ server });
+
+function broadcastToClients(obj) {
+  const payload = JSON.stringify(obj);
+  clientWSS.clients.forEach(c => {
+    if (c.readyState === WebSocket.OPEN) c.send(payload);
+  });
+}
+
+clientWSS.on('connection', (ws) => {
+  ws.send(JSON.stringify({ type: 'snapshot', symbols: subscribedSymbols, ticks: Array.from(latestTicks.entries()) }));
+  log('Client connected to Web UI');
+  // Listen for control messages from the browser (simulate toggle)
+  ws.on('message', (data) => {
+    try {
+      const msg = JSON.parse(data.toString());
+      if (msg && msg.type === 'simulate') {
+        if (msg.enabled) startSimulation(); else stopSimulation();
+        broadcastToClients({ type: 'simulate', enabled: msg.enabled });
+        log('Simulation set to', msg.enabled);
+      }
+    } catch (err) {
+      log('Invalid client message', err.message || err);
+    }
+  });
+});
+
+server.listen(PORT, () => {
+  log(`Web UI available at http://localhost:${PORT}`);
+  // Optionally expose via localtunnel if enabled
+  if (process.env.ENABLE_TUNNEL === 'true') {
+    try {
+      const lt = child_process.spawn('npx', ['localtunnel', '--port', String(PORT)], { stdio: ['ignore', 'pipe', 'pipe'] });
+      lt.stdout.on('data', d => log('tunnel:', d.toString().trim()));
+      lt.stderr.on('data', d => log('tunnel-err:', d.toString().trim()));
+      lt.on('close', code => log('localtunnel exited', code));
+    } catch (err) {
+      log('Failed to start localtunnel:', err.message || err);
+    }
+  }
+});
+
+// Admin HTTP endpoints for basic control (start/stop/reload)
+// Example: POST /admin/stop or GET /admin/stop
+server.on('request', (req, res) => {
+  try {
+    const url = req.url || '';
+    if (!url.startsWith('/admin/')) return; // ignore
+    // parse action
+    // Protect admin endpoints with ADMIN_TOKEN when set
+    const ADMIN_TOKEN = process.env.ADMIN_TOKEN;
+    if (ADMIN_TOKEN) {
+      const provided = req.headers['x-admin-token'] || req.headers['admin-token'];
+      if (!provided || provided !== ADMIN_TOKEN) {
+        res.writeHead(401, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ ok: false, error: 'unauthorized' }));
+        log('Admin: unauthorized request to', url);
+        return;
+      }
+    } else {
+      // no admin token configured — log a warning
+      log('Warning: ADMIN_TOKEN not set; admin endpoints are unprotected');
+    }
+    const action = url.split('/')[2];
+    if (action === 'stop') {
+      stopAllCycles();
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: true, action: 'stopped' }));
+      log('Admin: stop called');
+      return;
+    }
+    if (action === 'start') {
+      setupSymbolCycles(subscribedSymbols);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: true, action: 'started' }));
+      log('Admin: start called');
+      return;
+    }
+    if (action === 'reload') {
+      if (typeof currentDerivWS === 'object' && currentDerivWS) {
+        requestActiveSymbols(currentDerivWS);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ ok: true, action: 'reload requested' }));
+        log('Admin: reload requested');
+        return;
+      }
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: false, error: 'no connection' }));
+      return;
+    }
+    // unknown action
+    res.writeHead(404);
+    res.end('unknown admin action');
+  } catch (err) {
+    log('Admin handler error', err.message || err);
+  }
+});
+
+function connect() {
+  console.log(`Connecting to Deriv WebSocket at ${WS_URL}`);
+  const ws = new WebSocket(WS_URL);
+  // track current connection for admin/reload actions
+  currentDerivWS = ws;
+
+  ws.on('open', () => {
+    console.log('WebSocket open.');
+    // If a token is available, attempt to authorize first. The authorize
+    // request is optional for public tick streams but some account-related
+    // actions require it.
+    if (DEMO_TOKEN) {
+      console.log('Authorizing with demo token...');
+      ws.send(JSON.stringify({ authorize: DEMO_TOKEN }));
+      return;
+    }
+
+    // No token provided (shouldn't happen because we require DEMO_TOKEN),
+    // but keep the previous behavior as a fallback.
+    requestActiveSymbols(ws);
+  });
+
+  ws.on('message', (data) => {
+    try {
+      const msg = JSON.parse(data.toString());
+      handleMessage(ws, msg);
+    } catch (err) {
+      log('Failed to parse message:', err.message || err);
+    }
+  });
+
+  ws.on('close', () => {
+    console.log('WebSocket closed. Stopping cycles and reconnecting in 3s...');
+    stopAllCycles();
+    currentDerivWS = null;
+    setTimeout(connect, 3000);
+  });
+
+  ws.on('error', (err) => {
+    log('WebSocket error:', err && err.message ? err.message : err);
+  });
+}
+
+function handleMessage(ws, msg) {
+  // If this is an authorize response, proceed with active_symbols
+  if (msg.authorize) {
+    console.log('Authorization successful. Proceeding to request active symbols...');
+    requestActiveSymbols(ws);
+    return;
+  }
+
+  // If authorize returned an error object instead (older/alternate formats)
+  if (msg.error && msg.msg_type === 'authorize') {
+    console.error('Authorization failed:', msg.error.message || msg.error);
+    // Fall back to active symbols without auth
+    requestActiveSymbols(ws);
+    return;
+  }
+
+  // If this is the active_symbols response, extract volatility indices
+  if (msg.active_symbols) {
+    // Filter candidate volatility indices by common symbol patterns. The
+    // Deriv symbol naming convention frequently uses R_<number> for
+    // volatility indices (e.g. R_100). We'll keep any symbol that matches
+    // that pattern or contains 'VOL' as a fallback.
+    const raw = msg.active_symbols || [];
+    const candidateSymbols = raw.map(s => s.symbol).filter(Boolean);
+    const symbols = candidateSymbols.filter(sym => {
+      if (!sym) return false;
+      const up = sym.toUpperCase();
+      return /^R_\d+/i.test(sym) || up.includes('VOL') || up.includes('VIX');
+    });
+
+    if (symbols.length === 0) {
+      console.warn('No volatility-like symbols found in active_symbols. If this is unexpected, set SYMBOLS env var with a comma-separated list (e.g. "R_100,R_50").');
+      maybeUseEnvSymbols(ws);
+      return;
+    }
+
+    // Subscribe to ticks for each symbol
+    subscribedSymbols = symbols;
+    console.log(`Subscribing to ${symbols.length} symbols (first 10 shown):`, symbols.slice(0, 10));
+    symbols.forEach(sym => {
+      const req = { ticks: sym };
+      ws.send(JSON.stringify(req));
+    });
+    // Start per-symbol countdown/display cycles
+    setupSymbolCycles(symbols);
+    return;
+  }
+
+  // Handle incoming ticks
+  if (msg.tick && msg.tick.symbol) {
+    const symbol = msg.tick.symbol;
+    const quote = msg.tick.quote;
+    latestTicks.set(symbol, { quote, epoch: Date.now() });
+    return;
+  }
+
+  // If the API returned an error
+  if (msg.error) {
+    console.error('API error:', msg.error.message || msg.error.code || msg.error);
+    // Fall back to env symbols if provided
+    maybeUseEnvSymbols(ws);
+    return;
+  }
+
+  // Any other message we print lightly for debugging
+  // console.debug('Received message:', JSON.stringify(msg));
+}
+
+function maybeUseEnvSymbols(ws) {
+  const env = process.env.SYMBOLS;
+  if (env && env.trim().length > 0) {
+    const symbols = env.split(',').map(s => s.trim()).filter(Boolean);
+    if (symbols.length > 0) {
+      subscribedSymbols = symbols;
+      console.log('Using symbols from SYMBOLS env:', symbols);
+      symbols.forEach(sym => ws.send(JSON.stringify({ ticks: sym })));
+      setupSymbolCycles(symbols);
+      return;
+    }
+  }
+  console.warn('No symbols to subscribe to. Provide a list via SYMBOLS env or check active_symbols call. Exiting.');
+  process.exit(1);
+}
+
+// Helper to request active symbols (kept separate so we can call it after
+// successful authorization)
+function requestActiveSymbols(ws) {
+  console.log('Requesting list of volatility indices...');
+  const req = { active_symbols: 'brief' };
+  ws.send(JSON.stringify(req));
+}
+
+// Setup per-symbol cycles: each symbol has a 15s countdown, then we display
+// the latest signal for DISPLAY_DURATION_MS, then the cycle repeats.
+function setupSymbolCycles(symbols) {
+  symbols.forEach(sym => {
+    if (cycles.has(sym)) return; // already running
+    startCycle(sym);
+  });
+}
+
+function startCycle(sym) {
+  const state = {
+    remainingMs: POLL_INTERVAL_MS,
+    countdownInterval: null,
+    displayTimeout: null,
+  };
+
+  function tick() {
+    state.remainingMs -= 1000;
+    const secs = Math.max(0, Math.ceil(state.remainingMs / 1000));
+    // Broadcast countdown update to browser clients
+    broadcastToClients({ type: 'countdown', symbol: sym, remainingMs: state.remainingMs, remainingSec: secs });
+    process.stdout.write(`${sym} - next signal in ${secs}s\r`);
+    if (state.remainingMs <= 0) {
+      clearInterval(state.countdownInterval);
+      state.countdownInterval = null;
+      // Show signal
+      showSignal(sym, state);
+    }
+  }
+
+  // start the countdown immediately (show initial value)
+  state.countdownInterval = setInterval(tick, 1000);
+  // immediately write the first line and broadcast initial countdown
+  const initialSecs = Math.ceil(state.remainingMs/1000);
+  process.stdout.write(`${sym} - next signal in ${initialSecs}s\n`);
+  broadcastToClients({ type: 'countdown', symbol: sym, remainingMs: state.remainingMs, remainingSec: initialSecs });
+
+  cycles.set(sym, state);
+}
+
+function showSignal(sym, state) {
+  const tick = latestTicks.get(sym);
+  const lastDigit = (tick && tick.quote !== undefined && tick.quote !== null)
+    ? String(tick.quote).replace(/[^0-9]/g, '').slice(-1)
+    : null;
+
+  console.log(`${sym} >>> SIGNAL: ${lastDigit !== null ? lastDigit : 'N/A'} (displaying for ${DISPLAY_DURATION_MS/1000}s)`);
+
+  // Broadcast the signal to browser clients
+  broadcastToClients({ type: 'signal', symbol: sym, lastDigit: lastDigit, displayMs: DISPLAY_DURATION_MS });
+
+  // Set a timeout to end the display and restart the countdown
+  state.displayTimeout = setTimeout(() => {
+    // Reset remaining and restart countdown
+    state.remainingMs = POLL_INTERVAL_MS;
+    // Start a fresh countdown interval
+    state.countdownInterval = setInterval(() => {
+      state.remainingMs -= 1000;
+      const secs = Math.max(0, Math.ceil(state.remainingMs / 1000));
+      broadcastToClients({ type: 'countdown', symbol: sym, remainingMs: state.remainingMs, remainingSec: secs });
+      process.stdout.write(`${sym} - next signal in ${secs}s\r`);
+      if (state.remainingMs <= 0) {
+        clearInterval(state.countdownInterval);
+        state.countdownInterval = null;
+        showSignal(sym, state);
+      }
+    }, 1000);
+  }, DISPLAY_DURATION_MS);
+}
+
+function stopAllCycles() {
+  cycles.forEach((state, sym) => {
+    if (state.countdownInterval) clearInterval(state.countdownInterval);
+    if (state.displayTimeout) clearTimeout(state.displayTimeout);
+  });
+  cycles.clear();
+}
+
+
+// Start the client
+connect();
+
+// Handle clean shutdown
+process.on('SIGINT', () => {
+  console.log('\nReceived SIGINT, stopping cycles and exiting...');
+  stopAllCycles();
+  process.exit(0);
+});
+

@@ -1,0 +1,32 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Deriv Last-Digit Visual</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; background: #f7f7fb; }
+    h1 { margin-top: 0 }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(220px,1fr)); gap: 12px; }
+    .card { background: white; border-radius: 8px; padding: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+    .symbol { font-weight: 700; font-size: 16px; }
+    .countdown { color: #666; margin-top: 6px; }
+    .progress { height: 8px; background:#eee; border-radius:4px; overflow:hidden; margin-top:8px }
+    .progress > i { display:block; height:100%; background:linear-gradient(90deg,#4caf50,#8bc34a); width:0%; transition:width 0.3s linear }
+    .signal { margin-top: 8px; font-size: 28px; font-weight: 700; }
+    .signal.n/a { color: #aaa }
+    .signal.show { color: #d9534f }
+    @media (max-width:600px){ .grid{grid-template-columns:repeat(auto-fill,minmax(160px,1fr))} }
+  </style>
+</head>
+<body>
+  <h1>Deriv Last-Digit Visual</h1>
+  <p>Live per-symbol countdowns and signals. The page connects to the local Node server.</p>
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
+    <label style="display:flex;gap:8px;align-items:center;"><input id="simulateToggle" type="checkbox"> Simulate</label>
+    <div style="margin-left:auto;color:#666;font-size:14px;">Status: <span id="status">disconnected</span></div>
+  </div>
+  <div id="grid" class="grid"></div>
+  <script src="/client.js"></script>
+</body>
+</html>
