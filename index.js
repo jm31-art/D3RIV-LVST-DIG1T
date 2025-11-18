@@ -21,6 +21,12 @@ const DEMO_TOKEN = process.env.DEMO_TOKEN;
 const REAL_ACCOUNT_ID = process.env.REAL_ACCOUNT_ID;
 const REAL_TOKEN = process.env.REAL_TOKEN;
 
+// Trading configuration (demo mode only) - can be updated via UI
+let targetSignal = process.env.TARGET_SIGNAL || '9'; // Default to 9
+let targetSymbol = process.env.TARGET_SYMBOL || 'R_100'; // Default to R_100
+let numTrades = Number(process.env.NUM_TRADES) || 3; // Default to 3 trades
+let stake = Number(process.env.STAKE) || 1; // Default stake in USD
+
 // Startup check: require a demo token to be present (safety: we do not use
 // the real token from the local .env by default; keep real tokens out of
 // working directories). If you intentionally need to use a real token,
@@ -33,6 +39,22 @@ if (!DEMO_TOKEN) {
 // We'll store the latest tick per symbol here
 const latestTicks = new Map();
 let subscribedSymbols = [];
+
+// Trading state
+let isTradingEnabled = false; // Flag to enable/disable trading
+let tradesPlaced = 0; // Counter for trades placed in current cycle
+
+// Trading configuration (can be updated via UI) - initialized from env
+let targetSymbol2 = process.env.TARGET_SYMBOL || 'R_100';
+let targetSignal2 = process.env.TARGET_SIGNAL || '9';
+let numTrades2 = parseInt(process.env.NUM_TRADES) || 3;
+let stake2 = parseFloat(process.env.STAKE) || 1;
+
+// Digit frequency tracking (for analysis)
+const digitFrequencies = new Map(); // symbol -> { digit: count, total: count }
+
+// Trade tracking for UI
+const tradeHistory = [];
 
 // current Deriv WS connection (used by admin reload)
 let currentDerivWS = null;
@@ -133,8 +155,11 @@ function broadcastToClients(obj) {
 
 clientWSS.on('connection', (ws) => {
   ws.send(JSON.stringify({ type: 'snapshot', symbols: subscribedSymbols, ticks: Array.from(latestTicks.entries()), pollInterval: POLL_INTERVAL_MS, sampleMs: SAMPLE_MS, displayMs: DISPLAY_DURATION_MS }));
+  // Send current trading config and status
+  ws.send(JSON.stringify({ type: 'configUpdate', config: { targetSymbol: targetSymbol2, targetSignal: targetSignal2, numTrades: numTrades2, stake: stake2 } }));
+  ws.send(JSON.stringify({ type: 'tradeUpdate', tradingEnabled: isTradingEnabled }));
   log('Client connected to Web UI');
-  // Listen for control messages from the browser (simulate toggle)
+  // Listen for control messages from the browser (simulate toggle, trading controls)
   ws.on('message', (data) => {
     try {
       const msg = JSON.parse(data.toString());
@@ -142,6 +167,30 @@ clientWSS.on('connection', (ws) => {
         if (msg.enabled) startSimulation(); else stopSimulation();
         broadcastToClients({ type: 'simulate', enabled: msg.enabled });
         log('Simulation set to', msg.enabled);
+      } else if (msg.type === 'updateToken') {
+        // Update demo token
+        process.env.DEMO_TOKEN = msg.token;
+        log('Demo token updated via UI');
+        // Optionally reconnect with new token
+        if (currentDerivWS) {
+          currentDerivWS.close();
+        }
+      } else if (msg.type === 'updateConfig') {
+        // Update trading configuration
+        targetSymbol2 = msg.targetSymbol;
+        targetSignal2 = msg.targetSignal;
+        numTrades2 = msg.numTrades;
+        stake2 = msg.stake;
+        log(`Trading config updated: ${targetSymbol2} digit ${targetSignal2}, ${numTrades2} trades, stake ${stake2}`);
+        broadcastToClients({ type: 'configUpdate', config: { targetSymbol: targetSymbol2, targetSignal: targetSignal2, numTrades: numTrades2, stake: stake2 } });
+      } else if (msg.type === 'startTrading') {
+        isTradingEnabled = true;
+        log('Trading started via UI');
+        broadcastToClients({ type: 'tradeUpdate', tradingEnabled: true });
+      } else if (msg.type === 'stopTrading') {
+        isTradingEnabled = false;
+        log('Trading stopped via UI');
+        broadcastToClients({ type: 'tradeUpdate', tradingEnabled: false });
       }
     } catch (err) {
       log('Invalid client message', err.message || err);
@@ -267,6 +316,8 @@ function handleMessage(ws, msg) {
   // If this is an authorize response, proceed with active_symbols
   if (msg.authorize) {
     console.log('Authorization successful. Proceeding to request active symbols...');
+    isTradingEnabled = true; // Enable trading after successful authorization
+    log('Trading enabled for demo account');
     requestActiveSymbols(ws);
     return;
   }
@@ -320,6 +371,26 @@ function handleMessage(ws, msg) {
     const symbol = msg.tick.symbol;
     const quote = msg.tick.quote;
     latestTicks.set(symbol, { quote, epoch: Date.now() });
+    return;
+  }
+
+  // Handle buy response (trade confirmation)
+  if (msg.buy) {
+    log(`Trade placed: ${JSON.stringify(msg.buy)}`);
+    broadcastToClients({ type: 'trade', data: msg.buy });
+
+    // Track trade for UI
+    const trade = {
+      id: msg.buy.contract_id || Date.now(),
+      symbol: msg.buy.symbol || targetSymbol2,
+      prediction: msg.buy.digit || targetSignal2,
+      stake: msg.buy.price || stake2,
+      timestamp: new Date().toISOString(),
+      status: 'pending'
+    };
+    tradeHistory.push(trade);
+    broadcastToClients({ type: 'tradeResult', symbol: trade.symbol, prediction: trade.prediction, result: 'pending', payout: null });
+
     return;
   }
 
@@ -411,8 +482,25 @@ function showSignal(sym, state) {
     const lastDigit = (tick && tick.quote !== undefined && tick.quote !== null)
       ? String(tick.quote).replace(/[^0-9]/g, '').slice(-1)
       : null;
+
+    // Track digit frequency for analysis
+    if (lastDigit !== null) {
+      if (!digitFrequencies.has(sym)) {
+        digitFrequencies.set(sym, { total: 0 });
+      }
+      const freq = digitFrequencies.get(sym);
+      freq[lastDigit] = (freq[lastDigit] || 0) + 1;
+      freq.total += 1;
+    }
+
     log(`${sym} >>> SAMPLE: ${lastDigit !== null ? lastDigit : 'N/A'}`);
     broadcastToClients({ type: 'signal', symbol: sym, lastDigit: lastDigit, displayMs: DISPLAY_DURATION_MS });
+
+    // Check for trading condition: if symbol matches target and last digit matches target signal
+    if (sym === targetSymbol2 && lastDigit === targetSignal2 && currentDerivWS) {
+      log(`Target condition met: ${sym} digit ${lastDigit}, placing trade`);
+      placeDigitMatchTrade(currentDerivWS, sym, lastDigit);
+    }
   }
 
   // Emit the first sample immediately when display starts
@@ -428,6 +516,10 @@ function showSignal(sym, state) {
     }
     // Reset remaining and restart countdown
     state.remainingMs = POLL_INTERVAL_MS;
+    // Reset trades placed for new cycle
+    tradesPlaced = 0;
+    // Log digit frequency analysis at end of cycle
+    logDigitFrequencyAnalysis();
     // Start a fresh countdown interval
     state.countdownInterval = setInterval(() => {
       state.remainingMs -= 1000;
@@ -450,6 +542,73 @@ function stopAllCycles() {
     if (state.sampleInterval) clearInterval(state.sampleInterval);
   });
   cycles.clear();
+  // Reset trading state when stopping cycles
+  tradesPlaced = 0;
+  // Reset digit frequencies
+  digitFrequencies.clear();
+}
+
+// Function to place a "Digit Matches" trade
+function placeDigitMatchTrade(ws, symbol, targetDigit) {
+  if (!isTradingEnabled) {
+    log('Trading not enabled, skipping trade');
+    return;
+  }
+
+  if (tradesPlaced >= numTrades2) {
+    log(`Maximum trades (${numTrades2}) reached for this cycle`);
+    return;
+  }
+
+  const contractType = 'DIGITMATCH'; // For "Digit Matches" contract
+
+  const buyRequest = {
+    buy: 1,
+    price: stake2,
+    parameters: {
+      contract_type: contractType,
+      symbol: symbol,
+      digit: targetDigit
+    }
+  };
+
+  log(`Placing trade: ${symbol} digit ${targetDigit}, stake ${stake2}`);
+  ws.send(JSON.stringify(buyRequest));
+  tradesPlaced++;
+}
+// Function to log digit frequency analysis
+function logDigitFrequencyAnalysis() {
+  if (digitFrequencies.size === 0) return;
+
+  log('=== Digit Frequency Analysis ===');
+  for (const [symbol, freq] of digitFrequencies.entries()) {
+    if (freq.total === 0) continue;
+
+    const percentages = {};
+    for (let digit = 0; digit <= 9; digit++) {
+      const count = freq[digit] || 0;
+      percentages[digit] = ((count / freq.total) * 100).toFixed(2);
+    }
+
+    // Sort digits by frequency descending
+    const sortedDigits = Object.keys(percentages)
+      .sort((a, b) => parseFloat(percentages[b]) - parseFloat(percentages[a]));
+
+    log(`${symbol}: Total samples: ${freq.total}`);
+    sortedDigits.forEach(digit => {
+      const percentage = percentages[digit];
+      const count = freq[digit] || 0;
+      log(`  Digit ${digit}: ${count} times (${percentage}%)`);
+
+      // Highlight digits with 11.5%-14% occurrence for potential trading
+      const pct = parseFloat(percentage);
+      if (pct >= 11.5 && pct <= 14) {
+        log(`    *** RECOMMENDED: Digit ${digit} has ${percentage}% occurrence (within 11.5%-14% range)`);
+      }
+    });
+    log('');
+  }
+  log('=== End Analysis ===');
 }
 
 

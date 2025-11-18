@@ -9,11 +9,57 @@
   const simulateToggle = document.getElementById('simulateToggle');
   const items = new Map();
 
+  // Trading UI elements
+  const demoTokenInput = document.getElementById('demoToken');
+  const updateTokenBtn = document.getElementById('updateTokenBtn');
+  const targetSymbolSelect = document.getElementById('targetSymbol');
+  const targetSignalSelect = document.getElementById('targetSignal');
+  const tradeTypeSelect = document.getElementById('tradeType');
+  const stakeInput = document.getElementById('stake');
+  const numTradesInput = document.getElementById('numTrades');
+  const updateConfigBtn = document.getElementById('updateConfigBtn');
+  const startTradingBtn = document.getElementById('startTradingBtn');
+  const stopTradingBtn = document.getElementById('stopTradingBtn');
+  const tradingStatus = document.getElementById('tradingStatus');
+  const tradeLogContainer = document.getElementById('tradeLogContainer');
+
   // Send simulate messages when toggle changes
   simulateToggle.addEventListener('change', () => {
     const enabled = simulateToggle.checked;
     ws.send(JSON.stringify({ type: 'simulate', enabled }));
     status.textContent = enabled ? 'simulating' : (ws.readyState === WebSocket.OPEN ? 'connected' : 'disconnected');
+  });
+
+  // Trading control event listeners
+  updateTokenBtn.addEventListener('click', () => {
+    const token = demoTokenInput.value.trim();
+    if (token) {
+      ws.send(JSON.stringify({ type: 'updateToken', token }));
+      alert('Token updated successfully!');
+    } else {
+      alert('Please enter a valid token');
+    }
+  });
+
+  updateConfigBtn.addEventListener('click', () => {
+    const config = {
+      type: 'updateConfig',
+      targetSymbol: targetSymbolSelect.value,
+      targetSignal: targetSignalSelect.value,
+      tradeType: tradeTypeSelect.value,
+      stake: parseFloat(stakeInput.value),
+      numTrades: parseInt(numTradesInput.value)
+    };
+    ws.send(JSON.stringify(config));
+    alert('Configuration updated successfully!');
+  });
+
+  startTradingBtn.addEventListener('click', () => {
+    ws.send(JSON.stringify({ type: 'startTrading' }));
+  });
+
+  stopTradingBtn.addEventListener('click', () => {
+    ws.send(JSON.stringify({ type: 'stopTrading' }));
   });
 
   function renderSymbol(sym) {
@@ -79,6 +125,34 @@
         const sym = msg.symbol;
         const it = renderSymbol(sym);
         it.countdownEl.textContent = `ERROR: ${msg.message}`;
+      }
+      if (msg.type === 'tradeUpdate') {
+        // Update trading status
+        tradingStatus.textContent = msg.tradingEnabled ? 'Enabled' : 'Disabled';
+        tradingStatus.style.color = msg.tradingEnabled ? '#28a745' : '#dc3545';
+      }
+      if (msg.type === 'tradeResult') {
+        // Add trade result to log
+        const entry = document.createElement('div');
+        entry.className = `trade-entry ${msg.result}`;
+        const timestamp = new Date().toLocaleTimeString();
+        entry.textContent = `[${timestamp}] ${msg.symbol} digit ${msg.prediction} - ${msg.result.toUpperCase()} (${msg.payout ? '$' + msg.payout : 'N/A'})`;
+        tradeLogContainer.insertBefore(entry, tradeLogContainer.firstChild);
+
+        // Keep only last 50 entries
+        while (tradeLogContainer.children.length > 50) {
+          tradeLogContainer.removeChild(tradeLogContainer.lastChild);
+        }
+      }
+      if (msg.type === 'configUpdate') {
+        // Update UI with current config
+        if (msg.config) {
+          targetSymbolSelect.value = msg.config.targetSymbol || 'R_100';
+          targetSignalSelect.value = msg.config.targetSignal || '9';
+          tradeTypeSelect.value = msg.config.tradeType || 'DIGITMATCH';
+          stakeInput.value = msg.config.stake || 1;
+          numTradesInput.value = msg.config.numTrades || 3;
+        }
       }
     } catch (err) {
       console.warn('Invalid message', err);

@@ -1,10 +1,12 @@
 # deriv-last-digit
 
-Small Node.js utility that connects to Deriv's public WebSocket API and emits the "last digit" of the latest tick for each volatility index every 15 seconds.
+Small Node.js utility that connects to Deriv's public WebSocket API and emits the "last digit" of the latest tick for each volatility index every 15 seconds. Now includes automatic trading functionality for "Digit Matches" contracts in demo mode.
 
 Important notes
 - This tool only fetches market tick values and extracts the last digit of the numeric quote. It does not provide predictions or trading strategies.
+- **Automatic trading is enabled in demo mode only** when a `DEMO_TOKEN` is provided and authorization succeeds.
 - Use responsibly. Respect Deriv's terms of service, rate limits, and rules about automated access.
+- **Never use real account tokens** with this tool.
 
 Quick start
 
@@ -15,17 +17,31 @@ cd ~/Desktop/deriv-last-digit
 npm install
 ```
 
-2. Run
+2. Configure trading parameters (optional)
+
+Based on your manual chart analysis, set the target digit and symbol. For example, if you find that digit '7' appears 12.3% of the time on R_100:
+
+```bash
+# Set environment variables for trading
+export TARGET_SIGNAL='7'
+export TARGET_SYMBOL='R_100'
+export NUM_TRADES=2  # Conservative number
+export STAKE=0.5     # Low stake for testing
+```
+
+3. Run
 
 ```bash
 npm start
 ```
 
+The bot will analyze digit frequencies each cycle and highlight digits with 11.5%-14% occurrence. Use this data to manually verify profitable patterns before enabling automatic trading.
+
 Configuration
 - Use `DERIV_APP_ID` or `DERIV_WS_URL` environment variables to change the WebSocket endpoint/app_id.
 - If the automatic active-symbols request does not return volatility indices in your region, set `SYMBOLS` env to a comma-separated list (e.g. `R_100,R_50`):
 
-```bash
+WANT```bash
 SYMBOLS="R_100,R_50" npm start
 ```
 
@@ -40,8 +56,12 @@ This project reads configuration from environment variables. You can create a lo
 - `DEMO_ACCOUNT_ID` - your demo Deriv account ID (optional; used by client code that needs an account id).
 - `DEMO_TOKEN` - API token for your demo account (optional).
 - `REAL_ACCOUNT_ID` - your real Deriv account ID (optional).
-- `REAL_TOKEN` - API token for your real account (optional).
+- `REAL_TOKEN` - API token for your real account (optional). **DO NOT USE WITH THIS TOOL**.
 - `SYMBOLS` - optional comma-separated list of symbols to subscribe to (e.g. `R_100,R_50`). Used if the active_symbols request doesn't return volatility indices for your region.
+- `TARGET_SIGNAL` - target last digit for automatic trading (default: '9'). Set this based on your manual chart analysis.
+- `TARGET_SYMBOL` - target symbol for automatic trading (default: 'R_100'). Focus on volatility indices like R_100, R_50, etc.
+- `NUM_TRADES` - number of trades to place per cycle when target condition is met (default: 3). Limits exposure per cycle.
+- `STAKE` - stake amount in USD for each trade (default: 1). Keep low for demo trading.
 
 Startup requirement
 -------------------
@@ -80,9 +100,13 @@ REAL_TOKEN=wQw5foftZG4lAzm
 
 Behavior
 - The script will request active volatility indices from the API, subscribe to ticks for each, and every 15 seconds print a list of symbols with their latest last-digit value.
+- **Automatic Trading**: When enabled (after demo authorization), the bot will monitor signals during the display period. If the target symbol's last digit matches the target signal, it will automatically place up to NUM_TRADES "Digit Matches" contracts with the specified stake. Trading resets each cycle.
+- **Digit Frequency Analysis**: At the end of each cycle, the bot analyzes the frequency of each digit (0-9) across all samples during the display period. It highlights digits with 11.5%-14% occurrence as recommended for trading, helping you identify profitable patterns manually before configuring automatic trading.
 
 Security & ethics
 - Do not use this tool to automate betting or circumvent platform safeguards. Ensure you comply with all platform rules and local laws.
+- **Trading is strictly limited to demo accounts**. Real account tokens are explicitly not supported and should never be used.
+- Automatic trading occurs only during the display period when the target conditions are met, with a maximum of NUM_TRADES per cycle.
 
 Troubleshooting
 - If the script exits complaining about no symbols, provide the `SYMBOLS` env variable.

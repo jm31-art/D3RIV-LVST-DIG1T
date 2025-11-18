@@ -16,12 +16,94 @@
     .signal { margin-top: 8px; font-size: 28px; font-weight: 700; }
     .signal.n/a { color: #aaa }
     .signal.show { color: #d9534f }
+
+    /* Trading controls */
+    .trading-controls { background: white; border-radius: 8px; padding: 16px; margin-bottom: 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+    .control-group { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-bottom: 12px; }
+    .control-group label { font-weight: 600; min-width: 120px; }
+    .control-group input, .control-group select { padding: 6px 8px; border: 1px solid #ddd; border-radius: 4px; }
+    .control-group button { padding: 6px 12px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+    .control-group button:hover { background: #0056b3; }
+
+    /* Trade log */
+    .trade-log { background: white; border-radius: 8px; padding: 16px; margin-bottom: 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); max-height: 300px; overflow-y: auto; }
+    .trade-log h3 { margin-top: 0; }
+    .trade-entry { padding: 8px; border-bottom: 1px solid #eee; font-family: monospace; font-size: 12px; }
+    .trade-entry.win { color: #28a745; }
+    .trade-entry.loss { color: #dc3545; }
+    .trade-entry.pending { color: #ffc107; }
+
     @media (max-width:600px){ .grid{grid-template-columns:repeat(auto-fill,minmax(160px,1fr))} }
   </style>
 </head>
 <body>
-  <h1>Deriv Last-Digit Visual</h1>
-  <p>Live per-symbol countdowns and signals. The page connects to the local Node server.</p>
+  <h1>Deriv Last-Digit Trading Bot</h1>
+  <p>Live per-symbol countdowns, signals, and automated trading controls. The page connects to the local Node server.</p>
+
+  <!-- Trading Controls -->
+  <div class="trading-controls">
+    <h3 style="margin-top: 0;">Trading Configuration</h3>
+
+    <div class="control-group">
+      <label for="demoToken">Demo Token:</label>
+      <input type="password" id="demoToken" placeholder="Enter demo token" style="flex: 1; min-width: 200px;">
+      <button id="updateTokenBtn">Update Token</button>
+    </div>
+
+    <div class="control-group">
+      <label for="targetSymbol">Symbol:</label>
+      <select id="targetSymbol">
+        <option value="R_100">R_100 (Volatility 100)</option>
+        <option value="R_50">R_50 (Volatility 50)</option>
+        <option value="R_25">R_25 (Volatility 25)</option>
+        <option value="R_10">R_10 (Volatility 10)</option>
+      </select>
+
+      <label for="targetSignal">Prediction:</label>
+      <select id="targetSignal">
+        <option value="0">0</option>
+        <option value="1">1</option>
+        <option value="2">2</option>
+        <option value="3">3</option>
+        <option value="4">4</option>
+        <option value="5">5</option>
+        <option value="6">6</option>
+        <option value="7">7</option>
+        <option value="8">8</option>
+        <option value="9" selected>9</option>
+      </select>
+
+      <label for="tradeType">Type:</label>
+      <select id="tradeType">
+        <option value="DIGITMATCH" selected>Digit Matches</option>
+      </select>
+    </div>
+
+    <div class="control-group">
+      <label for="stake">Stake ($):</label>
+      <input type="number" id="stake" value="1" min="0.1" step="0.1" style="width: 80px;">
+
+      <label for="numTrades">Trades/Cycle:</label>
+      <input type="number" id="numTrades" value="3" min="1" max="10" style="width: 60px;">
+
+      <button id="updateConfigBtn">Update Configuration</button>
+    </div>
+
+    <div class="control-group">
+      <button id="startTradingBtn" style="background: #28a745;">Start Trading</button>
+      <button id="stopTradingBtn" style="background: #dc3545;">Stop Trading</button>
+      <div style="margin-left: auto; color: #666; font-size: 14px;">Trading Status: <span id="tradingStatus">Disabled</span></div>
+    </div>
+  </div>
+
+  <!-- Trade Log -->
+  <div class="trade-log">
+    <h3>Trade Log</h3>
+    <div id="tradeLogContainer">
+      <div class="trade-entry">Waiting for trades...</div>
+    </div>
+  </div>
+
   <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
     <label style="display:flex;gap:8px;align-items:center;"><input id="simulateToggle" type="checkbox"> Simulate</label>
     <div style="margin-left:auto;color:#666;font-size:14px;">Status: <span id="status">disconnected</span></div>
