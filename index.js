@@ -6,8 +6,14 @@ const WebSocket = require('ws');
 const APP_ID = process.env.DERIV_APP_ID || '1089'; // example public app_id
 const DERIV_APP_NAME = process.env.DERIV_APP_NAME || 'PURP_MATCH_31';
 const WS_URL = process.env.DERIV_WS_URL || `wss://ws.binaryws.com/websockets/v3?app_id=${APP_ID}`;
-const POLL_INTERVAL_MS = 15_000; // 15 seconds
+// Cycle length: countdown duration before entering display/sampling phase.
+// Default changed to 10s per your request; override with POLL_INTERVAL_MS env.
+const POLL_INTERVAL_MS = Number(process.env.POLL_INTERVAL_MS) || 10_000; // 10 seconds
+// How long to display / sample signals after each countdown.
 const DISPLAY_DURATION_MS = Number(process.env.DISPLAY_DURATION_MS) || 7000; // how long to display the signal (ms)
+// Sampling interval while in the display period (emit a signal every SAMPLE_MS)
+// Set SAMPLE_MS=1000 for 1s sampling or SAMPLE_MS=2000 for 2s.
+const SAMPLE_MS = Number(process.env.SAMPLE_MS) || 1000;
 
 // Optional credentials (only used if provided)
 const DEMO_ACCOUNT_ID = process.env.DEMO_ACCOUNT_ID;
@@ -126,7 +132,7 @@ function broadcastToClients(obj) {
 }
 
 clientWSS.on('connection', (ws) => {
-  ws.send(JSON.stringify({ type: 'snapshot', symbols: subscribedSymbols, ticks: Array.from(latestTicks.entries()) }));
+  ws.send(JSON.stringify({ type: 'snapshot', symbols: subscribedSymbols, ticks: Array.from(latestTicks.entries()), pollInterval: POLL_INTERVAL_MS, sampleMs: SAMPLE_MS, displayMs: DISPLAY_DURATION_MS }));
   log('Client connected to Web UI');
   // Listen for control messages from the browser (simulate toggle)
   ws.on('message', (data) => {
@@ -292,16 +298,20 @@ function handleMessage(ws, msg) {
       maybeUseEnvSymbols(ws);
       return;
     }
+    // Ensure we include the most common volatility indices explicitly
+    const forced = ['R_10','R_25','R_50','R_75','R_100'];
+    // Merge and dedupe discovered symbols with forced list
+    const combined = Array.from(new Set([...symbols, ...forced]));
 
     // Subscribe to ticks for each symbol
-    subscribedSymbols = symbols;
-    console.log(`Subscribing to ${symbols.length} symbols (first 10 shown):`, symbols.slice(0, 10));
-    symbols.forEach(sym => {
+    subscribedSymbols = combined;
+    console.log(`Subscribing to ${combined.length} symbols (first 10 shown):`, combined.slice(0, 10));
+    combined.forEach(sym => {
       const req = { ticks: sym };
       ws.send(JSON.stringify(req));
     });
     // Start per-symbol countdown/display cycles
-    setupSymbolCycles(symbols);
+    setupSymbolCycles(combined);
     return;
   }
 
@@ -330,10 +340,13 @@ function maybeUseEnvSymbols(ws) {
   if (env && env.trim().length > 0) {
     const symbols = env.split(',').map(s => s.trim()).filter(Boolean);
     if (symbols.length > 0) {
-      subscribedSymbols = symbols;
-      console.log('Using symbols from SYMBOLS env:', symbols);
-      symbols.forEach(sym => ws.send(JSON.stringify({ ticks: sym })));
-      setupSymbolCycles(symbols);
+      // Ensure forced indices are included
+      const forced = ['R_10','R_25','R_50','R_75','R_100'];
+      const combined = Array.from(new Set([...symbols, ...forced]));
+      subscribedSymbols = combined;
+      console.log('Using symbols from SYMBOLS env (plus forced indices):', combined);
+      combined.forEach(sym => ws.send(JSON.stringify({ ticks: sym })));
+      setupSymbolCycles(combined);
       return;
     }
   }
@@ -363,6 +376,7 @@ function startCycle(sym) {
     remainingMs: POLL_INTERVAL_MS,
     countdownInterval: null,
     displayTimeout: null,
+    sampleInterval: null,
   };
 
   function tick() {
@@ -390,18 +404,28 @@ function startCycle(sym) {
 }
 
 function showSignal(sym, state) {
-  const tick = latestTicks.get(sym);
-  const lastDigit = (tick && tick.quote !== undefined && tick.quote !== null)
-    ? String(tick.quote).replace(/[^0-9]/g, '').slice(-1)
-    : null;
+  // Sampling mode: during the DISPLAY_DURATION_MS window, emit a signal
+  // every SAMPLE_MS milliseconds using the latest tick we have for the symbol.
+  function emitSample() {
+    const tick = latestTicks.get(sym);
+    const lastDigit = (tick && tick.quote !== undefined && tick.quote !== null)
+      ? String(tick.quote).replace(/[^0-9]/g, '').slice(-1)
+      : null;
+    log(`${sym} >>> SAMPLE: ${lastDigit !== null ? lastDigit : 'N/A'}`);
+    broadcastToClients({ type: 'signal', symbol: sym, lastDigit: lastDigit, displayMs: DISPLAY_DURATION_MS });
+  }
 
-  console.log(`${sym} >>> SIGNAL: ${lastDigit !== null ? lastDigit : 'N/A'} (displaying for ${DISPLAY_DURATION_MS/1000}s)`);
+  // Emit the first sample immediately when display starts
+  emitSample();
+  // Then start regular sampling
+  state.sampleInterval = setInterval(emitSample, SAMPLE_MS);
 
-  // Broadcast the signal to browser clients
-  broadcastToClients({ type: 'signal', symbol: sym, lastDigit: lastDigit, displayMs: DISPLAY_DURATION_MS });
-
-  // Set a timeout to end the display and restart the countdown
+  // After DISPLAY_DURATION_MS stop sampling and restart countdown
   state.displayTimeout = setTimeout(() => {
+    if (state.sampleInterval) {
+      clearInterval(state.sampleInterval);
+      state.sampleInterval = null;
+    }
     // Reset remaining and restart countdown
     state.remainingMs = POLL_INTERVAL_MS;
     // Start a fresh countdown interval
@@ -423,6 +447,7 @@ function stopAllCycles() {
   cycles.forEach((state, sym) => {
     if (state.countdownInterval) clearInterval(state.countdownInterval);
     if (state.displayTimeout) clearTimeout(state.displayTimeout);
+    if (state.sampleInterval) clearInterval(state.sampleInterval);
   });
   cycles.clear();
 }

@@ -1,6 +1,8 @@
 (function(){
-  // Client-side constants must match server's cycle length
-  const POLL_INTERVAL_MS = 15000;
+  // Client-side timing values (will be overridden by server snapshot)
+  let POLL_INTERVAL_MS = 15000;
+  let SAMPLE_MS = 1000;
+  let DISPLAY_MS = 7000;
   const ws = new WebSocket((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host);
   const grid = document.getElementById('grid');
   const status = document.getElementById('status');
@@ -34,6 +36,10 @@
     try {
       const msg = JSON.parse(ev.data);
       if (msg.type === 'snapshot') {
+        // update timing values from server
+        if (msg.pollInterval) POLL_INTERVAL_MS = msg.pollInterval;
+        if (msg.sampleMs) SAMPLE_MS = msg.sampleMs;
+        if (msg.displayMs) DISPLAY_MS = msg.displayMs;
         if (msg.symbols && msg.symbols.length) {
           msg.symbols.forEach(sym => renderSymbol(sym));
         }
