@@ -48,3 +48,9 @@
     - Tested stake progression after wins
     - Confirmed profit tracking and stop conditions
     - Ensured no trades when probability too low
+
+11. **Add connection status logging to trade log** ✅
+    - Added connection status messages to the trade log UI
+    - Messages for WebSocket connection, authorization, symbol subscription
+    - Styled connection messages in blue for distinction
+    - Helps users monitor connection state and troubleshoot issues

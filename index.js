@@ -300,6 +300,7 @@ function connect() {
 
   ws.on('open', () => {
     console.log('WebSocket open.');
+    broadcastToClients({ type: 'connectionStatus', message: 'Connected to Deriv WebSocket' });
     // If a token is available, attempt to authorize first. The authorize
     // request is optional for public tick streams but some account-related
     // actions require it.
@@ -325,6 +326,7 @@ function connect() {
 
   ws.on('close', () => {
     console.log('WebSocket closed. Stopping cycles and reconnecting in 3s...');
+    broadcastToClients({ type: 'connectionStatus', message: 'Deriv WebSocket disconnected, reconnecting...' });
     stopAllCycles();
     currentDerivWS = null;
     setTimeout(connect, 3000);
@@ -339,8 +341,10 @@ function handleMessage(ws, msg) {
   // If this is an authorize response, proceed with active_symbols
   if (msg.authorize) {
     console.log('Authorization successful. Proceeding to request active symbols...');
-    isTradingEnabled = true; // Enable trading after successful authorization
-    log('Trading enabled for demo account');
+    broadcastToClients({ type: 'connectionStatus', message: 'Authorized with Deriv API' });
+    // Keep trading disabled by default - user must enable via UI
+    isTradingEnabled = false;
+    log('Trading disabled by default for demo account - enable via web UI if desired');
     requestActiveSymbols(ws);
     return;
   }
@@ -380,6 +384,7 @@ function handleMessage(ws, msg) {
     // Subscribe to ticks for each symbol
     subscribedSymbols = combined;
     console.log(`Subscribing to ${combined.length} symbols (first 10 shown):`, combined.slice(0, 10));
+    broadcastToClients({ type: 'connectionStatus', message: `Subscribed to ${combined.length} symbols` });
     combined.forEach(sym => {
       const req = { ticks: sym };
       ws.send(JSON.stringify(req));

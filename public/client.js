@@ -164,6 +164,14 @@
         currentProfitSpan.textContent = msg.currentProfit.toFixed(2);
         currentStakeSpan.textContent = msg.currentStake.toFixed(2);
       }
+      if (msg.type === 'connectionStatus') {
+        // Add connection status to trade log
+        const entry = document.createElement('div');
+        entry.className = 'trade-entry connection';
+        const timestamp = new Date().toLocaleTimeString();
+        entry.textContent = `[${timestamp}] ${msg.message}`;
+        tradeLogContainer.insertBefore(entry, tradeLogContainer.firstChild);
+      }
     } catch (err) {
       console.warn('Invalid message', err);
     }

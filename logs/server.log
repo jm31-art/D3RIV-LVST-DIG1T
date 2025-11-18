@@ -46140,3 +46140,966 @@
 [2025-11-18T00:51:08.674Z] R_100 >>> SAMPLE: 3
 [2025-11-18T00:51:08.675Z] Autonomous trade: R_100 digit 3 (28.57% probability), stake $1.00
 [2025-11-18T00:51:08.675Z] Placing autonomous trade: R_100 digit 3, stake $1.00
+[2025-11-18T01:17:49.734Z] Web UI available at http://localhost:3000
+[2025-11-18T01:17:51.277Z] Trading enabled for demo account
+[2025-11-18T01:18:01.602Z] R_10 >>> SAMPLE: 4
+[2025-11-18T01:18:01.603Z] R_25 >>> SAMPLE: 4
+[2025-11-18T01:18:01.603Z] R_50 >>> SAMPLE: 3
+[2025-11-18T01:18:01.603Z] R_75 >>> SAMPLE: 9
+[2025-11-18T01:18:01.603Z] R_100 >>> SAMPLE: 3
+[2025-11-18T01:18:01.603Z] Skipping trade: R_100 digit 3 probability 0.00% < threshold 12%
+[2025-11-18T01:18:02.602Z] R_10 >>> SAMPLE: 3
+[2025-11-18T01:18:02.604Z] R_25 >>> SAMPLE: 8
+[2025-11-18T01:18:02.604Z] R_50 >>> SAMPLE: 7
+[2025-11-18T01:18:02.604Z] R_75 >>> SAMPLE: 8
+[2025-11-18T01:18:02.605Z] R_100 >>> SAMPLE: 2
+[2025-11-18T01:18:02.605Z] Skipping trade: R_100 digit 2 probability 0.00% < threshold 12%
+[2025-11-18T01:18:03.603Z] R_10 >>> SAMPLE: 3
+[2025-11-18T01:18:03.605Z] R_25 >>> SAMPLE: 8
+[2025-11-18T01:18:03.605Z] R_50 >>> SAMPLE: 7
+[2025-11-18T01:18:03.606Z] R_75 >>> SAMPLE: 8
+[2025-11-18T01:18:03.606Z] R_100 >>> SAMPLE: 2
+[2025-11-18T01:18:03.606Z] Skipping trade: R_100 digit 2 probability 0.00% < threshold 12%
+[2025-11-18T01:18:04.643Z] R_10 >>> SAMPLE: 7
+[2025-11-18T01:18:04.643Z] R_25 >>> SAMPLE: 5
+[2025-11-18T01:18:04.643Z] R_50 >>> SAMPLE: 1
+[2025-11-18T01:18:04.643Z] R_75 >>> SAMPLE: 7
+[2025-11-18T01:18:04.643Z] R_100 >>> SAMPLE: 1
+[2025-11-18T01:18:04.643Z] Skipping trade: R_100 digit 1 probability 0.00% < threshold 12%
+[2025-11-18T01:18:05.644Z] R_10 >>> SAMPLE: 7
+[2025-11-18T01:18:05.645Z] R_25 >>> SAMPLE: 5
+[2025-11-18T01:18:05.645Z] R_50 >>> SAMPLE: 1
+[2025-11-18T01:18:05.646Z] R_75 >>> SAMPLE: 7
+[2025-11-18T01:18:05.646Z] R_100 >>> SAMPLE: 1
+[2025-11-18T01:18:05.646Z] Skipping trade: R_100 digit 1 probability 0.00% < threshold 12%
+[2025-11-18T01:18:06.645Z] R_10 >>> SAMPLE: 1
+[2025-11-18T01:18:06.646Z] R_25 >>> SAMPLE: 8
+[2025-11-18T01:18:06.646Z] R_50 >>> SAMPLE: 4
+[2025-11-18T01:18:06.646Z] R_75 >>> SAMPLE: 2
+[2025-11-18T01:18:06.646Z] R_100 >>> SAMPLE: 1
+[2025-11-18T01:18:06.646Z] Skipping trade: R_100 digit 1 probability 0.00% < threshold 12%
+[2025-11-18T01:18:07.646Z] R_10 >>> SAMPLE: 1
+[2025-11-18T01:18:07.647Z] R_25 >>> SAMPLE: 8
+[2025-11-18T01:18:07.647Z] R_50 >>> SAMPLE: 4
+[2025-11-18T01:18:07.648Z] R_75 >>> SAMPLE: 2
+[2025-11-18T01:18:07.648Z] R_100 >>> SAMPLE: 1
+[2025-11-18T01:18:07.649Z] Skipping trade: R_100 digit 1 probability 0.00% < threshold 12%
+[2025-11-18T01:18:08.604Z] === Digit Frequency Analysis for R_10 ===
+[2025-11-18T01:18:08.604Z] Total samples: 7
+[2025-11-18T01:18:08.605Z]   Digit 1: 2 times (28.57%)
+[2025-11-18T01:18:08.605Z]     *** PROFITABLE: Digit 1 has 28.57% occurrence (≥12% threshold)
+[2025-11-18T01:18:08.605Z]   Digit 3: 2 times (28.57%)
+[2025-11-18T01:18:08.605Z]     *** PROFITABLE: Digit 3 has 28.57% occurrence (≥12% threshold)
+[2025-11-18T01:18:08.605Z]   Digit 7: 2 times (28.57%)
+[2025-11-18T01:18:08.605Z]     *** PROFITABLE: Digit 7 has 28.57% occurrence (≥12% threshold)
+[2025-11-18T01:18:08.605Z]   Digit 4: 1 times (14.29%)
+[2025-11-18T01:18:08.605Z]     *** PROFITABLE: Digit 4 has 14.29% occurrence (≥12% threshold)
+[2025-11-18T01:18:08.605Z]   Digit 0: 0 times (0.00%)
+[2025-11-18T01:18:08.605Z]   Digit 2: 0 times (0.00%)
+[2025-11-18T01:18:08.605Z]   Digit 5: 0 times (0.00%)
+[2025-11-18T01:18:08.605Z]   Digit 6: 0 times (0.00%)
+[2025-11-18T01:18:08.605Z]   Digit 8: 0 times (0.00%)
+[2025-11-18T01:18:08.605Z]   Digit 9: 0 times (0.00%)
+[2025-11-18T01:18:08.605Z] === End Analysis ===
+[2025-11-18T01:18:08.606Z] === Digit Frequency Analysis for R_25 ===
+[2025-11-18T01:18:08.606Z] Total samples: 7
+[2025-11-18T01:18:08.606Z]   Digit 8: 4 times (57.14%)
+[2025-11-18T01:18:08.606Z]     *** PROFITABLE: Digit 8 has 57.14% occurrence (≥12% threshold)
+[2025-11-18T01:18:08.606Z]   Digit 5: 2 times (28.57%)
+[2025-11-18T01:18:08.606Z]     *** PROFITABLE: Digit 5 has 28.57% occurrence (≥12% threshold)
+[2025-11-18T01:18:08.606Z]   Digit 4: 1 times (14.29%)
+[2025-11-18T01:18:08.606Z]     *** PROFITABLE: Digit 4 has 14.29% occurrence (≥12% threshold)
+[2025-11-18T01:18:08.606Z]   Digit 0: 0 times (0.00%)
+[2025-11-18T01:18:08.606Z]   Digit 1: 0 times (0.00%)
+[2025-11-18T01:18:08.606Z]   Digit 2: 0 times (0.00%)
+[2025-11-18T01:18:08.606Z]   Digit 3: 0 times (0.00%)
+[2025-11-18T01:18:08.607Z]   Digit 6: 0 times (0.00%)
+[2025-11-18T01:18:08.607Z]   Digit 7: 0 times (0.00%)
+[2025-11-18T01:18:08.607Z]   Digit 9: 0 times (0.00%)
+[2025-11-18T01:18:08.607Z] === End Analysis ===
+[2025-11-18T01:18:08.607Z] === Digit Frequency Analysis for R_50 ===
+[2025-11-18T01:18:08.607Z] Total samples: 7
+[2025-11-18T01:18:08.607Z]   Digit 1: 2 times (28.57%)
+[2025-11-18T01:18:08.607Z]     *** PROFITABLE: Digit 1 has 28.57% occurrence (≥12% threshold)
+[2025-11-18T01:18:08.607Z]   Digit 4: 2 times (28.57%)
+[2025-11-18T01:18:08.607Z]     *** PROFITABLE: Digit 4 has 28.57% occurrence (≥12% threshold)
+[2025-11-18T01:18:08.607Z]   Digit 7: 2 times (28.57%)
+[2025-11-18T01:18:08.607Z]     *** PROFITABLE: Digit 7 has 28.57% occurrence (≥12% threshold)
+[2025-11-18T01:18:08.607Z]   Digit 3: 1 times (14.29%)
+[2025-11-18T01:18:08.607Z]     *** PROFITABLE: Digit 3 has 14.29% occurrence (≥12% threshold)
+[2025-11-18T01:18:08.607Z]   Digit 0: 0 times (0.00%)
+[2025-11-18T01:18:08.607Z]   Digit 2: 0 times (0.00%)
+[2025-11-18T01:18:08.607Z]   Digit 5: 0 times (0.00%)
+[2025-11-18T01:18:08.608Z]   Digit 6: 0 times (0.00%)
+[2025-11-18T01:18:08.608Z]   Digit 8: 0 times (0.00%)
+[2025-11-18T01:18:08.608Z]   Digit 9: 0 times (0.00%)
+[2025-11-18T01:18:08.608Z] === End Analysis ===
+[2025-11-18T01:18:08.608Z] === Digit Frequency Analysis for R_75 ===
+[2025-11-18T01:18:08.608Z] Total samples: 7
+[2025-11-18T01:18:08.608Z]   Digit 2: 2 times (28.57%)
+[2025-11-18T01:18:08.608Z]     *** PROFITABLE: Digit 2 has 28.57% occurrence (≥12% threshold)
+[2025-11-18T01:18:08.608Z]   Digit 7: 2 times (28.57%)
+[2025-11-18T01:18:08.608Z]     *** PROFITABLE: Digit 7 has 28.57% occurrence (≥12% threshold)
+[2025-11-18T01:18:08.608Z]   Digit 8: 2 times (28.57%)
+[2025-11-18T01:18:08.608Z]     *** PROFITABLE: Digit 8 has 28.57% occurrence (≥12% threshold)
+[2025-11-18T01:18:08.608Z]   Digit 9: 1 times (14.29%)
+[2025-11-18T01:18:08.608Z]     *** PROFITABLE: Digit 9 has 14.29% occurrence (≥12% threshold)
+[2025-11-18T01:18:08.609Z]   Digit 0: 0 times (0.00%)
+[2025-11-18T01:18:08.609Z]   Digit 1: 0 times (0.00%)
+[2025-11-18T01:18:08.609Z]   Digit 3: 0 times (0.00%)
+[2025-11-18T01:18:08.609Z]   Digit 4: 0 times (0.00%)
+[2025-11-18T01:18:08.609Z]   Digit 5: 0 times (0.00%)
+[2025-11-18T01:18:08.609Z]   Digit 6: 0 times (0.00%)
+[2025-11-18T01:18:08.609Z] === End Analysis ===
+[2025-11-18T01:18:08.609Z] === Digit Frequency Analysis for R_100 ===
+[2025-11-18T01:18:08.609Z] Total samples: 7
+[2025-11-18T01:18:08.609Z]   Digit 1: 4 times (57.14%)
+[2025-11-18T01:18:08.609Z]     *** PROFITABLE: Digit 1 has 57.14% occurrence (≥12% threshold)
+[2025-11-18T01:18:08.609Z]   Digit 2: 2 times (28.57%)
+[2025-11-18T01:18:08.609Z]     *** PROFITABLE: Digit 2 has 28.57% occurrence (≥12% threshold)
+[2025-11-18T01:18:08.609Z]   Digit 3: 1 times (14.29%)
+[2025-11-18T01:18:08.609Z]     *** PROFITABLE: Digit 3 has 14.29% occurrence (≥12% threshold)
+[2025-11-18T01:18:08.610Z]   Digit 0: 0 times (0.00%)
+[2025-11-18T01:18:08.610Z]   Digit 4: 0 times (0.00%)
+[2025-11-18T01:18:08.612Z]   Digit 5: 0 times (0.00%)
+[2025-11-18T01:18:08.612Z]   Digit 6: 0 times (0.00%)
+[2025-11-18T01:18:08.613Z]   Digit 7: 0 times (0.00%)
+[2025-11-18T01:18:08.613Z]   Digit 8: 0 times (0.00%)
+[2025-11-18T01:18:08.613Z]   Digit 9: 0 times (0.00%)
+[2025-11-18T01:18:08.613Z] === End Analysis ===
+[2025-11-18T01:18:18.612Z] R_10 >>> SAMPLE: 6
+[2025-11-18T01:18:18.613Z] R_25 >>> SAMPLE: 9
+[2025-11-18T01:18:18.614Z] R_50 >>> SAMPLE: 8
+[2025-11-18T01:18:18.614Z] R_75 >>> SAMPLE: 3
+[2025-11-18T01:18:18.616Z] R_100 >>> SAMPLE: 7
+[2025-11-18T01:18:18.616Z] Skipping trade: R_100 digit 7 probability 0.00% < threshold 12%
+[2025-11-18T01:18:19.614Z] R_10 >>> SAMPLE: 6
+[2025-11-18T01:18:19.615Z] R_25 >>> SAMPLE: 9
+[2025-11-18T01:18:19.616Z] R_50 >>> SAMPLE: 8
+[2025-11-18T01:18:19.617Z] R_75 >>> SAMPLE: 3
+[2025-11-18T01:18:19.618Z] R_100 >>> SAMPLE: 7
+[2025-11-18T01:18:19.618Z] Skipping trade: R_100 digit 7 probability 0.00% < threshold 12%
+[2025-11-18T01:18:20.614Z] R_10 >>> SAMPLE: 1
+[2025-11-18T01:18:20.615Z] R_25 >>> SAMPLE: 8
+[2025-11-18T01:18:20.616Z] R_50 >>> SAMPLE: 6
+[2025-11-18T01:18:20.618Z] R_75 >>> SAMPLE: 8
+[2025-11-18T01:18:20.618Z] R_100 >>> SAMPLE: 1
+[2025-11-18T01:18:20.619Z] Autonomous trade: R_100 digit 1 (57.14% probability), stake $1.00
+[2025-11-18T01:18:20.619Z] Placing autonomous trade: R_100 digit 1, stake $1.00
+[2025-11-18T01:26:38.652Z] Web UI available at http://localhost:3000
+[2025-11-18T01:26:40.303Z] Trading disabled by default for demo account - enable via web UI if desired
+[2025-11-18T01:26:50.779Z] R_10 >>> SAMPLE: 4
+[2025-11-18T01:26:50.779Z] R_25 >>> SAMPLE: 8
+[2025-11-18T01:26:50.780Z] R_50 >>> SAMPLE: 9
+[2025-11-18T01:26:50.780Z] R_75 >>> SAMPLE: 2
+[2025-11-18T01:26:50.780Z] R_100 >>> SAMPLE: 8
+[2025-11-18T01:26:51.780Z] R_10 >>> SAMPLE: 4
+[2025-11-18T01:26:51.780Z] R_25 >>> SAMPLE: 8
+[2025-11-18T01:26:51.780Z] R_50 >>> SAMPLE: 9
+[2025-11-18T01:26:51.780Z] R_75 >>> SAMPLE: 2
+[2025-11-18T01:26:51.780Z] R_100 >>> SAMPLE: 8
+[2025-11-18T01:26:52.781Z] R_10 >>> SAMPLE: 4
+[2025-11-18T01:26:52.781Z] R_25 >>> SAMPLE: 4
+[2025-11-18T01:26:52.781Z] R_50 >>> SAMPLE: 9
+[2025-11-18T01:26:52.781Z] R_75 >>> SAMPLE: 5
+[2025-11-18T01:26:52.781Z] R_100 >>> SAMPLE: 8
+[2025-11-18T01:26:53.781Z] R_10 >>> SAMPLE: 4
+[2025-11-18T01:26:53.781Z] R_25 >>> SAMPLE: 4
+[2025-11-18T01:26:53.781Z] R_50 >>> SAMPLE: 9
+[2025-11-18T01:26:53.781Z] R_75 >>> SAMPLE: 5
+[2025-11-18T01:26:53.781Z] R_100 >>> SAMPLE: 8
+[2025-11-18T01:26:54.811Z] R_10 >>> SAMPLE: 6
+[2025-11-18T01:26:54.889Z] R_25 >>> SAMPLE: 6
+[2025-11-18T01:26:54.889Z] R_50 >>> SAMPLE: 3
+[2025-11-18T01:26:54.889Z] R_75 >>> SAMPLE: 5
+[2025-11-18T01:26:54.889Z] R_100 >>> SAMPLE: 2
+[2025-11-18T01:26:55.799Z] R_10 >>> SAMPLE: 6
+[2025-11-18T01:26:55.889Z] R_25 >>> SAMPLE: 6
+[2025-11-18T01:26:55.889Z] R_50 >>> SAMPLE: 3
+[2025-11-18T01:26:55.889Z] R_75 >>> SAMPLE: 5
+[2025-11-18T01:26:55.889Z] R_100 >>> SAMPLE: 2
+[2025-11-18T01:26:56.799Z] R_10 >>> SAMPLE: 6
+[2025-11-18T01:26:56.889Z] R_25 >>> SAMPLE: 8
+[2025-11-18T01:26:56.889Z] R_50 >>> SAMPLE: 9
+[2025-11-18T01:26:56.889Z] R_75 >>> SAMPLE: 8
+[2025-11-18T01:26:56.889Z] R_100 >>> SAMPLE: 2
+[2025-11-18T01:26:57.779Z] === Digit Frequency Analysis for R_10 ===
+[2025-11-18T01:26:57.779Z] Total samples: 7
+[2025-11-18T01:26:57.779Z]   Digit 4: 4 times (57.14%)
+[2025-11-18T01:26:57.779Z]     *** PROFITABLE: Digit 4 has 57.14% occurrence (≥12% threshold)
+[2025-11-18T01:26:57.779Z]   Digit 6: 3 times (42.86%)
+[2025-11-18T01:26:57.780Z]     *** PROFITABLE: Digit 6 has 42.86% occurrence (≥12% threshold)
+[2025-11-18T01:26:57.780Z]   Digit 0: 0 times (0.00%)
+[2025-11-18T01:26:57.780Z]   Digit 1: 0 times (0.00%)
+[2025-11-18T01:26:57.780Z]   Digit 2: 0 times (0.00%)
+[2025-11-18T01:26:57.780Z]   Digit 3: 0 times (0.00%)
+[2025-11-18T01:26:57.780Z]   Digit 5: 0 times (0.00%)
+[2025-11-18T01:26:57.780Z]   Digit 7: 0 times (0.00%)
+[2025-11-18T01:26:57.780Z]   Digit 8: 0 times (0.00%)
+[2025-11-18T01:26:57.780Z]   Digit 9: 0 times (0.00%)
+[2025-11-18T01:26:57.780Z] === End Analysis ===
+[2025-11-18T01:26:57.780Z] === Digit Frequency Analysis for R_25 ===
+[2025-11-18T01:26:57.780Z] Total samples: 7
+[2025-11-18T01:26:57.780Z]   Digit 8: 3 times (42.86%)
+[2025-11-18T01:26:57.780Z]     *** PROFITABLE: Digit 8 has 42.86% occurrence (≥12% threshold)
+[2025-11-18T01:26:57.780Z]   Digit 4: 2 times (28.57%)
+[2025-11-18T01:26:57.780Z]     *** PROFITABLE: Digit 4 has 28.57% occurrence (≥12% threshold)
+[2025-11-18T01:26:57.780Z]   Digit 6: 2 times (28.57%)
+[2025-11-18T01:26:57.780Z]     *** PROFITABLE: Digit 6 has 28.57% occurrence (≥12% threshold)
+[2025-11-18T01:26:57.780Z]   Digit 0: 0 times (0.00%)
+[2025-11-18T01:26:57.780Z]   Digit 1: 0 times (0.00%)
+[2025-11-18T01:26:57.780Z]   Digit 2: 0 times (0.00%)
+[2025-11-18T01:26:57.780Z]   Digit 3: 0 times (0.00%)
+[2025-11-18T01:26:57.780Z]   Digit 5: 0 times (0.00%)
+[2025-11-18T01:26:57.780Z]   Digit 7: 0 times (0.00%)
+[2025-11-18T01:26:57.780Z]   Digit 9: 0 times (0.00%)
+[2025-11-18T01:26:57.780Z] === End Analysis ===
+[2025-11-18T01:26:57.782Z] === Digit Frequency Analysis for R_50 ===
+[2025-11-18T01:26:57.782Z] Total samples: 7
+[2025-11-18T01:26:57.782Z]   Digit 9: 5 times (71.43%)
+[2025-11-18T01:26:57.782Z]     *** PROFITABLE: Digit 9 has 71.43% occurrence (≥12% threshold)
+[2025-11-18T01:26:57.782Z]   Digit 3: 2 times (28.57%)
+[2025-11-18T01:26:57.782Z]     *** PROFITABLE: Digit 3 has 28.57% occurrence (≥12% threshold)
+[2025-11-18T01:26:57.782Z]   Digit 0: 0 times (0.00%)
+[2025-11-18T01:26:57.782Z]   Digit 1: 0 times (0.00%)
+[2025-11-18T01:26:57.782Z]   Digit 2: 0 times (0.00%)
+[2025-11-18T01:26:57.782Z]   Digit 4: 0 times (0.00%)
+[2025-11-18T01:26:57.782Z]   Digit 5: 0 times (0.00%)
+[2025-11-18T01:26:57.782Z]   Digit 6: 0 times (0.00%)
+[2025-11-18T01:26:57.782Z]   Digit 7: 0 times (0.00%)
+[2025-11-18T01:26:57.782Z]   Digit 8: 0 times (0.00%)
+[2025-11-18T01:26:57.782Z] === End Analysis ===
+[2025-11-18T01:26:57.782Z] === Digit Frequency Analysis for R_75 ===
+[2025-11-18T01:26:57.782Z] Total samples: 7
+[2025-11-18T01:26:57.782Z]   Digit 5: 4 times (57.14%)
+[2025-11-18T01:26:57.782Z]     *** PROFITABLE: Digit 5 has 57.14% occurrence (≥12% threshold)
+[2025-11-18T01:26:57.782Z]   Digit 2: 2 times (28.57%)
+[2025-11-18T01:26:57.782Z]     *** PROFITABLE: Digit 2 has 28.57% occurrence (≥12% threshold)
+[2025-11-18T01:26:57.782Z]   Digit 8: 1 times (14.29%)
+[2025-11-18T01:26:57.782Z]     *** PROFITABLE: Digit 8 has 14.29% occurrence (≥12% threshold)
+[2025-11-18T01:26:57.782Z]   Digit 0: 0 times (0.00%)
+[2025-11-18T01:26:57.782Z]   Digit 1: 0 times (0.00%)
+[2025-11-18T01:26:57.782Z]   Digit 3: 0 times (0.00%)
+[2025-11-18T01:26:57.782Z]   Digit 4: 0 times (0.00%)
+[2025-11-18T01:26:57.782Z]   Digit 6: 0 times (0.00%)
+[2025-11-18T01:26:57.782Z]   Digit 7: 0 times (0.00%)
+[2025-11-18T01:26:57.782Z]   Digit 9: 0 times (0.00%)
+[2025-11-18T01:26:57.782Z] === End Analysis ===
+[2025-11-18T01:26:57.783Z] === Digit Frequency Analysis for R_100 ===
+[2025-11-18T01:26:57.783Z] Total samples: 7
+[2025-11-18T01:26:57.783Z]   Digit 8: 4 times (57.14%)
+[2025-11-18T01:26:57.783Z]     *** PROFITABLE: Digit 8 has 57.14% occurrence (≥12% threshold)
+[2025-11-18T01:26:57.783Z]   Digit 2: 3 times (42.86%)
+[2025-11-18T01:26:57.783Z]     *** PROFITABLE: Digit 2 has 42.86% occurrence (≥12% threshold)
+[2025-11-18T01:26:57.783Z]   Digit 0: 0 times (0.00%)
+[2025-11-18T01:26:57.783Z]   Digit 1: 0 times (0.00%)
+[2025-11-18T01:26:57.783Z]   Digit 3: 0 times (0.00%)
+[2025-11-18T01:26:57.783Z]   Digit 4: 0 times (0.00%)
+[2025-11-18T01:26:57.783Z]   Digit 5: 0 times (0.00%)
+[2025-11-18T01:26:57.783Z]   Digit 6: 0 times (0.00%)
+[2025-11-18T01:26:57.783Z]   Digit 7: 0 times (0.00%)
+[2025-11-18T01:26:57.783Z]   Digit 9: 0 times (0.00%)
+[2025-11-18T01:26:57.783Z] === End Analysis ===
+[2025-11-18T01:27:07.790Z] R_10 >>> SAMPLE: 8
+[2025-11-18T01:27:07.793Z] R_25 >>> SAMPLE: 9
+[2025-11-18T01:27:07.793Z] R_50 >>> SAMPLE: 7
+[2025-11-18T01:27:07.793Z] R_75 >>> SAMPLE: 9
+[2025-11-18T01:27:07.794Z] R_100 >>> SAMPLE: 8
+[2025-11-18T01:27:08.791Z] R_10 >>> SAMPLE: 4
+[2025-11-18T01:27:08.793Z] R_25 >>> SAMPLE: 2
+[2025-11-18T01:27:08.793Z] R_50 >>> SAMPLE: 4
+[2025-11-18T01:27:08.793Z] R_75 >>> SAMPLE: 4
+[2025-11-18T01:27:08.795Z] R_100 >>> SAMPLE: 2
+[2025-11-18T01:27:09.790Z] R_10 >>> SAMPLE: 4
+[2025-11-18T01:27:09.793Z] R_25 >>> SAMPLE: 2
+[2025-11-18T01:27:09.793Z] R_50 >>> SAMPLE: 4
+[2025-11-18T01:27:09.793Z] R_75 >>> SAMPLE: 4
+[2025-11-18T01:27:09.796Z] R_100 >>> SAMPLE: 2
+[2025-11-18T01:27:10.790Z] R_10 >>> SAMPLE: 5
+[2025-11-18T01:27:10.794Z] R_25 >>> SAMPLE: 3
+[2025-11-18T01:27:10.794Z] R_50 >>> SAMPLE: 4
+[2025-11-18T01:27:10.794Z] R_75 >>> SAMPLE: 2
+[2025-11-18T01:27:10.797Z] R_100 >>> SAMPLE: 9
+[2025-11-18T01:27:11.791Z] R_10 >>> SAMPLE: 5
+[2025-11-18T01:27:11.795Z] R_25 >>> SAMPLE: 3
+[2025-11-18T01:27:11.795Z] R_50 >>> SAMPLE: 4
+[2025-11-18T01:27:11.795Z] R_75 >>> SAMPLE: 2
+[2025-11-18T01:27:11.798Z] R_100 >>> SAMPLE: 9
+[2025-11-18T01:27:12.791Z] R_10 >>> SAMPLE: 2
+[2025-11-18T01:27:12.796Z] R_25 >>> SAMPLE: 4
+[2025-11-18T01:27:12.796Z] R_50 >>> SAMPLE: 7
+[2025-11-18T01:27:12.796Z] R_75 >>> SAMPLE: 7
+[2025-11-18T01:27:12.799Z] R_100 >>> SAMPLE: 6
+[2025-11-18T01:27:13.792Z] R_10 >>> SAMPLE: 2
+[2025-11-18T01:27:13.796Z] R_25 >>> SAMPLE: 4
+[2025-11-18T01:27:13.796Z] R_50 >>> SAMPLE: 7
+[2025-11-18T01:27:13.796Z] R_75 >>> SAMPLE: 7
+[2025-11-18T01:27:13.799Z] R_100 >>> SAMPLE: 6
+[2025-11-18T01:27:14.791Z] === Digit Frequency Analysis for R_10 ===
+[2025-11-18T01:27:14.792Z] Total samples: 7
+[2025-11-18T01:27:14.793Z]   Digit 2: 2 times (28.57%)
+[2025-11-18T01:27:14.793Z]     *** PROFITABLE: Digit 2 has 28.57% occurrence (≥12% threshold)
+[2025-11-18T01:27:14.793Z]   Digit 4: 2 times (28.57%)
+[2025-11-18T01:27:14.793Z]     *** PROFITABLE: Digit 4 has 28.57% occurrence (≥12% threshold)
+[2025-11-18T01:27:14.794Z]   Digit 5: 2 times (28.57%)
+[2025-11-18T01:27:14.794Z]     *** PROFITABLE: Digit 5 has 28.57% occurrence (≥12% threshold)
+[2025-11-18T01:27:14.794Z]   Digit 8: 1 times (14.29%)
+[2025-11-18T01:27:14.794Z]     *** PROFITABLE: Digit 8 has 14.29% occurrence (≥12% threshold)
+[2025-11-18T01:27:14.794Z]   Digit 0: 0 times (0.00%)
+[2025-11-18T01:27:14.795Z]   Digit 1: 0 times (0.00%)
+[2025-11-18T01:27:14.795Z]   Digit 3: 0 times (0.00%)
+[2025-11-18T01:27:14.795Z]   Digit 6: 0 times (0.00%)
+[2025-11-18T01:27:14.795Z]   Digit 7: 0 times (0.00%)
+[2025-11-18T01:27:14.795Z]   Digit 9: 0 times (0.00%)
+[2025-11-18T01:27:14.795Z] === End Analysis ===
+[2025-11-18T01:27:14.796Z] === Digit Frequency Analysis for R_25 ===
+[2025-11-18T01:27:14.796Z] Total samples: 7
+[2025-11-18T01:27:14.796Z]   Digit 2: 2 times (28.57%)
+[2025-11-18T01:27:14.796Z]     *** PROFITABLE: Digit 2 has 28.57% occurrence (≥12% threshold)
+[2025-11-18T01:27:14.796Z]   Digit 3: 2 times (28.57%)
+[2025-11-18T01:27:14.796Z]     *** PROFITABLE: Digit 3 has 28.57% occurrence (≥12% threshold)
+[2025-11-18T01:27:14.796Z]   Digit 4: 2 times (28.57%)
+[2025-11-18T01:27:14.796Z]     *** PROFITABLE: Digit 4 has 28.57% occurrence (≥12% threshold)
+[2025-11-18T01:27:14.796Z]   Digit 9: 1 times (14.29%)
+[2025-11-18T01:27:14.796Z]     *** PROFITABLE: Digit 9 has 14.29% occurrence (≥12% threshold)
+[2025-11-18T01:27:14.796Z]   Digit 0: 0 times (0.00%)
+[2025-11-18T01:27:14.796Z]   Digit 1: 0 times (0.00%)
+[2025-11-18T01:27:14.796Z]   Digit 5: 0 times (0.00%)
+[2025-11-18T01:27:14.796Z]   Digit 6: 0 times (0.00%)
+[2025-11-18T01:27:14.796Z]   Digit 7: 0 times (0.00%)
+[2025-11-18T01:27:14.797Z]   Digit 8: 0 times (0.00%)
+[2025-11-18T01:27:14.797Z] === End Analysis ===
+[2025-11-18T01:27:14.797Z] === Digit Frequency Analysis for R_50 ===
+[2025-11-18T01:27:14.797Z] Total samples: 7
+[2025-11-18T01:27:14.797Z]   Digit 4: 4 times (57.14%)
+[2025-11-18T01:27:14.797Z]     *** PROFITABLE: Digit 4 has 57.14% occurrence (≥12% threshold)
+[2025-11-18T01:27:14.797Z]   Digit 7: 3 times (42.86%)
+[2025-11-18T01:27:14.797Z]     *** PROFITABLE: Digit 7 has 42.86% occurrence (≥12% threshold)
+[2025-11-18T01:27:14.797Z]   Digit 0: 0 times (0.00%)
+[2025-11-18T01:27:14.797Z]   Digit 1: 0 times (0.00%)
+[2025-11-18T01:27:14.797Z]   Digit 2: 0 times (0.00%)
+[2025-11-18T01:27:14.797Z]   Digit 3: 0 times (0.00%)
+[2025-11-18T01:27:14.798Z]   Digit 5: 0 times (0.00%)
+[2025-11-18T01:27:14.798Z]   Digit 6: 0 times (0.00%)
+[2025-11-18T01:27:14.798Z]   Digit 8: 0 times (0.00%)
+[2025-11-18T01:27:14.798Z]   Digit 9: 0 times (0.00%)
+[2025-11-18T01:27:14.799Z] === End Analysis ===
+[2025-11-18T01:27:14.799Z] === Digit Frequency Analysis for R_75 ===
+[2025-11-18T01:27:14.799Z] Total samples: 7
+[2025-11-18T01:27:14.799Z]   Digit 2: 2 times (28.57%)
+[2025-11-18T01:27:14.799Z]     *** PROFITABLE: Digit 2 has 28.57% occurrence (≥12% threshold)
+[2025-11-18T01:27:14.799Z]   Digit 4: 2 times (28.57%)
+[2025-11-18T01:27:14.800Z]     *** PROFITABLE: Digit 4 has 28.57% occurrence (≥12% threshold)
+[2025-11-18T01:27:14.800Z]   Digit 7: 2 times (28.57%)
+[2025-11-18T01:27:14.800Z]     *** PROFITABLE: Digit 7 has 28.57% occurrence (≥12% threshold)
+[2025-11-18T01:27:14.800Z]   Digit 9: 1 times (14.29%)
+[2025-11-18T01:27:14.800Z]     *** PROFITABLE: Digit 9 has 14.29% occurrence (≥12% threshold)
+[2025-11-18T01:27:14.800Z]   Digit 0: 0 times (0.00%)
+[2025-11-18T01:27:14.800Z]   Digit 1: 0 times (0.00%)
+[2025-11-18T01:27:14.800Z]   Digit 3: 0 times (0.00%)
+[2025-11-18T01:27:14.800Z]   Digit 5: 0 times (0.00%)
+[2025-11-18T01:27:14.800Z]   Digit 6: 0 times (0.00%)
+[2025-11-18T01:27:14.800Z]   Digit 8: 0 times (0.00%)
+[2025-11-18T01:27:14.800Z] === End Analysis ===
+[2025-11-18T01:27:14.801Z] === Digit Frequency Analysis for R_100 ===
+[2025-11-18T01:27:14.801Z] Total samples: 7
+[2025-11-18T01:27:14.801Z]   Digit 2: 2 times (28.57%)
+[2025-11-18T01:27:14.801Z]     *** PROFITABLE: Digit 2 has 28.57% occurrence (≥12% threshold)
+[2025-11-18T01:27:14.801Z]   Digit 6: 2 times (28.57%)
+[2025-11-18T01:27:14.801Z]     *** PROFITABLE: Digit 6 has 28.57% occurrence (≥12% threshold)
+[2025-11-18T01:27:14.801Z]   Digit 9: 2 times (28.57%)
+[2025-11-18T01:27:14.801Z]     *** PROFITABLE: Digit 9 has 28.57% occurrence (≥12% threshold)
+[2025-11-18T01:27:14.801Z]   Digit 8: 1 times (14.29%)
+[2025-11-18T01:27:14.801Z]     *** PROFITABLE: Digit 8 has 14.29% occurrence (≥12% threshold)
+[2025-11-18T01:27:14.801Z]   Digit 0: 0 times (0.00%)
+[2025-11-18T01:27:14.801Z]   Digit 1: 0 times (0.00%)
+[2025-11-18T01:27:14.801Z]   Digit 3: 0 times (0.00%)
+[2025-11-18T01:27:14.801Z]   Digit 4: 0 times (0.00%)
+[2025-11-18T01:27:14.801Z]   Digit 5: 0 times (0.00%)
+[2025-11-18T01:27:14.801Z]   Digit 7: 0 times (0.00%)
+[2025-11-18T01:27:14.801Z] === End Analysis ===
+[2025-11-18T01:27:24.804Z] R_10 >>> SAMPLE: 9
+[2025-11-18T01:27:24.804Z] R_25 >>> SAMPLE: 5
+[2025-11-18T01:27:24.805Z] R_50 >>> SAMPLE: 5
+[2025-11-18T01:27:24.805Z] R_75 >>> SAMPLE: 9
+[2025-11-18T01:27:24.806Z] R_100 >>> SAMPLE: 5
+[2025-11-18T01:27:25.806Z] R_10 >>> SAMPLE: 9
+[2025-11-18T01:27:25.807Z] R_25 >>> SAMPLE: 5
+[2025-11-18T01:27:25.807Z] R_50 >>> SAMPLE: 5
+[2025-11-18T01:27:25.807Z] R_75 >>> SAMPLE: 9
+[2025-11-18T01:27:25.808Z] R_100 >>> SAMPLE: 5
+[2025-11-18T01:27:26.807Z] R_10 >>> SAMPLE: 3
+[2025-11-18T01:27:26.807Z] R_25 >>> SAMPLE: 6
+[2025-11-18T01:27:26.808Z] R_50 >>> SAMPLE: 6
+[2025-11-18T01:27:26.808Z] R_75 >>> SAMPLE: 9
+[2025-11-18T01:27:26.808Z] R_100 >>> SAMPLE: 4
+[2025-11-18T01:27:27.808Z] R_10 >>> SAMPLE: 3
+[2025-11-18T01:27:27.809Z] R_25 >>> SAMPLE: 6
+[2025-11-18T01:27:27.809Z] R_50 >>> SAMPLE: 6
+[2025-11-18T01:27:27.809Z] R_75 >>> SAMPLE: 9
+[2025-11-18T01:27:27.809Z] R_100 >>> SAMPLE: 4
+[2025-11-18T01:27:28.809Z] R_10 >>> SAMPLE: 9
+[2025-11-18T01:27:28.809Z] R_25 >>> SAMPLE: 6
+[2025-11-18T01:27:28.810Z] R_50 >>> SAMPLE: 3
+[2025-11-18T01:27:28.810Z] R_75 >>> SAMPLE: 4
+[2025-11-18T01:27:28.811Z] R_100 >>> SAMPLE: 8
+[2025-11-18T01:27:29.809Z] R_10 >>> SAMPLE: 9
+[2025-11-18T01:27:29.810Z] R_25 >>> SAMPLE: 6
+[2025-11-18T01:27:29.812Z] R_50 >>> SAMPLE: 3
+[2025-11-18T01:27:29.813Z] R_75 >>> SAMPLE: 4
+[2025-11-18T01:27:29.813Z] R_100 >>> SAMPLE: 8
+[2025-11-18T01:27:30.811Z] R_10 >>> SAMPLE: 1
+[2025-11-18T01:27:30.811Z] R_25 >>> SAMPLE: 6
+[2025-11-18T01:27:30.812Z] R_50 >>> SAMPLE: 6
+[2025-11-18T01:27:30.812Z] R_75 >>> SAMPLE: 5
+[2025-11-18T01:27:30.812Z] R_100 >>> SAMPLE: 9
+[2025-11-18T01:27:31.805Z] === Digit Frequency Analysis for R_10 ===
+[2025-11-18T01:27:31.806Z] Total samples: 7
+[2025-11-18T01:27:31.806Z]   Digit 9: 4 times (57.14%)
+[2025-11-18T01:27:31.806Z]     *** PROFITABLE: Digit 9 has 57.14% occurrence (≥12% threshold)
+[2025-11-18T01:27:31.806Z]   Digit 3: 2 times (28.57%)
+[2025-11-18T01:27:31.806Z]     *** PROFITABLE: Digit 3 has 28.57% occurrence (≥12% threshold)
+[2025-11-18T01:27:31.806Z]   Digit 1: 1 times (14.29%)
+[2025-11-18T01:27:31.806Z]     *** PROFITABLE: Digit 1 has 14.29% occurrence (≥12% threshold)
+[2025-11-18T01:27:31.806Z]   Digit 0: 0 times (0.00%)
+[2025-11-18T01:27:31.806Z]   Digit 2: 0 times (0.00%)
+[2025-11-18T01:27:31.806Z]   Digit 4: 0 times (0.00%)
+[2025-11-18T01:27:31.806Z]   Digit 5: 0 times (0.00%)
+[2025-11-18T01:27:31.806Z]   Digit 6: 0 times (0.00%)
+[2025-11-18T01:27:31.806Z]   Digit 7: 0 times (0.00%)
+[2025-11-18T01:27:31.806Z]   Digit 8: 0 times (0.00%)
+[2025-11-18T01:27:31.806Z] === End Analysis ===
+[2025-11-18T01:27:31.806Z] === Digit Frequency Analysis for R_25 ===
+[2025-11-18T01:27:31.806Z] Total samples: 7
+[2025-11-18T01:27:31.807Z]   Digit 6: 5 times (71.43%)
+[2025-11-18T01:27:31.807Z]     *** PROFITABLE: Digit 6 has 71.43% occurrence (≥12% threshold)
+[2025-11-18T01:27:31.807Z]   Digit 5: 2 times (28.57%)
+[2025-11-18T01:27:31.807Z]     *** PROFITABLE: Digit 5 has 28.57% occurrence (≥12% threshold)
+[2025-11-18T01:27:31.807Z]   Digit 0: 0 times (0.00%)
+[2025-11-18T01:27:31.807Z]   Digit 1: 0 times (0.00%)
+[2025-11-18T01:27:31.807Z]   Digit 2: 0 times (0.00%)
+[2025-11-18T01:27:31.807Z]   Digit 3: 0 times (0.00%)
+[2025-11-18T01:27:31.807Z]   Digit 4: 0 times (0.00%)
+[2025-11-18T01:27:31.807Z]   Digit 7: 0 times (0.00%)
+[2025-11-18T01:27:31.807Z]   Digit 8: 0 times (0.00%)
+[2025-11-18T01:27:31.807Z]   Digit 9: 0 times (0.00%)
+[2025-11-18T01:27:31.807Z] === End Analysis ===
+[2025-11-18T01:27:31.807Z] === Digit Frequency Analysis for R_50 ===
+[2025-11-18T01:27:31.807Z] Total samples: 7
+[2025-11-18T01:27:31.807Z]   Digit 6: 3 times (42.86%)
+[2025-11-18T01:27:31.807Z]     *** PROFITABLE: Digit 6 has 42.86% occurrence (≥12% threshold)
+[2025-11-18T01:27:31.807Z]   Digit 3: 2 times (28.57%)
+[2025-11-18T01:27:31.807Z]     *** PROFITABLE: Digit 3 has 28.57% occurrence (≥12% threshold)
+[2025-11-18T01:27:31.807Z]   Digit 5: 2 times (28.57%)
+[2025-11-18T01:27:31.807Z]     *** PROFITABLE: Digit 5 has 28.57% occurrence (≥12% threshold)
+[2025-11-18T01:27:31.807Z]   Digit 0: 0 times (0.00%)
+[2025-11-18T01:27:31.807Z]   Digit 1: 0 times (0.00%)
+[2025-11-18T01:27:31.807Z]   Digit 2: 0 times (0.00%)
+[2025-11-18T01:27:31.807Z]   Digit 4: 0 times (0.00%)
+[2025-11-18T01:27:31.808Z]   Digit 7: 0 times (0.00%)
+[2025-11-18T01:27:31.808Z]   Digit 8: 0 times (0.00%)
+[2025-11-18T01:27:31.808Z]   Digit 9: 0 times (0.00%)
+[2025-11-18T01:27:31.808Z] === End Analysis ===
+[2025-11-18T01:27:31.808Z] === Digit Frequency Analysis for R_75 ===
+[2025-11-18T01:27:31.808Z] Total samples: 7
+[2025-11-18T01:27:31.808Z]   Digit 9: 4 times (57.14%)
+[2025-11-18T01:27:31.808Z]     *** PROFITABLE: Digit 9 has 57.14% occurrence (≥12% threshold)
+[2025-11-18T01:27:31.808Z]   Digit 4: 2 times (28.57%)
+[2025-11-18T01:27:31.808Z]     *** PROFITABLE: Digit 4 has 28.57% occurrence (≥12% threshold)
+[2025-11-18T01:27:31.808Z]   Digit 5: 1 times (14.29%)
+[2025-11-18T01:27:31.808Z]     *** PROFITABLE: Digit 5 has 14.29% occurrence (≥12% threshold)
+[2025-11-18T01:27:31.808Z]   Digit 0: 0 times (0.00%)
+[2025-11-18T01:27:31.808Z]   Digit 1: 0 times (0.00%)
+[2025-11-18T01:27:31.808Z]   Digit 2: 0 times (0.00%)
+[2025-11-18T01:27:31.808Z]   Digit 3: 0 times (0.00%)
+[2025-11-18T01:27:31.808Z]   Digit 6: 0 times (0.00%)
+[2025-11-18T01:27:31.808Z]   Digit 7: 0 times (0.00%)
+[2025-11-18T01:27:31.808Z]   Digit 8: 0 times (0.00%)
+[2025-11-18T01:27:31.808Z] === End Analysis ===
+[2025-11-18T01:27:31.810Z] === Digit Frequency Analysis for R_100 ===
+[2025-11-18T01:27:31.810Z] Total samples: 7
+[2025-11-18T01:27:31.810Z]   Digit 4: 2 times (28.57%)
+[2025-11-18T01:27:31.810Z]     *** PROFITABLE: Digit 4 has 28.57% occurrence (≥12% threshold)
+[2025-11-18T01:27:31.810Z]   Digit 5: 2 times (28.57%)
+[2025-11-18T01:27:31.810Z]     *** PROFITABLE: Digit 5 has 28.57% occurrence (≥12% threshold)
+[2025-11-18T01:27:31.810Z]   Digit 8: 2 times (28.57%)
+[2025-11-18T01:27:31.810Z]     *** PROFITABLE: Digit 8 has 28.57% occurrence (≥12% threshold)
+[2025-11-18T01:27:31.810Z]   Digit 9: 1 times (14.29%)
+[2025-11-18T01:27:31.810Z]     *** PROFITABLE: Digit 9 has 14.29% occurrence (≥12% threshold)
+[2025-11-18T01:27:31.810Z]   Digit 0: 0 times (0.00%)
+[2025-11-18T01:27:31.810Z]   Digit 1: 0 times (0.00%)
+[2025-11-18T01:27:31.810Z]   Digit 2: 0 times (0.00%)
+[2025-11-18T01:27:31.810Z]   Digit 3: 0 times (0.00%)
+[2025-11-18T01:27:31.810Z]   Digit 6: 0 times (0.00%)
+[2025-11-18T01:27:31.810Z]   Digit 7: 0 times (0.00%)
+[2025-11-18T01:27:31.811Z] === End Analysis ===
+[2025-11-18T01:27:41.815Z] R_10 >>> SAMPLE: 9
+[2025-11-18T01:27:41.817Z] R_25 >>> SAMPLE: 1
+[2025-11-18T01:27:41.817Z] R_50 >>> SAMPLE: 2
+[2025-11-18T01:27:41.817Z] R_75 >>> SAMPLE: 1
+[2025-11-18T01:27:41.817Z] R_100 >>> SAMPLE: 9
+[2025-11-18T01:27:42.817Z] R_10 >>> SAMPLE: 9
+[2025-11-18T01:27:42.818Z] R_25 >>> SAMPLE: 9
+[2025-11-18T01:27:42.818Z] R_50 >>> SAMPLE: 1
+[2025-11-18T01:27:42.818Z] R_75 >>> SAMPLE: 5
+[2025-11-18T01:27:42.818Z] R_100 >>> SAMPLE: 7
+[2025-11-18T01:27:43.818Z] R_10 >>> SAMPLE: 9
+[2025-11-18T01:27:43.819Z] R_25 >>> SAMPLE: 9
+[2025-11-18T01:27:43.819Z] R_50 >>> SAMPLE: 1
+[2025-11-18T01:27:43.820Z] R_75 >>> SAMPLE: 5
+[2025-11-18T01:27:43.820Z] R_100 >>> SAMPLE: 7
+[2025-11-18T01:27:44.819Z] R_10 >>> SAMPLE: 8
+[2025-11-18T01:27:44.819Z] R_25 >>> SAMPLE: 1
+[2025-11-18T01:27:44.820Z] R_50 >>> SAMPLE: 4
+[2025-11-18T01:27:44.820Z] R_75 >>> SAMPLE: 6
+[2025-11-18T01:27:44.821Z] R_100 >>> SAMPLE: 4
+[2025-11-18T01:27:45.820Z] R_10 >>> SAMPLE: 8
+[2025-11-18T01:27:45.820Z] R_25 >>> SAMPLE: 1
+[2025-11-18T01:27:45.822Z] R_50 >>> SAMPLE: 4
+[2025-11-18T01:27:45.823Z] R_75 >>> SAMPLE: 6
+[2025-11-18T01:27:45.823Z] R_100 >>> SAMPLE: 4
+[2025-11-18T01:27:46.821Z] R_10 >>> SAMPLE: 7
+[2025-11-18T01:27:46.821Z] R_25 >>> SAMPLE: 4
+[2025-11-18T01:27:46.822Z] R_50 >>> SAMPLE: 3
+[2025-11-18T01:27:46.823Z] R_75 >>> SAMPLE: 5
+[2025-11-18T01:27:46.823Z] R_100 >>> SAMPLE: 4
+[2025-11-18T01:27:47.822Z] R_10 >>> SAMPLE: 7
+[2025-11-18T01:27:47.822Z] R_25 >>> SAMPLE: 4
+[2025-11-18T01:27:47.823Z] R_50 >>> SAMPLE: 3
+[2025-11-18T01:27:47.823Z] R_75 >>> SAMPLE: 5
+[2025-11-18T01:27:47.823Z] R_100 >>> SAMPLE: 4
+[2025-11-18T01:27:48.816Z] === Digit Frequency Analysis for R_10 ===
+[2025-11-18T01:27:48.816Z] Total samples: 7
+[2025-11-18T01:27:48.816Z]   Digit 9: 3 times (42.86%)
+[2025-11-18T01:27:48.816Z]     *** PROFITABLE: Digit 9 has 42.86% occurrence (≥12% threshold)
+[2025-11-18T01:27:48.816Z]   Digit 7: 2 times (28.57%)
+[2025-11-18T01:27:48.816Z]     *** PROFITABLE: Digit 7 has 28.57% occurrence (≥12% threshold)
+[2025-11-18T01:27:48.816Z]   Digit 8: 2 times (28.57%)
+[2025-11-18T01:27:48.817Z]     *** PROFITABLE: Digit 8 has 28.57% occurrence (≥12% threshold)
+[2025-11-18T01:27:48.817Z]   Digit 0: 0 times (0.00%)
+[2025-11-18T01:27:48.817Z]   Digit 1: 0 times (0.00%)
+[2025-11-18T01:27:48.817Z]   Digit 2: 0 times (0.00%)
+[2025-11-18T01:27:48.817Z]   Digit 3: 0 times (0.00%)
+[2025-11-18T01:27:48.817Z]   Digit 4: 0 times (0.00%)
+[2025-11-18T01:27:48.817Z]   Digit 5: 0 times (0.00%)
+[2025-11-18T01:27:48.817Z]   Digit 6: 0 times (0.00%)
+[2025-11-18T01:27:48.817Z] === End Analysis ===
+[2025-11-18T01:27:48.818Z] === Digit Frequency Analysis for R_25 ===
+[2025-11-18T01:27:48.819Z] Total samples: 7
+[2025-11-18T01:27:48.819Z]   Digit 1: 3 times (42.86%)
+[2025-11-18T01:27:48.819Z]     *** PROFITABLE: Digit 1 has 42.86% occurrence (≥12% threshold)
+[2025-11-18T01:27:48.819Z]   Digit 4: 2 times (28.57%)
+[2025-11-18T01:27:48.819Z]     *** PROFITABLE: Digit 4 has 28.57% occurrence (≥12% threshold)
+[2025-11-18T01:27:48.819Z]   Digit 9: 2 times (28.57%)
+[2025-11-18T01:27:48.819Z]     *** PROFITABLE: Digit 9 has 28.57% occurrence (≥12% threshold)
+[2025-11-18T01:27:48.819Z]   Digit 0: 0 times (0.00%)
+[2025-11-18T01:27:48.820Z]   Digit 2: 0 times (0.00%)
+[2025-11-18T01:27:48.820Z]   Digit 3: 0 times (0.00%)
+[2025-11-18T01:27:48.820Z]   Digit 5: 0 times (0.00%)
+[2025-11-18T01:27:48.820Z]   Digit 6: 0 times (0.00%)
+[2025-11-18T01:27:48.820Z]   Digit 7: 0 times (0.00%)
+[2025-11-18T01:27:48.820Z]   Digit 8: 0 times (0.00%)
+[2025-11-18T01:27:48.820Z] === End Analysis ===
+[2025-11-18T01:27:48.820Z] === Digit Frequency Analysis for R_50 ===
+[2025-11-18T01:27:48.820Z] Total samples: 7
+[2025-11-18T01:27:48.820Z]   Digit 1: 2 times (28.57%)
+[2025-11-18T01:27:48.820Z]     *** PROFITABLE: Digit 1 has 28.57% occurrence (≥12% threshold)
+[2025-11-18T01:27:48.820Z]   Digit 3: 2 times (28.57%)
+[2025-11-18T01:27:48.820Z]     *** PROFITABLE: Digit 3 has 28.57% occurrence (≥12% threshold)
+[2025-11-18T01:27:48.820Z]   Digit 4: 2 times (28.57%)
+[2025-11-18T01:27:48.820Z]     *** PROFITABLE: Digit 4 has 28.57% occurrence (≥12% threshold)
+[2025-11-18T01:27:48.820Z]   Digit 2: 1 times (14.29%)
+[2025-11-18T01:27:48.820Z]     *** PROFITABLE: Digit 2 has 14.29% occurrence (≥12% threshold)
+[2025-11-18T01:27:48.820Z]   Digit 0: 0 times (0.00%)
+[2025-11-18T01:27:48.820Z]   Digit 5: 0 times (0.00%)
+[2025-11-18T01:27:48.820Z]   Digit 6: 0 times (0.00%)
+[2025-11-18T01:27:48.820Z]   Digit 7: 0 times (0.00%)
+[2025-11-18T01:27:48.820Z]   Digit 8: 0 times (0.00%)
+[2025-11-18T01:27:48.820Z]   Digit 9: 0 times (0.00%)
+[2025-11-18T01:27:48.820Z] === End Analysis ===
+[2025-11-18T01:27:48.820Z] === Digit Frequency Analysis for R_75 ===
+[2025-11-18T01:27:48.821Z] Total samples: 7
+[2025-11-18T01:27:48.821Z]   Digit 5: 4 times (57.14%)
+[2025-11-18T01:27:48.821Z]     *** PROFITABLE: Digit 5 has 57.14% occurrence (≥12% threshold)
+[2025-11-18T01:27:48.821Z]   Digit 6: 2 times (28.57%)
+[2025-11-18T01:27:48.821Z]     *** PROFITABLE: Digit 6 has 28.57% occurrence (≥12% threshold)
+[2025-11-18T01:27:48.821Z]   Digit 1: 1 times (14.29%)
+[2025-11-18T01:27:48.821Z]     *** PROFITABLE: Digit 1 has 14.29% occurrence (≥12% threshold)
+[2025-11-18T01:27:48.821Z]   Digit 0: 0 times (0.00%)
+[2025-11-18T01:27:48.821Z]   Digit 2: 0 times (0.00%)
+[2025-11-18T01:27:48.821Z]   Digit 3: 0 times (0.00%)
+[2025-11-18T01:27:48.821Z]   Digit 4: 0 times (0.00%)
+[2025-11-18T01:27:48.821Z]   Digit 7: 0 times (0.00%)
+[2025-11-18T01:27:48.821Z]   Digit 8: 0 times (0.00%)
+[2025-11-18T01:27:48.821Z]   Digit 9: 0 times (0.00%)
+[2025-11-18T01:27:48.821Z] === End Analysis ===
+[2025-11-18T01:27:48.821Z] === Digit Frequency Analysis for R_100 ===
+[2025-11-18T01:27:48.821Z] Total samples: 7
+[2025-11-18T01:27:48.821Z]   Digit 4: 4 times (57.14%)
+[2025-11-18T01:27:48.821Z]     *** PROFITABLE: Digit 4 has 57.14% occurrence (≥12% threshold)
+[2025-11-18T01:27:48.821Z]   Digit 7: 2 times (28.57%)
+[2025-11-18T01:27:48.821Z]     *** PROFITABLE: Digit 7 has 28.57% occurrence (≥12% threshold)
+[2025-11-18T01:27:48.821Z]   Digit 9: 1 times (14.29%)
+[2025-11-18T01:27:48.821Z]     *** PROFITABLE: Digit 9 has 14.29% occurrence (≥12% threshold)
+[2025-11-18T01:27:48.821Z]   Digit 0: 0 times (0.00%)
+[2025-11-18T01:27:48.821Z]   Digit 1: 0 times (0.00%)
+[2025-11-18T01:27:48.821Z]   Digit 2: 0 times (0.00%)
+[2025-11-18T01:27:48.821Z]   Digit 3: 0 times (0.00%)
+[2025-11-18T01:27:48.821Z]   Digit 5: 0 times (0.00%)
+[2025-11-18T01:27:48.821Z]   Digit 6: 0 times (0.00%)
+[2025-11-18T01:27:48.822Z]   Digit 8: 0 times (0.00%)
+[2025-11-18T01:27:48.822Z] === End Analysis ===
+[2025-11-18T01:27:58.824Z] R_10 >>> SAMPLE: 3
+[2025-11-18T01:27:58.825Z] R_25 >>> SAMPLE: 5
+[2025-11-18T01:27:58.825Z] R_50 >>> SAMPLE: 6
+[2025-11-18T01:27:58.825Z] R_75 >>> SAMPLE: 2
+[2025-11-18T01:27:58.826Z] R_100 >>> SAMPLE: 6
+[2025-11-18T01:27:59.826Z] R_10 >>> SAMPLE: 3
+[2025-11-18T01:27:59.827Z] R_25 >>> SAMPLE: 5
+[2025-11-18T01:27:59.827Z] R_50 >>> SAMPLE: 6
+[2025-11-18T01:27:59.828Z] R_75 >>> SAMPLE: 2
+[2025-11-18T01:27:59.828Z] R_100 >>> SAMPLE: 6
+[2025-11-18T01:28:00.827Z] R_10 >>> SAMPLE: 7
+[2025-11-18T01:28:00.828Z] R_25 >>> SAMPLE: 8
+[2025-11-18T01:28:00.828Z] R_50 >>> SAMPLE: 5
+[2025-11-18T01:28:00.829Z] R_75 >>> SAMPLE: 2
+[2025-11-18T01:28:00.829Z] R_100 >>> SAMPLE: 2
+[2025-11-18T01:28:01.829Z] R_10 >>> SAMPLE: 7
+[2025-11-18T01:28:01.830Z] R_25 >>> SAMPLE: 8
+[2025-11-18T01:28:01.830Z] R_50 >>> SAMPLE: 5
+[2025-11-18T01:28:01.830Z] R_75 >>> SAMPLE: 2
+[2025-11-18T01:28:01.830Z] R_100 >>> SAMPLE: 2
+[2025-11-18T01:28:02.831Z] R_10 >>> SAMPLE: 8
+[2025-11-18T01:28:02.831Z] R_25 >>> SAMPLE: 8
+[2025-11-18T01:28:02.831Z] R_50 >>> SAMPLE: 1
+[2025-11-18T01:28:02.831Z] R_75 >>> SAMPLE: 1
+[2025-11-18T01:28:02.832Z] R_100 >>> SAMPLE: 2
+[2025-11-18T01:28:03.833Z] R_10 >>> SAMPLE: 8
+[2025-11-18T01:28:03.833Z] R_25 >>> SAMPLE: 8
+[2025-11-18T01:28:03.833Z] R_50 >>> SAMPLE: 1
+[2025-11-18T01:28:03.834Z] R_75 >>> SAMPLE: 1
+[2025-11-18T01:28:03.834Z] R_100 >>> SAMPLE: 2
+[2025-11-18T01:28:04.834Z] R_10 >>> SAMPLE: 8
+[2025-11-18T01:28:04.835Z] R_25 >>> SAMPLE: 2
+[2025-11-18T01:28:04.836Z] R_50 >>> SAMPLE: 8
+[2025-11-18T01:28:04.836Z] R_75 >>> SAMPLE: 2
+[2025-11-18T01:28:04.836Z] R_100 >>> SAMPLE: 1
+[2025-11-18T01:28:05.825Z] === Digit Frequency Analysis for R_10 ===
+[2025-11-18T01:28:05.826Z] Total samples: 7
+[2025-11-18T01:28:05.826Z]   Digit 8: 3 times (42.86%)
+[2025-11-18T01:28:05.826Z]     *** PROFITABLE: Digit 8 has 42.86% occurrence (≥12% threshold)
+[2025-11-18T01:28:05.826Z]   Digit 3: 2 times (28.57%)
+[2025-11-18T01:28:05.826Z]     *** PROFITABLE: Digit 3 has 28.57% occurrence (≥12% threshold)
+[2025-11-18T01:28:05.827Z]   Digit 7: 2 times (28.57%)
+[2025-11-18T01:28:05.827Z]     *** PROFITABLE: Digit 7 has 28.57% occurrence (≥12% threshold)
+[2025-11-18T01:28:05.827Z]   Digit 0: 0 times (0.00%)
+[2025-11-18T01:28:05.827Z]   Digit 1: 0 times (0.00%)
+[2025-11-18T01:28:05.827Z]   Digit 2: 0 times (0.00%)
+[2025-11-18T01:28:05.827Z]   Digit 4: 0 times (0.00%)
+[2025-11-18T01:28:05.827Z]   Digit 5: 0 times (0.00%)
+[2025-11-18T01:28:05.827Z]   Digit 6: 0 times (0.00%)
+[2025-11-18T01:28:05.827Z]   Digit 9: 0 times (0.00%)
+[2025-11-18T01:28:05.828Z] === End Analysis ===
+[2025-11-18T01:28:05.828Z] === Digit Frequency Analysis for R_25 ===
+[2025-11-18T01:28:05.828Z] Total samples: 7
+[2025-11-18T01:28:05.828Z]   Digit 8: 4 times (57.14%)
+[2025-11-18T01:28:05.828Z]     *** PROFITABLE: Digit 8 has 57.14% occurrence (≥12% threshold)
+[2025-11-18T01:28:05.828Z]   Digit 5: 2 times (28.57%)
+[2025-11-18T01:28:05.828Z]     *** PROFITABLE: Digit 5 has 28.57% occurrence (≥12% threshold)
+[2025-11-18T01:28:05.828Z]   Digit 2: 1 times (14.29%)
+[2025-11-18T01:28:05.828Z]     *** PROFITABLE: Digit 2 has 14.29% occurrence (≥12% threshold)
+[2025-11-18T01:28:05.828Z]   Digit 0: 0 times (0.00%)
+[2025-11-18T01:28:05.828Z]   Digit 1: 0 times (0.00%)
+[2025-11-18T01:28:05.828Z]   Digit 3: 0 times (0.00%)
+[2025-11-18T01:28:05.828Z]   Digit 4: 0 times (0.00%)
+[2025-11-18T01:28:05.828Z]   Digit 6: 0 times (0.00%)
+[2025-11-18T01:28:05.828Z]   Digit 7: 0 times (0.00%)
+[2025-11-18T01:28:05.828Z]   Digit 9: 0 times (0.00%)
+[2025-11-18T01:28:05.829Z] === End Analysis ===
+[2025-11-18T01:28:05.830Z] === Digit Frequency Analysis for R_50 ===
+[2025-11-18T01:28:05.830Z] Total samples: 7
+[2025-11-18T01:28:05.831Z]   Digit 1: 2 times (28.57%)
+[2025-11-18T01:28:05.831Z]     *** PROFITABLE: Digit 1 has 28.57% occurrence (≥12% threshold)
+[2025-11-18T01:28:05.831Z]   Digit 5: 2 times (28.57%)
+[2025-11-18T01:28:05.831Z]     *** PROFITABLE: Digit 5 has 28.57% occurrence (≥12% threshold)
+[2025-11-18T01:28:05.831Z]   Digit 6: 2 times (28.57%)
+[2025-11-18T01:28:05.831Z]     *** PROFITABLE: Digit 6 has 28.57% occurrence (≥12% threshold)
+[2025-11-18T01:28:05.831Z]   Digit 8: 1 times (14.29%)
+[2025-11-18T01:28:05.831Z]     *** PROFITABLE: Digit 8 has 14.29% occurrence (≥12% threshold)
+[2025-11-18T01:28:05.831Z]   Digit 0: 0 times (0.00%)
+[2025-11-18T01:28:05.831Z]   Digit 2: 0 times (0.00%)
+[2025-11-18T01:28:05.831Z]   Digit 3: 0 times (0.00%)
+[2025-11-18T01:28:05.831Z]   Digit 4: 0 times (0.00%)
+[2025-11-18T01:28:05.831Z]   Digit 7: 0 times (0.00%)
+[2025-11-18T01:28:05.831Z]   Digit 9: 0 times (0.00%)
+[2025-11-18T01:28:05.832Z] === End Analysis ===
+[2025-11-18T01:28:05.832Z] === Digit Frequency Analysis for R_75 ===
+[2025-11-18T01:28:05.832Z] Total samples: 7
+[2025-11-18T01:28:05.832Z]   Digit 2: 5 times (71.43%)
+[2025-11-18T01:28:05.832Z]     *** PROFITABLE: Digit 2 has 71.43% occurrence (≥12% threshold)
+[2025-11-18T01:28:05.832Z]   Digit 1: 2 times (28.57%)
+[2025-11-18T01:28:05.832Z]     *** PROFITABLE: Digit 1 has 28.57% occurrence (≥12% threshold)
+[2025-11-18T01:28:05.833Z]   Digit 0: 0 times (0.00%)
+[2025-11-18T01:28:05.833Z]   Digit 3: 0 times (0.00%)
+[2025-11-18T01:28:05.833Z]   Digit 4: 0 times (0.00%)
+[2025-11-18T01:28:05.833Z]   Digit 5: 0 times (0.00%)
+[2025-11-18T01:28:05.833Z]   Digit 6: 0 times (0.00%)
+[2025-11-18T01:28:05.833Z]   Digit 7: 0 times (0.00%)
+[2025-11-18T01:28:05.833Z]   Digit 8: 0 times (0.00%)
+[2025-11-18T01:28:05.833Z]   Digit 9: 0 times (0.00%)
+[2025-11-18T01:28:05.833Z] === End Analysis ===
+[2025-11-18T01:28:05.833Z] === Digit Frequency Analysis for R_100 ===
+[2025-11-18T01:28:05.833Z] Total samples: 7
+[2025-11-18T01:28:05.833Z]   Digit 2: 4 times (57.14%)
+[2025-11-18T01:28:05.833Z]     *** PROFITABLE: Digit 2 has 57.14% occurrence (≥12% threshold)
+[2025-11-18T01:28:05.834Z]   Digit 6: 2 times (28.57%)
+[2025-11-18T01:28:05.834Z]     *** PROFITABLE: Digit 6 has 28.57% occurrence (≥12% threshold)
+[2025-11-18T01:28:05.834Z]   Digit 1: 1 times (14.29%)
+[2025-11-18T01:28:05.834Z]     *** PROFITABLE: Digit 1 has 14.29% occurrence (≥12% threshold)
+[2025-11-18T01:28:05.834Z]   Digit 0: 0 times (0.00%)
+[2025-11-18T01:28:05.834Z]   Digit 3: 0 times (0.00%)
+[2025-11-18T01:28:05.834Z]   Digit 4: 0 times (0.00%)
+[2025-11-18T01:28:05.834Z]   Digit 5: 0 times (0.00%)
+[2025-11-18T01:28:05.834Z]   Digit 7: 0 times (0.00%)
+[2025-11-18T01:28:05.834Z]   Digit 8: 0 times (0.00%)
+[2025-11-18T01:28:05.834Z]   Digit 9: 0 times (0.00%)
+[2025-11-18T01:28:05.834Z] === End Analysis ===
+[2025-11-18T01:28:15.834Z] R_10 >>> SAMPLE: 5
+[2025-11-18T01:28:15.835Z] R_25 >>> SAMPLE: 4
+[2025-11-18T01:28:15.839Z] R_50 >>> SAMPLE: 1
+[2025-11-18T01:28:15.840Z] R_75 >>> SAMPLE: 3
+[2025-11-18T01:28:15.840Z] R_100 >>> SAMPLE: 1
+[2025-11-18T01:28:16.755Z] R_10 >>> SAMPLE: 4
+[2025-11-18T01:28:16.755Z] R_25 >>> SAMPLE: 3
+[2025-11-18T01:28:16.759Z] R_50 >>> SAMPLE: 4
+[2025-11-18T01:28:16.759Z] R_75 >>> SAMPLE: 2
+[2025-11-18T01:28:16.760Z] R_100 >>> SAMPLE: 6
+[2025-11-18T01:28:17.756Z] R_10 >>> SAMPLE: 4
+[2025-11-18T01:28:17.757Z] R_25 >>> SAMPLE: 3
+[2025-11-18T01:28:17.760Z] R_50 >>> SAMPLE: 4
+[2025-11-18T01:28:17.760Z] R_75 >>> SAMPLE: 2
+[2025-11-18T01:28:17.760Z] R_100 >>> SAMPLE: 6
+[2025-11-18T01:28:18.758Z] R_10 >>> SAMPLE: 3
+[2025-11-18T01:28:18.758Z] R_25 >>> SAMPLE: 9
+[2025-11-18T01:28:18.759Z] R_50 >>> SAMPLE: 9
+[2025-11-18T01:28:18.761Z] R_75 >>> SAMPLE: 8
+[2025-11-18T01:28:18.761Z] R_100 >>> SAMPLE: 2
+[2025-11-18T01:28:19.760Z] R_10 >>> SAMPLE: 3
+[2025-11-18T01:28:19.761Z] R_25 >>> SAMPLE: 9
+[2025-11-18T01:28:19.761Z] R_50 >>> SAMPLE: 9
+[2025-11-18T01:28:19.761Z] R_75 >>> SAMPLE: 8
+[2025-11-18T01:28:19.761Z] R_100 >>> SAMPLE: 2
+[2025-11-18T01:28:20.761Z] R_10 >>> SAMPLE: 1
+[2025-11-18T01:28:20.761Z] R_25 >>> SAMPLE: 6
+[2025-11-18T01:28:20.762Z] R_50 >>> SAMPLE: 3
+[2025-11-18T01:28:20.762Z] R_75 >>> SAMPLE: 9
+[2025-11-18T01:28:20.762Z] R_100 >>> SAMPLE: 8
+[2025-11-18T01:28:21.761Z] R_10 >>> SAMPLE: 1
+[2025-11-18T01:28:21.761Z] R_25 >>> SAMPLE: 6
+[2025-11-18T01:28:21.761Z] R_50 >>> SAMPLE: 3
+[2025-11-18T01:28:21.761Z] R_75 >>> SAMPLE: 9
+[2025-11-18T01:28:21.763Z] R_100 >>> SAMPLE: 8
+[2025-11-18T01:28:22.754Z] === Digit Frequency Analysis for R_10 ===
+[2025-11-18T01:28:22.754Z] Total samples: 7
+[2025-11-18T01:28:22.754Z]   Digit 1: 2 times (28.57%)
+[2025-11-18T01:28:22.754Z]     *** PROFITABLE: Digit 1 has 28.57% occurrence (≥12% threshold)
+[2025-11-18T01:28:22.755Z]   Digit 3: 2 times (28.57%)
+[2025-11-18T01:28:22.755Z]     *** PROFITABLE: Digit 3 has 28.57% occurrence (≥12% threshold)
+[2025-11-18T01:28:22.755Z]   Digit 4: 2 times (28.57%)
+[2025-11-18T01:28:22.755Z]     *** PROFITABLE: Digit 4 has 28.57% occurrence (≥12% threshold)
+[2025-11-18T01:28:22.755Z]   Digit 5: 1 times (14.29%)
+[2025-11-18T01:28:22.755Z]     *** PROFITABLE: Digit 5 has 14.29% occurrence (≥12% threshold)
+[2025-11-18T01:28:22.755Z]   Digit 0: 0 times (0.00%)
+[2025-11-18T01:28:22.755Z]   Digit 2: 0 times (0.00%)
+[2025-11-18T01:28:22.755Z]   Digit 6: 0 times (0.00%)
+[2025-11-18T01:28:22.755Z]   Digit 7: 0 times (0.00%)
+[2025-11-18T01:28:22.755Z]   Digit 8: 0 times (0.00%)
+[2025-11-18T01:28:22.755Z]   Digit 9: 0 times (0.00%)
+[2025-11-18T01:28:22.755Z] === End Analysis ===
+[2025-11-18T01:28:22.782Z] === Digit Frequency Analysis for R_25 ===
+[2025-11-18T01:28:22.782Z] Total samples: 7
+[2025-11-18T01:28:22.783Z]   Digit 3: 2 times (28.57%)
+[2025-11-18T01:28:22.783Z]     *** PROFITABLE: Digit 3 has 28.57% occurrence (≥12% threshold)
+[2025-11-18T01:28:22.783Z]   Digit 6: 2 times (28.57%)
+[2025-11-18T01:28:22.783Z]     *** PROFITABLE: Digit 6 has 28.57% occurrence (≥12% threshold)
+[2025-11-18T01:28:22.783Z]   Digit 9: 2 times (28.57%)
+[2025-11-18T01:28:22.783Z]     *** PROFITABLE: Digit 9 has 28.57% occurrence (≥12% threshold)
+[2025-11-18T01:28:22.783Z]   Digit 4: 1 times (14.29%)
+[2025-11-18T01:28:22.783Z]     *** PROFITABLE: Digit 4 has 14.29% occurrence (≥12% threshold)
+[2025-11-18T01:28:22.783Z]   Digit 0: 0 times (0.00%)
+[2025-11-18T01:28:22.783Z]   Digit 1: 0 times (0.00%)
+[2025-11-18T01:28:22.783Z]   Digit 2: 0 times (0.00%)
+[2025-11-18T01:28:22.783Z]   Digit 5: 0 times (0.00%)
+[2025-11-18T01:28:22.783Z]   Digit 7: 0 times (0.00%)
+[2025-11-18T01:28:22.783Z]   Digit 8: 0 times (0.00%)
+[2025-11-18T01:28:22.783Z] === End Analysis ===
+[2025-11-18T01:28:22.783Z] === Digit Frequency Analysis for R_50 ===
+[2025-11-18T01:28:22.783Z] Total samples: 7
+[2025-11-18T01:28:22.783Z]   Digit 3: 2 times (28.57%)
+[2025-11-18T01:28:22.783Z]     *** PROFITABLE: Digit 3 has 28.57% occurrence (≥12% threshold)
+[2025-11-18T01:28:22.784Z]   Digit 4: 2 times (28.57%)
+[2025-11-18T01:28:22.784Z]     *** PROFITABLE: Digit 4 has 28.57% occurrence (≥12% threshold)
+[2025-11-18T01:28:22.784Z]   Digit 9: 2 times (28.57%)
+[2025-11-18T01:28:22.784Z]     *** PROFITABLE: Digit 9 has 28.57% occurrence (≥12% threshold)
+[2025-11-18T01:28:22.784Z]   Digit 1: 1 times (14.29%)
+[2025-11-18T01:28:22.784Z]     *** PROFITABLE: Digit 1 has 14.29% occurrence (≥12% threshold)
+[2025-11-18T01:28:22.784Z]   Digit 0: 0 times (0.00%)
+[2025-11-18T01:28:22.784Z]   Digit 2: 0 times (0.00%)
+[2025-11-18T01:28:22.784Z]   Digit 5: 0 times (0.00%)
+[2025-11-18T01:28:22.784Z]   Digit 6: 0 times (0.00%)
+[2025-11-18T01:28:22.784Z]   Digit 7: 0 times (0.00%)
+[2025-11-18T01:28:22.784Z]   Digit 8: 0 times (0.00%)
+[2025-11-18T01:28:22.784Z] === End Analysis ===
+[2025-11-18T01:28:22.784Z] === Digit Frequency Analysis for R_75 ===
+[2025-11-18T01:28:22.784Z] Total samples: 7
+[2025-11-18T01:28:22.784Z]   Digit 2: 2 times (28.57%)
+[2025-11-18T01:28:22.784Z]     *** PROFITABLE: Digit 2 has 28.57% occurrence (≥12% threshold)
+[2025-11-18T01:28:22.784Z]   Digit 8: 2 times (28.57%)
+[2025-11-18T01:28:22.784Z]     *** PROFITABLE: Digit 8 has 28.57% occurrence (≥12% threshold)
+[2025-11-18T01:28:22.785Z]   Digit 9: 2 times (28.57%)
+[2025-11-18T01:28:22.785Z]     *** PROFITABLE: Digit 9 has 28.57% occurrence (≥12% threshold)
+[2025-11-18T01:28:22.785Z]   Digit 3: 1 times (14.29%)
+[2025-11-18T01:28:22.785Z]     *** PROFITABLE: Digit 3 has 14.29% occurrence (≥12% threshold)
+[2025-11-18T01:28:22.785Z]   Digit 0: 0 times (0.00%)
+[2025-11-18T01:28:22.785Z]   Digit 1: 0 times (0.00%)
+[2025-11-18T01:28:22.785Z]   Digit 4: 0 times (0.00%)
+[2025-11-18T01:28:22.785Z]   Digit 5: 0 times (0.00%)
+[2025-11-18T01:28:22.785Z]   Digit 6: 0 times (0.00%)
+[2025-11-18T01:28:22.785Z]   Digit 7: 0 times (0.00%)
+[2025-11-18T01:28:22.785Z] === End Analysis ===
+[2025-11-18T01:28:22.785Z] === Digit Frequency Analysis for R_100 ===
+[2025-11-18T01:28:22.785Z] Total samples: 7
+[2025-11-18T01:28:22.785Z]   Digit 2: 2 times (28.57%)
+[2025-11-18T01:28:22.785Z]     *** PROFITABLE: Digit 2 has 28.57% occurrence (≥12% threshold)
+[2025-11-18T01:28:22.785Z]   Digit 6: 2 times (28.57%)
+[2025-11-18T01:28:22.785Z]     *** PROFITABLE: Digit 6 has 28.57% occurrence (≥12% threshold)
+[2025-11-18T01:28:22.785Z]   Digit 8: 2 times (28.57%)
+[2025-11-18T01:28:22.785Z]     *** PROFITABLE: Digit 8 has 28.57% occurrence (≥12% threshold)
+[2025-11-18T01:28:22.785Z]   Digit 1: 1 times (14.29%)
+[2025-11-18T01:28:22.785Z]     *** PROFITABLE: Digit 1 has 14.29% occurrence (≥12% threshold)
+[2025-11-18T01:28:22.785Z]   Digit 0: 0 times (0.00%)
+[2025-11-18T01:28:22.785Z]   Digit 3: 0 times (0.00%)
+[2025-11-18T01:28:22.785Z]   Digit 4: 0 times (0.00%)
+[2025-11-18T01:28:22.786Z]   Digit 5: 0 times (0.00%)
+[2025-11-18T01:28:22.786Z]   Digit 7: 0 times (0.00%)
+[2025-11-18T01:28:22.786Z]   Digit 9: 0 times (0.00%)
+[2025-11-18T01:28:22.786Z] === End Analysis ===
+[2025-11-18T01:28:32.763Z] R_10 >>> SAMPLE: 9
+[2025-11-18T01:28:32.790Z] R_25 >>> SAMPLE: 7
+[2025-11-18T01:28:32.790Z] R_50 >>> SAMPLE: 4
+[2025-11-18T01:28:32.791Z] R_75 >>> SAMPLE: 2
+[2025-11-18T01:28:32.791Z] R_100 >>> SAMPLE: 4
+[2025-11-18T01:28:33.764Z] R_10 >>> SAMPLE: 9
+[2025-11-18T01:28:33.791Z] R_25 >>> SAMPLE: 7
+[2025-11-18T01:28:33.792Z] R_50 >>> SAMPLE: 4
+[2025-11-18T01:28:33.792Z] R_75 >>> SAMPLE: 2
+[2025-11-18T01:28:33.792Z] R_100 >>> SAMPLE: 4
+[2025-11-18T01:28:34.764Z] R_10 >>> SAMPLE: 5
+[2025-11-18T01:28:34.791Z] R_25 >>> SAMPLE: 1
+[2025-11-18T01:28:34.792Z] R_50 >>> SAMPLE: 5
+[2025-11-18T01:28:34.792Z] R_75 >>> SAMPLE: 1
+[2025-11-18T01:28:34.793Z] R_100 >>> SAMPLE: 5
+[2025-11-18T01:28:35.765Z] R_10 >>> SAMPLE: 5
+[2025-11-18T01:28:35.792Z] R_25 >>> SAMPLE: 1
+[2025-11-18T01:28:35.793Z] R_50 >>> SAMPLE: 5
+[2025-11-18T01:28:35.794Z] R_75 >>> SAMPLE: 1
+[2025-11-18T01:28:35.794Z] R_100 >>> SAMPLE: 5
+[2025-11-18T01:28:36.767Z] R_10 >>> SAMPLE: 8
+[2025-11-18T01:28:36.793Z] R_25 >>> SAMPLE: 1
+[2025-11-18T01:28:36.793Z] R_50 >>> SAMPLE: 7
+[2025-11-18T01:28:36.794Z] R_75 >>> SAMPLE: 3
+[2025-11-18T01:28:36.794Z] R_100 >>> SAMPLE: 8
+[2025-11-18T01:28:37.767Z] R_10 >>> SAMPLE: 8
+[2025-11-18T01:28:37.794Z] R_25 >>> SAMPLE: 1
+[2025-11-18T01:28:37.794Z] R_50 >>> SAMPLE: 7
+[2025-11-18T01:28:37.794Z] R_75 >>> SAMPLE: 3
+[2025-11-18T01:28:37.795Z] R_100 >>> SAMPLE: 8
+[2025-11-18T01:28:38.768Z] R_10 >>> SAMPLE: 6
+[2025-11-18T01:28:38.794Z] R_25 >>> SAMPLE: 9
+[2025-11-18T01:28:38.795Z] R_50 >>> SAMPLE: 3
+[2025-11-18T01:28:38.796Z] R_75 >>> SAMPLE: 4
+[2025-11-18T01:28:38.796Z] R_100 >>> SAMPLE: 6
+[2025-11-18T01:28:39.765Z] === Digit Frequency Analysis for R_10 ===
+[2025-11-18T01:28:39.765Z] Total samples: 7
+[2025-11-18T01:28:39.765Z]   Digit 5: 2 times (28.57%)
+[2025-11-18T01:28:39.765Z]     *** PROFITABLE: Digit 5 has 28.57% occurrence (≥12% threshold)
+[2025-11-18T01:28:39.765Z]   Digit 8: 2 times (28.57%)
+[2025-11-18T01:28:39.765Z]     *** PROFITABLE: Digit 8 has 28.57% occurrence (≥12% threshold)
+[2025-11-18T01:28:39.765Z]   Digit 9: 2 times (28.57%)
+[2025-11-18T01:28:39.765Z]     *** PROFITABLE: Digit 9 has 28.57% occurrence (≥12% threshold)
+[2025-11-18T01:28:39.766Z]   Digit 6: 1 times (14.29%)
+[2025-11-18T01:28:39.766Z]     *** PROFITABLE: Digit 6 has 14.29% occurrence (≥12% threshold)
+[2025-11-18T01:28:39.766Z]   Digit 0: 0 times (0.00%)
+[2025-11-18T01:28:39.766Z]   Digit 1: 0 times (0.00%)
+[2025-11-18T01:28:39.766Z]   Digit 2: 0 times (0.00%)
+[2025-11-18T01:28:39.766Z]   Digit 3: 0 times (0.00%)
+[2025-11-18T01:28:39.766Z]   Digit 4: 0 times (0.00%)
+[2025-11-18T01:28:39.766Z]   Digit 7: 0 times (0.00%)
+[2025-11-18T01:28:39.766Z] === End Analysis ===
+[2025-11-18T01:28:39.791Z] === Digit Frequency Analysis for R_25 ===
+[2025-11-18T01:28:39.791Z] Total samples: 7
+[2025-11-18T01:28:39.791Z]   Digit 1: 4 times (57.14%)
+[2025-11-18T01:28:39.791Z]     *** PROFITABLE: Digit 1 has 57.14% occurrence (≥12% threshold)
+[2025-11-18T01:28:39.791Z]   Digit 7: 2 times (28.57%)
+[2025-11-18T01:28:39.791Z]     *** PROFITABLE: Digit 7 has 28.57% occurrence (≥12% threshold)
+[2025-11-18T01:28:39.792Z]   Digit 9: 1 times (14.29%)
+[2025-11-18T01:28:39.792Z]     *** PROFITABLE: Digit 9 has 14.29% occurrence (≥12% threshold)
+[2025-11-18T01:28:39.792Z]   Digit 0: 0 times (0.00%)
+[2025-11-18T01:28:39.792Z]   Digit 2: 0 times (0.00%)
+[2025-11-18T01:28:39.792Z]   Digit 3: 0 times (0.00%)
+[2025-11-18T01:28:39.792Z]   Digit 4: 0 times (0.00%)
+[2025-11-18T01:28:39.792Z]   Digit 5: 0 times (0.00%)
+[2025-11-18T01:28:39.792Z]   Digit 6: 0 times (0.00%)
+[2025-11-18T01:28:39.792Z]   Digit 8: 0 times (0.00%)
+[2025-11-18T01:28:39.792Z] === End Analysis ===
+[2025-11-18T01:28:39.792Z] === Digit Frequency Analysis for R_50 ===
+[2025-11-18T01:28:39.792Z] Total samples: 7
+[2025-11-18T01:28:39.793Z]   Digit 4: 2 times (28.57%)
+[2025-11-18T01:28:39.793Z]     *** PROFITABLE: Digit 4 has 28.57% occurrence (≥12% threshold)
+[2025-11-18T01:28:39.793Z]   Digit 5: 2 times (28.57%)
+[2025-11-18T01:28:39.793Z]     *** PROFITABLE: Digit 5 has 28.57% occurrence (≥12% threshold)
+[2025-11-18T01:28:39.793Z]   Digit 7: 2 times (28.57%)
+[2025-11-18T01:28:39.793Z]     *** PROFITABLE: Digit 7 has 28.57% occurrence (≥12% threshold)
+[2025-11-18T01:28:39.793Z]   Digit 3: 1 times (14.29%)
+[2025-11-18T01:28:39.794Z]     *** PROFITABLE: Digit 3 has 14.29% occurrence (≥12% threshold)
+[2025-11-18T01:28:39.794Z]   Digit 0: 0 times (0.00%)
+[2025-11-18T01:28:39.794Z]   Digit 1: 0 times (0.00%)
+[2025-11-18T01:28:39.795Z]   Digit 2: 0 times (0.00%)
+[2025-11-18T01:28:39.795Z]   Digit 6: 0 times (0.00%)
+[2025-11-18T01:28:39.795Z]   Digit 8: 0 times (0.00%)
+[2025-11-18T01:28:39.795Z]   Digit 9: 0 times (0.00%)
+[2025-11-18T01:28:39.795Z] === End Analysis ===
+[2025-11-18T01:28:39.796Z] === Digit Frequency Analysis for R_75 ===
+[2025-11-18T01:28:39.796Z] Total samples: 7
+[2025-11-18T01:28:39.796Z]   Digit 1: 2 times (28.57%)
+[2025-11-18T01:28:39.796Z]     *** PROFITABLE: Digit 1 has 28.57% occurrence (≥12% threshold)
+[2025-11-18T01:28:39.796Z]   Digit 2: 2 times (28.57%)
+[2025-11-18T01:28:39.796Z]     *** PROFITABLE: Digit 2 has 28.57% occurrence (≥12% threshold)
+[2025-11-18T01:28:39.796Z]   Digit 3: 2 times (28.57%)
+[2025-11-18T01:28:39.796Z]     *** PROFITABLE: Digit 3 has 28.57% occurrence (≥12% threshold)
+[2025-11-18T01:28:39.796Z]   Digit 4: 1 times (14.29%)
+[2025-11-18T01:28:39.796Z]     *** PROFITABLE: Digit 4 has 14.29% occurrence (≥12% threshold)
+[2025-11-18T01:28:39.796Z]   Digit 0: 0 times (0.00%)
+[2025-11-18T01:28:39.796Z]   Digit 5: 0 times (0.00%)
+[2025-11-18T01:28:39.796Z]   Digit 6: 0 times (0.00%)
+[2025-11-18T01:28:39.796Z]   Digit 7: 0 times (0.00%)
+[2025-11-18T01:28:39.797Z]   Digit 8: 0 times (0.00%)
+[2025-11-18T01:28:39.797Z]   Digit 9: 0 times (0.00%)
+[2025-11-18T01:28:39.797Z] === End Analysis ===
+[2025-11-18T01:28:39.797Z] === Digit Frequency Analysis for R_100 ===
+[2025-11-18T01:28:39.797Z] Total samples: 7
+[2025-11-18T01:28:39.797Z]   Digit 4: 2 times (28.57%)
+[2025-11-18T01:28:39.797Z]     *** PROFITABLE: Digit 4 has 28.57% occurrence (≥12% threshold)
+[2025-11-18T01:28:39.798Z]   Digit 5: 2 times (28.57%)
+[2025-11-18T01:28:39.798Z]     *** PROFITABLE: Digit 5 has 28.57% occurrence (≥12% threshold)
+[2025-11-18T01:28:39.798Z]   Digit 8: 2 times (28.57%)
+[2025-11-18T01:28:39.798Z]     *** PROFITABLE: Digit 8 has 28.57% occurrence (≥12% threshold)
+[2025-11-18T01:28:39.798Z]   Digit 6: 1 times (14.29%)
+[2025-11-18T01:28:39.798Z]     *** PROFITABLE: Digit 6 has 14.29% occurrence (≥12% threshold)
+[2025-11-18T01:28:39.798Z]   Digit 0: 0 times (0.00%)
+[2025-11-18T01:28:39.798Z]   Digit 1: 0 times (0.00%)
+[2025-11-18T01:28:39.798Z]   Digit 2: 0 times (0.00%)
+[2025-11-18T01:28:39.798Z]   Digit 3: 0 times (0.00%)
+[2025-11-18T01:28:39.798Z]   Digit 7: 0 times (0.00%)
+[2025-11-18T01:28:39.798Z]   Digit 9: 0 times (0.00%)
+[2025-11-18T01:28:39.798Z] === End Analysis ===
