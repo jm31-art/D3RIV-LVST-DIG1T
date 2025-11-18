@@ -45944,3 +45944,199 @@
 [2025-11-18T00:28:33.124Z] R_100 >>> SAMPLE: 9
 [2025-11-18T00:28:33.124Z] Target condition met: R_100 digit 9, placing trade
 [2025-11-18T00:28:33.125Z] Placing trade: R_100 digit 9, stake 1
+[2025-11-18T00:49:57.031Z] Web UI available at http://localhost:3000
+[2025-11-18T00:49:58.397Z] Trading enabled for demo account
+[2025-11-18T00:50:08.820Z] R_10 >>> SAMPLE: 7
+[2025-11-18T00:50:08.820Z] R_25 >>> SAMPLE: 5
+[2025-11-18T00:50:08.821Z] R_50 >>> SAMPLE: 9
+[2025-11-18T00:50:08.821Z] R_75 >>> SAMPLE: 2
+[2025-11-18T00:50:08.821Z] R_100 >>> SAMPLE: 4
+[2025-11-18T00:50:08.821Z] Skipping trade: R_100 digit 4 probability 0.00% < threshold 12%
+[2025-11-18T00:50:09.821Z] R_10 >>> SAMPLE: 7
+[2025-11-18T00:50:09.822Z] R_25 >>> SAMPLE: 5
+[2025-11-18T00:50:09.822Z] R_50 >>> SAMPLE: 9
+[2025-11-18T00:50:09.823Z] R_75 >>> SAMPLE: 2
+[2025-11-18T00:50:09.823Z] R_100 >>> SAMPLE: 4
+[2025-11-18T00:50:09.824Z] Skipping trade: R_100 digit 4 probability 0.00% < threshold 12%
+[2025-11-18T00:50:10.823Z] R_10 >>> SAMPLE: 3
+[2025-11-18T00:50:10.824Z] R_25 >>> SAMPLE: 7
+[2025-11-18T00:50:10.824Z] R_50 >>> SAMPLE: 3
+[2025-11-18T00:50:10.826Z] R_75 >>> SAMPLE: 9
+[2025-11-18T00:50:10.826Z] R_100 >>> SAMPLE: 5
+[2025-11-18T00:50:10.827Z] Skipping trade: R_100 digit 5 probability 0.00% < threshold 12%
+[2025-11-18T00:50:11.825Z] R_10 >>> SAMPLE: 3
+[2025-11-18T00:50:11.825Z] R_25 >>> SAMPLE: 7
+[2025-11-18T00:50:11.826Z] R_50 >>> SAMPLE: 3
+[2025-11-18T00:50:11.827Z] R_75 >>> SAMPLE: 9
+[2025-11-18T00:50:11.828Z] R_100 >>> SAMPLE: 5
+[2025-11-18T00:50:11.829Z] Skipping trade: R_100 digit 5 probability 0.00% < threshold 12%
+[2025-11-18T00:50:12.826Z] R_10 >>> SAMPLE: 9
+[2025-11-18T00:50:12.826Z] R_25 >>> SAMPLE: 6
+[2025-11-18T00:50:12.828Z] R_50 >>> SAMPLE: 3
+[2025-11-18T00:50:12.829Z] R_75 >>> SAMPLE: 4
+[2025-11-18T00:50:12.830Z] R_100 >>> SAMPLE: 8
+[2025-11-18T00:50:12.831Z] Skipping trade: R_100 digit 8 probability 0.00% < threshold 12%
+[2025-11-18T00:50:13.826Z] R_10 >>> SAMPLE: 9
+[2025-11-18T00:50:13.826Z] R_25 >>> SAMPLE: 6
+[2025-11-18T00:50:13.827Z] R_50 >>> SAMPLE: 3
+[2025-11-18T00:50:13.829Z] R_75 >>> SAMPLE: 4
+[2025-11-18T00:50:13.831Z] R_100 >>> SAMPLE: 8
+[2025-11-18T00:50:13.831Z] Skipping trade: R_100 digit 8 probability 0.00% < threshold 12%
+[2025-11-18T00:50:14.828Z] R_10 >>> SAMPLE: 3
+[2025-11-18T00:50:14.828Z] R_25 >>> SAMPLE: 9
+[2025-11-18T00:50:14.828Z] R_50 >>> SAMPLE: 2
+[2025-11-18T00:50:14.829Z] R_75 >>> SAMPLE: 7
+[2025-11-18T00:50:14.831Z] R_100 >>> SAMPLE: 5
+[2025-11-18T00:50:14.831Z] Skipping trade: R_100 digit 5 probability 0.00% < threshold 12%
+[2025-11-18T00:50:15.821Z] === Digit Frequency Analysis for R_10 ===
+[2025-11-18T00:50:36.986Z] Web UI available at http://localhost:3000
+[2025-11-18T00:50:38.233Z] Trading enabled for demo account
+[2025-11-18T00:50:48.655Z] R_10 >>> SAMPLE: 8
+[2025-11-18T00:50:48.656Z] R_25 >>> SAMPLE: 9
+[2025-11-18T00:50:48.657Z] R_50 >>> SAMPLE: 2
+[2025-11-18T00:50:48.657Z] R_75 >>> SAMPLE: 5
+[2025-11-18T00:50:48.657Z] R_100 >>> SAMPLE: 3
+[2025-11-18T00:50:48.657Z] Skipping trade: R_100 digit 3 probability 0.00% < threshold 12%
+[2025-11-18T00:50:49.657Z] R_10 >>> SAMPLE: 8
+[2025-11-18T00:50:49.659Z] R_25 >>> SAMPLE: 9
+[2025-11-18T00:50:49.659Z] R_50 >>> SAMPLE: 2
+[2025-11-18T00:50:49.660Z] R_75 >>> SAMPLE: 5
+[2025-11-18T00:50:49.661Z] R_100 >>> SAMPLE: 3
+[2025-11-18T00:50:49.661Z] Skipping trade: R_100 digit 3 probability 0.00% < threshold 12%
+[2025-11-18T00:50:50.658Z] R_10 >>> SAMPLE: 2
+[2025-11-18T00:50:50.660Z] R_25 >>> SAMPLE: 8
+[2025-11-18T00:50:50.660Z] R_50 >>> SAMPLE: 2
+[2025-11-18T00:50:50.662Z] R_75 >>> SAMPLE: 9
+[2025-11-18T00:50:50.662Z] R_100 >>> SAMPLE: 2
+[2025-11-18T00:50:50.664Z] Skipping trade: R_100 digit 2 probability 0.00% < threshold 12%
+[2025-11-18T00:50:51.659Z] R_10 >>> SAMPLE: 2
+[2025-11-18T00:50:51.660Z] R_25 >>> SAMPLE: 8
+[2025-11-18T00:50:51.661Z] R_50 >>> SAMPLE: 2
+[2025-11-18T00:50:51.662Z] R_75 >>> SAMPLE: 9
+[2025-11-18T00:50:51.662Z] R_100 >>> SAMPLE: 2
+[2025-11-18T00:50:51.663Z] Skipping trade: R_100 digit 2 probability 0.00% < threshold 12%
+[2025-11-18T00:50:52.660Z] R_10 >>> SAMPLE: 3
+[2025-11-18T00:50:52.660Z] R_25 >>> SAMPLE: 9
+[2025-11-18T00:50:52.661Z] R_50 >>> SAMPLE: 4
+[2025-11-18T00:50:52.663Z] R_75 >>> SAMPLE: 6
+[2025-11-18T00:50:52.663Z] R_100 >>> SAMPLE: 7
+[2025-11-18T00:50:52.664Z] Skipping trade: R_100 digit 7 probability 0.00% < threshold 12%
+[2025-11-18T00:50:53.660Z] R_10 >>> SAMPLE: 3
+[2025-11-18T00:50:53.661Z] R_25 >>> SAMPLE: 9
+[2025-11-18T00:50:53.663Z] R_50 >>> SAMPLE: 4
+[2025-11-18T00:50:53.663Z] R_75 >>> SAMPLE: 6
+[2025-11-18T00:50:53.664Z] R_100 >>> SAMPLE: 7
+[2025-11-18T00:50:53.665Z] Skipping trade: R_100 digit 7 probability 0.00% < threshold 12%
+[2025-11-18T00:50:54.660Z] R_10 >>> SAMPLE: 4
+[2025-11-18T00:50:54.662Z] R_25 >>> SAMPLE: 6
+[2025-11-18T00:50:54.663Z] R_50 >>> SAMPLE: 3
+[2025-11-18T00:50:54.665Z] R_75 >>> SAMPLE: 5
+[2025-11-18T00:50:54.665Z] R_100 >>> SAMPLE: 5
+[2025-11-18T00:50:54.665Z] Skipping trade: R_100 digit 5 probability 0.00% < threshold 12%
+[2025-11-18T00:50:55.658Z] === Digit Frequency Analysis for R_10 ===
+[2025-11-18T00:50:55.658Z] Total samples: 7
+[2025-11-18T00:50:55.659Z]   Digit 2: 2 times (28.57%)
+[2025-11-18T00:50:55.659Z]     *** PROFITABLE: Digit 2 has 28.57% occurrence (≥12% threshold)
+[2025-11-18T00:50:55.659Z]   Digit 3: 2 times (28.57%)
+[2025-11-18T00:50:55.659Z]     *** PROFITABLE: Digit 3 has 28.57% occurrence (≥12% threshold)
+[2025-11-18T00:50:55.659Z]   Digit 8: 2 times (28.57%)
+[2025-11-18T00:50:55.659Z]     *** PROFITABLE: Digit 8 has 28.57% occurrence (≥12% threshold)
+[2025-11-18T00:50:55.659Z]   Digit 4: 1 times (14.29%)
+[2025-11-18T00:50:55.660Z]     *** PROFITABLE: Digit 4 has 14.29% occurrence (≥12% threshold)
+[2025-11-18T00:50:55.660Z]   Digit 0: 0 times (0.00%)
+[2025-11-18T00:50:55.660Z]   Digit 1: 0 times (0.00%)
+[2025-11-18T00:50:55.660Z]   Digit 5: 0 times (0.00%)
+[2025-11-18T00:50:55.660Z]   Digit 6: 0 times (0.00%)
+[2025-11-18T00:50:55.660Z]   Digit 7: 0 times (0.00%)
+[2025-11-18T00:50:55.660Z]   Digit 9: 0 times (0.00%)
+[2025-11-18T00:50:55.661Z] === End Analysis ===
+[2025-11-18T00:50:55.661Z] === Digit Frequency Analysis for R_25 ===
+[2025-11-18T00:50:55.661Z] Total samples: 7
+[2025-11-18T00:50:55.661Z]   Digit 9: 4 times (57.14%)
+[2025-11-18T00:50:55.661Z]     *** PROFITABLE: Digit 9 has 57.14% occurrence (≥12% threshold)
+[2025-11-18T00:50:55.661Z]   Digit 8: 2 times (28.57%)
+[2025-11-18T00:50:55.661Z]     *** PROFITABLE: Digit 8 has 28.57% occurrence (≥12% threshold)
+[2025-11-18T00:50:55.661Z]   Digit 6: 1 times (14.29%)
+[2025-11-18T00:50:55.661Z]     *** PROFITABLE: Digit 6 has 14.29% occurrence (≥12% threshold)
+[2025-11-18T00:50:55.661Z]   Digit 0: 0 times (0.00%)
+[2025-11-18T00:50:55.661Z]   Digit 1: 0 times (0.00%)
+[2025-11-18T00:50:55.661Z]   Digit 2: 0 times (0.00%)
+[2025-11-18T00:50:55.661Z]   Digit 3: 0 times (0.00%)
+[2025-11-18T00:50:55.661Z]   Digit 4: 0 times (0.00%)
+[2025-11-18T00:50:55.662Z]   Digit 5: 0 times (0.00%)
+[2025-11-18T00:50:55.662Z]   Digit 7: 0 times (0.00%)
+[2025-11-18T00:50:55.662Z] === End Analysis ===
+[2025-11-18T00:50:55.662Z] === Digit Frequency Analysis for R_50 ===
+[2025-11-18T00:50:55.662Z] Total samples: 7
+[2025-11-18T00:50:55.662Z]   Digit 2: 4 times (57.14%)
+[2025-11-18T00:50:55.662Z]     *** PROFITABLE: Digit 2 has 57.14% occurrence (≥12% threshold)
+[2025-11-18T00:50:55.662Z]   Digit 4: 2 times (28.57%)
+[2025-11-18T00:50:55.662Z]     *** PROFITABLE: Digit 4 has 28.57% occurrence (≥12% threshold)
+[2025-11-18T00:50:55.662Z]   Digit 3: 1 times (14.29%)
+[2025-11-18T00:50:55.662Z]     *** PROFITABLE: Digit 3 has 14.29% occurrence (≥12% threshold)
+[2025-11-18T00:50:55.662Z]   Digit 0: 0 times (0.00%)
+[2025-11-18T00:50:55.662Z]   Digit 1: 0 times (0.00%)
+[2025-11-18T00:50:55.662Z]   Digit 5: 0 times (0.00%)
+[2025-11-18T00:50:55.662Z]   Digit 6: 0 times (0.00%)
+[2025-11-18T00:50:55.662Z]   Digit 7: 0 times (0.00%)
+[2025-11-18T00:50:55.662Z]   Digit 8: 0 times (0.00%)
+[2025-11-18T00:50:55.662Z]   Digit 9: 0 times (0.00%)
+[2025-11-18T00:50:55.663Z] === End Analysis ===
+[2025-11-18T00:50:55.663Z] === Digit Frequency Analysis for R_75 ===
+[2025-11-18T00:50:55.663Z] Total samples: 7
+[2025-11-18T00:50:55.663Z]   Digit 5: 3 times (42.86%)
+[2025-11-18T00:50:55.663Z]     *** PROFITABLE: Digit 5 has 42.86% occurrence (≥12% threshold)
+[2025-11-18T00:50:55.663Z]   Digit 6: 2 times (28.57%)
+[2025-11-18T00:50:55.663Z]     *** PROFITABLE: Digit 6 has 28.57% occurrence (≥12% threshold)
+[2025-11-18T00:50:55.663Z]   Digit 9: 2 times (28.57%)
+[2025-11-18T00:50:55.663Z]     *** PROFITABLE: Digit 9 has 28.57% occurrence (≥12% threshold)
+[2025-11-18T00:50:55.663Z]   Digit 0: 0 times (0.00%)
+[2025-11-18T00:50:55.663Z]   Digit 1: 0 times (0.00%)
+[2025-11-18T00:50:55.663Z]   Digit 2: 0 times (0.00%)
+[2025-11-18T00:50:55.663Z]   Digit 3: 0 times (0.00%)
+[2025-11-18T00:50:55.664Z]   Digit 4: 0 times (0.00%)
+[2025-11-18T00:50:55.664Z]   Digit 7: 0 times (0.00%)
+[2025-11-18T00:50:55.664Z]   Digit 8: 0 times (0.00%)
+[2025-11-18T00:50:55.664Z] === End Analysis ===
+[2025-11-18T00:50:55.664Z] === Digit Frequency Analysis for R_100 ===
+[2025-11-18T00:50:55.665Z] Total samples: 7
+[2025-11-18T00:50:55.665Z]   Digit 2: 2 times (28.57%)
+[2025-11-18T00:50:55.665Z]     *** PROFITABLE: Digit 2 has 28.57% occurrence (≥12% threshold)
+[2025-11-18T00:50:55.666Z]   Digit 3: 2 times (28.57%)
+[2025-11-18T00:50:55.666Z]     *** PROFITABLE: Digit 3 has 28.57% occurrence (≥12% threshold)
+[2025-11-18T00:50:55.666Z]   Digit 7: 2 times (28.57%)
+[2025-11-18T00:50:55.666Z]     *** PROFITABLE: Digit 7 has 28.57% occurrence (≥12% threshold)
+[2025-11-18T00:50:55.666Z]   Digit 5: 1 times (14.29%)
+[2025-11-18T00:50:55.666Z]     *** PROFITABLE: Digit 5 has 14.29% occurrence (≥12% threshold)
+[2025-11-18T00:50:55.666Z]   Digit 0: 0 times (0.00%)
+[2025-11-18T00:50:55.666Z]   Digit 1: 0 times (0.00%)
+[2025-11-18T00:50:55.666Z]   Digit 4: 0 times (0.00%)
+[2025-11-18T00:50:55.666Z]   Digit 6: 0 times (0.00%)
+[2025-11-18T00:50:55.666Z]   Digit 8: 0 times (0.00%)
+[2025-11-18T00:50:55.666Z]   Digit 9: 0 times (0.00%)
+[2025-11-18T00:50:55.667Z] === End Analysis ===
+[2025-11-18T00:51:05.668Z] R_10 >>> SAMPLE: 8
+[2025-11-18T00:51:05.669Z] R_25 >>> SAMPLE: 1
+[2025-11-18T00:51:05.669Z] R_50 >>> SAMPLE: 6
+[2025-11-18T00:51:05.669Z] R_75 >>> SAMPLE: 7
+[2025-11-18T00:51:05.670Z] R_100 >>> SAMPLE: 6
+[2025-11-18T00:51:05.670Z] Skipping trade: R_100 digit 6 probability 0.00% < threshold 12%
+[2025-11-18T00:51:06.669Z] R_10 >>> SAMPLE: 1
+[2025-11-18T00:51:06.670Z] R_25 >>> SAMPLE: 7
+[2025-11-18T00:51:06.670Z] R_50 >>> SAMPLE: 3
+[2025-11-18T00:51:06.670Z] R_75 >>> SAMPLE: 9
+[2025-11-18T00:51:06.671Z] R_100 >>> SAMPLE: 6
+[2025-11-18T00:51:06.671Z] Skipping trade: R_100 digit 6 probability 0.00% < threshold 12%
+[2025-11-18T00:51:07.671Z] R_10 >>> SAMPLE: 1
+[2025-11-18T00:51:07.671Z] R_25 >>> SAMPLE: 7
+[2025-11-18T00:51:07.672Z] R_50 >>> SAMPLE: 3
+[2025-11-18T00:51:07.672Z] R_75 >>> SAMPLE: 9
+[2025-11-18T00:51:07.674Z] R_100 >>> SAMPLE: 6
+[2025-11-18T00:51:07.675Z] Skipping trade: R_100 digit 6 probability 0.00% < threshold 12%
+[2025-11-18T00:51:08.672Z] R_10 >>> SAMPLE: 7
+[2025-11-18T00:51:08.672Z] R_25 >>> SAMPLE: 4
+[2025-11-18T00:51:08.672Z] R_50 >>> SAMPLE: 4
+[2025-11-18T00:51:08.673Z] R_75 >>> SAMPLE: 2
+[2025-11-18T00:51:08.674Z] R_100 >>> SAMPLE: 3
+[2025-11-18T00:51:08.675Z] Autonomous trade: R_100 digit 3 (28.57% probability), stake $1.00
+[2025-11-18T00:51:08.675Z] Placing autonomous trade: R_100 digit 3, stake $1.00

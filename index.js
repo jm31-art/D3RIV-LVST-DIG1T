@@ -21,12 +21,6 @@ const DEMO_TOKEN = process.env.DEMO_TOKEN;
 const REAL_ACCOUNT_ID = process.env.REAL_ACCOUNT_ID;
 const REAL_TOKEN = process.env.REAL_TOKEN;
 
-// Trading configuration (demo mode only) - can be updated via UI
-let targetSignal = process.env.TARGET_SIGNAL || '9'; // Default to 9
-let targetSymbol = process.env.TARGET_SYMBOL || 'R_100'; // Default to R_100
-let numTrades = Number(process.env.NUM_TRADES) || 3; // Default to 3 trades
-let stake = Number(process.env.STAKE) || 1; // Default stake in USD
-
 // Startup check: require a demo token to be present (safety: we do not use
 // the real token from the local .env by default; keep real tokens out of
 // working directories). If you intentionally need to use a real token,
@@ -40,15 +34,23 @@ if (!DEMO_TOKEN) {
 const latestTicks = new Map();
 let subscribedSymbols = [];
 
-// Trading state
+// Autonomous trading state
 let isTradingEnabled = false; // Flag to enable/disable trading
-let tradesPlaced = 0; // Counter for trades placed in current cycle
+let currentProfit = 0; // Track total profit/loss
+let currentStake = 1; // Current stake amount (will be set from config)
+let consecutiveWins = 0; // Track consecutive wins for stake progression
+let profitableDigits = new Map(); // symbol -> { digit: probability }
 
 // Trading configuration (can be updated via UI) - initialized from env
 let targetSymbol2 = process.env.TARGET_SYMBOL || 'R_100';
-let targetSignal2 = process.env.TARGET_SIGNAL || '9';
-let numTrades2 = parseInt(process.env.NUM_TRADES) || 3;
-let stake2 = parseFloat(process.env.STAKE) || 1;
+let targetProfit2 = parseFloat(process.env.TARGET_PROFIT) || 100;
+let initialStake2 = parseFloat(process.env.INITIAL_STAKE) || 1;
+let stakeMultiplier2 = parseFloat(process.env.STAKE_MULTIPLIER) || 2;
+let maxStake2 = parseFloat(process.env.MAX_STAKE) || 100;
+let minProbabilityThreshold2 = parseFloat(process.env.MIN_PROBABILITY_THRESHOLD) || 12;
+
+// Initialize current stake from config
+currentStake = initialStake2;
 
 // Digit frequency tracking (for analysis)
 const digitFrequencies = new Map(); // symbol -> { digit: count, total: count }
@@ -156,8 +158,15 @@ function broadcastToClients(obj) {
 clientWSS.on('connection', (ws) => {
   ws.send(JSON.stringify({ type: 'snapshot', symbols: subscribedSymbols, ticks: Array.from(latestTicks.entries()), pollInterval: POLL_INTERVAL_MS, sampleMs: SAMPLE_MS, displayMs: DISPLAY_DURATION_MS }));
   // Send current trading config and status
-  ws.send(JSON.stringify({ type: 'configUpdate', config: { targetSymbol: targetSymbol2, targetSignal: targetSignal2, numTrades: numTrades2, stake: stake2 } }));
-  ws.send(JSON.stringify({ type: 'tradeUpdate', tradingEnabled: isTradingEnabled }));
+  ws.send(JSON.stringify({ type: 'configUpdate', config: {
+    targetSymbol: targetSymbol2,
+    targetProfit: targetProfit2,
+    initialStake: initialStake2,
+    stakeMultiplier: stakeMultiplier2,
+    maxStake: maxStake2,
+    minProbabilityThreshold: minProbabilityThreshold2
+  } }));
+  ws.send(JSON.stringify({ type: 'tradeUpdate', tradingEnabled: isTradingEnabled, currentProfit, currentStake }));
   log('Client connected to Web UI');
   // Listen for control messages from the browser (simulate toggle, trading controls)
   ws.on('message', (data) => {
@@ -176,21 +185,35 @@ clientWSS.on('connection', (ws) => {
           currentDerivWS.close();
         }
       } else if (msg.type === 'updateConfig') {
-        // Update trading configuration
+        // Update autonomous trading configuration
         targetSymbol2 = msg.targetSymbol;
-        targetSignal2 = msg.targetSignal;
-        numTrades2 = msg.numTrades;
-        stake2 = msg.stake;
-        log(`Trading config updated: ${targetSymbol2} digit ${targetSignal2}, ${numTrades2} trades, stake ${stake2}`);
-        broadcastToClients({ type: 'configUpdate', config: { targetSymbol: targetSymbol2, targetSignal: targetSignal2, numTrades: numTrades2, stake: stake2 } });
+        targetProfit2 = msg.targetProfit;
+        initialStake2 = msg.initialStake;
+        stakeMultiplier2 = msg.stakeMultiplier;
+        maxStake2 = msg.maxStake;
+        minProbabilityThreshold2 = msg.minProbabilityThreshold;
+        // Reset trading state when config changes
+        currentStake = initialStake2;
+        consecutiveWins = 0;
+        currentProfit = 0;
+        log(`Autonomous config updated: ${targetSymbol2}, target profit $${targetProfit2}, stake ${initialStake2}x multiplier, max $${maxStake2}, min prob ${minProbabilityThreshold2}%`);
+        broadcastToClients({ type: 'configUpdate', config: {
+          targetSymbol: targetSymbol2,
+          targetProfit: targetProfit2,
+          initialStake: initialStake2,
+          stakeMultiplier: stakeMultiplier2,
+          maxStake: maxStake2,
+          minProbabilityThreshold: minProbabilityThreshold2
+        } });
+        broadcastToClients({ type: 'profitUpdate', currentProfit, currentStake });
       } else if (msg.type === 'startTrading') {
         isTradingEnabled = true;
-        log('Trading started via UI');
-        broadcastToClients({ type: 'tradeUpdate', tradingEnabled: true });
+        log('Autonomous trading started via UI');
+        broadcastToClients({ type: 'tradeUpdate', tradingEnabled: true, currentProfit, currentStake });
       } else if (msg.type === 'stopTrading') {
         isTradingEnabled = false;
-        log('Trading stopped via UI');
-        broadcastToClients({ type: 'tradeUpdate', tradingEnabled: false });
+        log('Autonomous trading stopped via UI');
+        broadcastToClients({ type: 'tradeUpdate', tradingEnabled: false, currentProfit, currentStake });
       }
     } catch (err) {
       log('Invalid client message', err.message || err);
@@ -366,6 +389,48 @@ function handleMessage(ws, msg) {
     return;
   }
 
+  // Handle trade result (win/loss/payout)
+  if (msg.proposal_open_contract) {
+    const contract = msg.proposal_open_contract;
+    if (contract.status === 'won' || contract.status === 'lost') {
+      const payout = contract.payout || 0;
+      const stake = contract.buy_price || 0;
+      const profit = payout - stake;
+
+      // Update profit tracking
+      currentProfit += profit;
+
+      // Update stake based on win/loss
+      if (contract.status === 'won') {
+        consecutiveWins++;
+        // Increase stake exponentially after every 10 wins
+        if (consecutiveWins % 10 === 0) {
+          currentStake = Math.min(currentStake * stakeMultiplier, maxStake);
+          log(`Stake increased to $${currentStake.toFixed(2)} after ${consecutiveWins} consecutive wins`);
+        }
+      } else {
+        // Reset consecutive wins on loss
+        consecutiveWins = 0;
+        // Reset stake to initial on loss (martingale would increase, but we avoid fixed losses)
+        currentStake = initialStake;
+        log(`Loss detected, resetting stake to $${currentStake.toFixed(2)}`);
+      }
+
+      log(`Trade result: ${contract.status.toUpperCase()}, stake: $${stake.toFixed(2)}, payout: $${payout.toFixed(2)}, profit: $${profit.toFixed(2)}, total profit: $${currentProfit.toFixed(2)}`);
+
+      // Update UI
+      broadcastToClients({ type: 'tradeResult', symbol: contract.symbol || targetSymbol2, prediction: contract.contract_type === 'DIGITMATCH' ? (contract.digit || 'auto') : 'auto', result: contract.status, payout });
+      broadcastToClients({ type: 'profitUpdate', currentProfit, currentStake });
+
+      // Check if target profit reached
+      if (currentProfit >= targetProfit2) {
+        log(`Target profit $${targetProfit2} reached! Stopping autonomous trading.`);
+        isTradingEnabled = false;
+        broadcastToClients({ type: 'tradeUpdate', tradingEnabled: false, currentProfit, currentStake });
+      }
+    }
+  }
+
   // Handle incoming ticks
   if (msg.tick && msg.tick.symbol) {
     const symbol = msg.tick.symbol;
@@ -383,8 +448,8 @@ function handleMessage(ws, msg) {
     const trade = {
       id: msg.buy.contract_id || Date.now(),
       symbol: msg.buy.symbol || targetSymbol2,
-      prediction: msg.buy.digit || targetSignal2,
-      stake: msg.buy.price || stake2,
+      prediction: msg.buy.digit || 'auto',
+      stake: msg.buy.price || currentStake,
       timestamp: new Date().toISOString(),
       status: 'pending'
     };
@@ -496,10 +561,27 @@ function showSignal(sym, state) {
     log(`${sym} >>> SAMPLE: ${lastDigit !== null ? lastDigit : 'N/A'}`);
     broadcastToClients({ type: 'signal', symbol: sym, lastDigit: lastDigit, displayMs: DISPLAY_DURATION_MS });
 
-    // Check for trading condition: if symbol matches target and last digit matches target signal
-    if (sym === targetSymbol2 && lastDigit === targetSignal2 && currentDerivWS) {
-      log(`Target condition met: ${sym} digit ${lastDigit}, placing trade`);
-      placeDigitMatchTrade(currentDerivWS, sym, lastDigit);
+    // Autonomous trading: check if we should place a trade based on probability analysis
+    if (sym === targetSymbol2 && lastDigit !== null && currentDerivWS && isTradingEnabled) {
+      // Check if target profit reached
+      if (currentProfit >= targetProfit2) {
+        log(`Target profit $${targetProfit2} reached! Stopping autonomous trading.`);
+        isTradingEnabled = false;
+        broadcastToClients({ type: 'tradeUpdate', tradingEnabled: false, currentProfit, currentStake });
+        return;
+      }
+
+      // Get profitable digits for this symbol
+      const profitable = profitableDigits.get(sym) || {};
+      const probability = profitable[lastDigit] || 0;
+
+      // Only trade if probability meets threshold (ensures martingale recovery potential)
+      if (probability >= minProbabilityThreshold2) {
+        log(`Autonomous trade: ${sym} digit ${lastDigit} (${probability.toFixed(2)}% probability), stake $${currentStake.toFixed(2)}`);
+        placeAutonomousTrade(currentDerivWS, sym, lastDigit);
+      } else {
+        log(`Skipping trade: ${sym} digit ${lastDigit} probability ${probability.toFixed(2)}% < threshold ${minProbabilityThreshold2}%`);
+      }
     }
   }
 
@@ -516,10 +598,8 @@ function showSignal(sym, state) {
     }
     // Reset remaining and restart countdown
     state.remainingMs = POLL_INTERVAL_MS;
-    // Reset trades placed for new cycle
-    tradesPlaced = 0;
-    // Log digit frequency analysis at end of cycle
-    logDigitFrequencyAnalysis();
+    // Analyze digit frequencies and update profitable digits
+    analyzeAndUpdateProfitableDigits(sym);
     // Start a fresh countdown interval
     state.countdownInterval = setInterval(() => {
       state.remainingMs -= 1000;
@@ -542,21 +622,16 @@ function stopAllCycles() {
     if (state.sampleInterval) clearInterval(state.sampleInterval);
   });
   cycles.clear();
-  // Reset trading state when stopping cycles
-  tradesPlaced = 0;
   // Reset digit frequencies
   digitFrequencies.clear();
+  // Reset profitable digits
+  profitableDigits.clear();
 }
 
-// Function to place a "Digit Matches" trade
-function placeDigitMatchTrade(ws, symbol, targetDigit) {
+// Function to place autonomous "Digit Matches" trade
+function placeAutonomousTrade(ws, symbol, targetDigit) {
   if (!isTradingEnabled) {
-    log('Trading not enabled, skipping trade');
-    return;
-  }
-
-  if (tradesPlaced >= numTrades2) {
-    log(`Maximum trades (${numTrades2}) reached for this cycle`);
+    log('Autonomous trading not enabled, skipping trade');
     return;
   }
 
@@ -564,7 +639,7 @@ function placeDigitMatchTrade(ws, symbol, targetDigit) {
 
   const buyRequest = {
     buy: 1,
-    price: stake2,
+    price: currentStake,
     parameters: {
       contract_type: contractType,
       symbol: symbol,
@@ -572,43 +647,46 @@ function placeDigitMatchTrade(ws, symbol, targetDigit) {
     }
   };
 
-  log(`Placing trade: ${symbol} digit ${targetDigit}, stake ${stake2}`);
+  log(`Placing autonomous trade: ${symbol} digit ${targetDigit}, stake $${currentStake.toFixed(2)}`);
   ws.send(JSON.stringify(buyRequest));
-  tradesPlaced++;
 }
-// Function to log digit frequency analysis
-function logDigitFrequencyAnalysis() {
-  if (digitFrequencies.size === 0) return;
+// Function to analyze digit frequencies and update profitable digits for autonomous trading
+function analyzeAndUpdateProfitableDigits(symbol) {
+  const freq = digitFrequencies.get(symbol);
+  if (!freq || freq.total === 0) return;
 
-  log('=== Digit Frequency Analysis ===');
-  for (const [symbol, freq] of digitFrequencies.entries()) {
-    if (freq.total === 0) continue;
-
-    const percentages = {};
-    for (let digit = 0; digit <= 9; digit++) {
-      const count = freq[digit] || 0;
-      percentages[digit] = ((count / freq.total) * 100).toFixed(2);
-    }
-
-    // Sort digits by frequency descending
-    const sortedDigits = Object.keys(percentages)
-      .sort((a, b) => parseFloat(percentages[b]) - parseFloat(percentages[a]));
-
-    log(`${symbol}: Total samples: ${freq.total}`);
-    sortedDigits.forEach(digit => {
-      const percentage = percentages[digit];
-      const count = freq[digit] || 0;
-      log(`  Digit ${digit}: ${count} times (${percentage}%)`);
-
-      // Highlight digits with 11.5%-14% occurrence for potential trading
-      const pct = parseFloat(percentage);
-      if (pct >= 11.5 && pct <= 14) {
-        log(`    *** RECOMMENDED: Digit ${digit} has ${percentage}% occurrence (within 11.5%-14% range)`);
-      }
-    });
-    log('');
+  const percentages = {};
+  for (let digit = 0; digit <= 9; digit++) {
+    const count = freq[digit] || 0;
+    percentages[digit] = (count / freq.total) * 100;
   }
+
+  // Update profitable digits map
+  profitableDigits.set(symbol, percentages);
+
+  // Log analysis
+  log(`=== Digit Frequency Analysis for ${symbol} ===`);
+  log(`Total samples: ${freq.total}`);
+
+  // Sort digits by frequency descending
+  const sortedDigits = Object.keys(percentages)
+    .sort((a, b) => percentages[b] - percentages[a]);
+
+  sortedDigits.forEach(digit => {
+    const percentage = percentages[digit].toFixed(2);
+    const count = freq[digit] || 0;
+    log(`  Digit ${digit}: ${count} times (${percentage}%)`);
+
+    // Mark as profitable if above threshold
+    const pct = parseFloat(percentage);
+    if (pct >= minProbabilityThreshold2) {
+      log(`    *** PROFITABLE: Digit ${digit} has ${percentage}% occurrence (≥${minProbabilityThreshold2}% threshold)`);
+    }
+  });
   log('=== End Analysis ===');
+
+  // Clear frequencies for next cycle
+  digitFrequencies.delete(symbol);
 }
 
 

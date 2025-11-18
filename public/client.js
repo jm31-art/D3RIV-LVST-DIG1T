@@ -13,14 +13,17 @@
   const demoTokenInput = document.getElementById('demoToken');
   const updateTokenBtn = document.getElementById('updateTokenBtn');
   const targetSymbolSelect = document.getElementById('targetSymbol');
-  const targetSignalSelect = document.getElementById('targetSignal');
-  const tradeTypeSelect = document.getElementById('tradeType');
-  const stakeInput = document.getElementById('stake');
-  const numTradesInput = document.getElementById('numTrades');
+  const targetProfitInput = document.getElementById('targetProfit');
+  const initialStakeInput = document.getElementById('initialStake');
+  const stakeMultiplierInput = document.getElementById('stakeMultiplier');
+  const maxStakeInput = document.getElementById('maxStake');
+  const minProbabilityThresholdInput = document.getElementById('minProbabilityThreshold');
   const updateConfigBtn = document.getElementById('updateConfigBtn');
   const startTradingBtn = document.getElementById('startTradingBtn');
   const stopTradingBtn = document.getElementById('stopTradingBtn');
   const tradingStatus = document.getElementById('tradingStatus');
+  const currentProfitSpan = document.getElementById('currentProfit');
+  const currentStakeSpan = document.getElementById('currentStake');
   const tradeLogContainer = document.getElementById('tradeLogContainer');
 
   // Send simulate messages when toggle changes
@@ -45,13 +48,14 @@
     const config = {
       type: 'updateConfig',
       targetSymbol: targetSymbolSelect.value,
-      targetSignal: targetSignalSelect.value,
-      tradeType: tradeTypeSelect.value,
-      stake: parseFloat(stakeInput.value),
-      numTrades: parseInt(numTradesInput.value)
+      targetProfit: parseFloat(targetProfitInput.value),
+      initialStake: parseFloat(initialStakeInput.value),
+      stakeMultiplier: parseFloat(stakeMultiplierInput.value),
+      maxStake: parseFloat(maxStakeInput.value),
+      minProbabilityThreshold: parseFloat(minProbabilityThresholdInput.value)
     };
     ws.send(JSON.stringify(config));
-    alert('Configuration updated successfully!');
+    alert('Autonomous configuration updated successfully!');
   });
 
   startTradingBtn.addEventListener('click', () => {
@@ -145,14 +149,20 @@
         }
       }
       if (msg.type === 'configUpdate') {
-        // Update UI with current config
+        // Update UI with current autonomous config
         if (msg.config) {
           targetSymbolSelect.value = msg.config.targetSymbol || 'R_100';
-          targetSignalSelect.value = msg.config.targetSignal || '9';
-          tradeTypeSelect.value = msg.config.tradeType || 'DIGITMATCH';
-          stakeInput.value = msg.config.stake || 1;
-          numTradesInput.value = msg.config.numTrades || 3;
+          targetProfitInput.value = msg.config.targetProfit || 100;
+          initialStakeInput.value = msg.config.initialStake || 1;
+          stakeMultiplierInput.value = msg.config.stakeMultiplier || 2;
+          maxStakeInput.value = msg.config.maxStake || 100;
+          minProbabilityThresholdInput.value = msg.config.minProbabilityThreshold || 12;
         }
+      }
+      if (msg.type === 'profitUpdate') {
+        // Update profit and stake display
+        currentProfitSpan.textContent = msg.currentProfit.toFixed(2);
+        currentStakeSpan.textContent = msg.currentStake.toFixed(2);
       }
     } catch (err) {
       console.warn('Invalid message', err);

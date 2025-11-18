@@ -1,10 +1,11 @@
 # deriv-last-digit
 
-Small Node.js utility that connects to Deriv's public WebSocket API and emits the "last digit" of the latest tick for each volatility index every 15 seconds. Now includes automatic trading functionality for "Digit Matches" contracts in demo mode.
+Sophisticated autonomous trading bot that connects to Deriv's public WebSocket API, analyzes digit frequency patterns, and automatically trades "Digit Matches" contracts based on probability analysis. The bot uses exponential stake progression and intelligent risk management to achieve profit targets.
 
 Important notes
-- This tool only fetches market tick values and extracts the last digit of the numeric quote. It does not provide predictions or trading strategies.
-- **Automatic trading is enabled in demo mode only** when a `DEMO_TOKEN` is provided and authorization succeeds.
+- **Autonomous trading is enabled in demo mode only** when a `DEMO_TOKEN` is provided and authorization succeeds.
+- The bot analyzes digit frequencies during each 15-second cycle and only trades on digits with probability above the configured threshold.
+- Stake increases exponentially after every 10 consecutive wins, with automatic profit target achievement.
 - Use responsibly. Respect Deriv's terms of service, rate limits, and rules about automated access.
 - **Never use real account tokens** with this tool.
 
@@ -17,16 +18,18 @@ cd ~/Desktop/deriv-last-digit
 npm install
 ```
 
-2. Configure trading parameters (optional)
+2. Configure autonomous trading parameters (optional)
 
-Based on your manual chart analysis, set the target digit and symbol. For example, if you find that digit '7' appears 12.3% of the time on R_100:
+The bot now operates autonomously based on probability analysis. Configure your risk parameters:
 
 ```bash
-# Set environment variables for trading
-export TARGET_SIGNAL='7'
-export TARGET_SYMBOL='R_100'
-export NUM_TRADES=2  # Conservative number
-export STAKE=0.5     # Low stake for testing
+# Autonomous trading configuration
+export TARGET_SYMBOL='R_100'           # Symbol to trade
+export TARGET_PROFIT=100               # Stop when this profit is reached
+export INITIAL_STAKE=1                 # Starting stake amount
+export STAKE_MULTIPLIER=2              # Stake multiplier after wins
+export MAX_STAKE=100                   # Maximum stake limit
+export MIN_PROBABILITY_THRESHOLD=12    # Minimum probability % to trade
 ```
 
 3. Run
@@ -35,7 +38,7 @@ export STAKE=0.5     # Low stake for testing
 npm start
 ```
 
-The bot will analyze digit frequencies each cycle and highlight digits with 11.5%-14% occurrence. Use this data to manually verify profitable patterns before enabling automatic trading.
+The bot will analyze digit frequencies each cycle and automatically trade only on digits meeting the probability threshold. Stake increases exponentially after every 10 wins, and trading stops when the target profit is achieved.
 
 Configuration
 - Use `DERIV_APP_ID` or `DERIV_WS_URL` environment variables to change the WebSocket endpoint/app_id.
@@ -58,10 +61,12 @@ This project reads configuration from environment variables. You can create a lo
 - `REAL_ACCOUNT_ID` - your real Deriv account ID (optional).
 - `REAL_TOKEN` - API token for your real account (optional). **DO NOT USE WITH THIS TOOL**.
 - `SYMBOLS` - optional comma-separated list of symbols to subscribe to (e.g. `R_100,R_50`). Used if the active_symbols request doesn't return volatility indices for your region.
-- `TARGET_SIGNAL` - target last digit for automatic trading (default: '9'). Set this based on your manual chart analysis.
-- `TARGET_SYMBOL` - target symbol for automatic trading (default: 'R_100'). Focus on volatility indices like R_100, R_50, etc.
-- `NUM_TRADES` - number of trades to place per cycle when target condition is met (default: 3). Limits exposure per cycle.
-- `STAKE` - stake amount in USD for each trade (default: 1). Keep low for demo trading.
+- `TARGET_SYMBOL` - target symbol for autonomous trading (default: 'R_100'). Focus on volatility indices like R_100, R_50, etc.
+- `TARGET_PROFIT` - profit target in USD (default: 100). Bot stops trading when this profit is reached.
+- `INITIAL_STAKE` - starting stake amount in USD (default: 1). Bot begins trading with this stake.
+- `STAKE_MULTIPLIER` - multiplier for stake increase after wins (default: 2). Stake increases exponentially.
+- `MAX_STAKE` - maximum stake limit in USD (default: 100). Prevents excessive risk exposure.
+- `MIN_PROBABILITY_THRESHOLD` - minimum probability percentage to trade (default: 12). Only trade digits above this threshold.
 
 Startup requirement
 -------------------
@@ -99,9 +104,10 @@ REAL_TOKEN=wQw5foftZG4lAzm
 ```
 
 Behavior
-- The script will request active volatility indices from the API, subscribe to ticks for each, and every 15 seconds print a list of symbols with their latest last-digit value.
-- **Automatic Trading**: When enabled (after demo authorization), the bot will monitor signals during the display period. If the target symbol's last digit matches the target signal, it will automatically place up to NUM_TRADES "Digit Matches" contracts with the specified stake. Trading resets each cycle.
-- **Digit Frequency Analysis**: At the end of each cycle, the bot analyzes the frequency of each digit (0-9) across all samples during the display period. It highlights digits with 11.5%-14% occurrence as recommended for trading, helping you identify profitable patterns manually before configuring automatic trading.
+- The script requests active volatility indices from the API, subscribes to ticks for each, and every 15 seconds analyzes digit frequency patterns.
+- **Autonomous Trading**: When enabled (after demo authorization), the bot analyzes digit frequencies during each cycle and automatically trades only on digits with probability above the threshold. Stake increases exponentially after every 10 wins, and trading stops when the target profit is achieved.
+- **Intelligent Risk Management**: No fixed stop-loss; only trades when probability ensures martingale recovery potential. Stake resets to initial amount on losses to avoid compounding risk.
+- **Real-time Profit Tracking**: Displays current profit, stake, and trading status in the web UI. Automatically stops when target profit is reached.
 
 Security & ethics
 - Do not use this tool to automate betting or circumvent platform safeguards. Ensure you comply with all platform rules and local laws.
