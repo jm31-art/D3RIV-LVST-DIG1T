@@ -26,6 +26,16 @@
   const currentStakeSpan = document.getElementById('currentStake');
   const tradeLogContainer = document.getElementById('tradeLogContainer');
 
+  // Add tooltips for better UX
+  function addTooltip(element, text) {
+    element.title = text;
+  }
+
+  addTooltip(updateTokenBtn, 'Update your Deriv API token');
+  addTooltip(updateConfigBtn, 'Apply trading configuration changes');
+  addTooltip(startTradingBtn, 'Start autonomous trading');
+  addTooltip(stopTradingBtn, 'Stop all trading activities');
+
   // Send simulate messages when toggle changes
   simulateToggle.addEventListener('change', () => {
     const enabled = simulateToggle.checked;
@@ -59,11 +69,19 @@
   });
 
   startTradingBtn.addEventListener('click', () => {
-    ws.send(JSON.stringify({ type: 'startTrading' }));
+    if (confirm('Are you sure you want to start autonomous trading? This will begin real trades.')) {
+      ws.send(JSON.stringify({ type: 'startTrading' }));
+      startTradingBtn.disabled = true;
+      stopTradingBtn.disabled = false;
+    }
   });
 
   stopTradingBtn.addEventListener('click', () => {
-    ws.send(JSON.stringify({ type: 'stopTrading' }));
+    if (confirm('Are you sure you want to stop trading?')) {
+      ws.send(JSON.stringify({ type: 'stopTrading' }));
+      startTradingBtn.disabled = false;
+      stopTradingBtn.disabled = true;
+    }
   });
 
   function renderSymbol(sym) {
