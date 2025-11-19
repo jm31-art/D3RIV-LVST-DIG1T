@@ -42,9 +42,9 @@ const CONFIG = {
   // Trading settings
   symbols: ['R_10', 'R_25', 'R_50', 'R_75', 'R_100'],
   minSamplesRequired: 10000, // Minimum samples before trading
-  minProbabilityThreshold: 25, // Increased threshold for 95%+ accuracy (was 12)
-  maxConcurrentTrades: 3,
-  tradeCooldown: 5000, // 5 seconds between trades
+  minProbabilityThreshold: 50, // Realistic threshold for better accuracy
+  maxConcurrentTrades: 1, // Reduced for safer trading
+  tradeCooldown: 10000, // Increased cooldown for safety
 
   // Risk management
   riskPerTrade: 0.02, // 2% risk per trade
