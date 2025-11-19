@@ -1,9 +1,9 @@
-const brain = require('brain.js');
+const ss = require('simple-statistics');
 
-// Advanced Machine Learning models for high-accuracy digit prediction
+// Advanced Statistical ML models for high-accuracy digit prediction
 class MLManager {
   constructor() {
-    this.models = new Map(); // symbol -> {lstm, cnn, ensemble, ...}
+    this.models = new Map(); // symbol -> {regression, bayesian, markov, ensemble, ...}
     this.trainingData = new Map(); // symbol -> array of training samples
     this.patternCache = new Map(); // symbol -> pattern analysis results
     this.isTraining = false;
@@ -59,14 +59,14 @@ class MLManager {
 
       const models = {};
 
-      // 1. Deep Neural Network
-      models.dnn = await this.trainDeepNeuralNetwork(trainingSamples, options);
+      // 1. Statistical Regression Model
+      models.regression = await this.trainStatisticalRegression(trainingSamples, options);
 
-      // 2. LSTM-style Recurrent Network (simplified)
-      models.lstm = await this.trainLSTMNetwork(trainingSamples, options);
+      // 2. Time Series Analysis
+      models.timeSeries = await this.trainTimeSeriesAnalysis(trainingSamples, options);
 
-      // 3. Convolutional Neural Network for pattern recognition
-      models.cnn = await this.trainConvolutionalNetwork(trainingSamples, options);
+      // 3. Pattern Recognition using Statistics
+      models.patterns = await this.trainPatternRecognition(trainingSamples, options);
 
       // 4. Bayesian Network for probabilistic reasoning
       models.bayesian = this.trainBayesianModel(symbol, ticks);
@@ -97,74 +97,88 @@ class MLManager {
     }
   }
 
-  // Train deep neural network
+  // Train statistical regression model
+  async trainStatisticalRegression(trainingSamples, options) {
+    if (!trainingSamples || trainingSamples.length < 10) return null;
+
+    try {
+      // Prepare data for regression
+      const features = trainingSamples.map(sample => sample.input);
+      const targets = trainingSamples.map(sample => sample.output.indexOf(1));
+
+      // Perform multiple regression
+      const regression = this.performMultipleRegression(features, targets);
+
+      console.log(`Statistical regression training completed with ${trainingSamples.length} samples`);
+      return regression;
+    } catch (error) {
+      console.error('Error training statistical regression:', error);
+      return null;
+    }
+  }
+
+  // Train deep neural network (simplified version without brain.js)
   async trainDeepNeuralNetwork(trainingSamples, options) {
-    const net = new brain.NeuralNetwork({
-      hiddenLayers: [64, 32, 16, 8], // Deeper network
-      activation: 'leaky-relu',
-      learningRate: 0.01,
-      momentum: 0.9,
-      dropout: 0.1,
-      ...options
-    });
+    // Simplified neural network implementation using statistical methods
+    if (!trainingSamples || trainingSamples.length < 20) return null;
 
-    const trainingOptions = {
-      iterations: 2000,
-      errorThresh: 0.001,
-      log: false,
-      learningRate: (iteration) => 0.01 * Math.pow(0.99, iteration / 100), // Learning rate decay
-      ...options.trainingOptions
-    };
+    try {
+      // Use multiple regression as approximation
+      const regression = this.performMultipleRegression(
+        trainingSamples.map(s => s.input),
+        trainingSamples.map(s => s.output.indexOf(1))
+      );
 
-    const result = net.train(trainingSamples, trainingOptions);
-    console.log(`DNN training completed. Error: ${result.error}, Iterations: ${result.iterations}`);
-    return net;
+      console.log(`Simplified neural network training completed with ${trainingSamples.length} samples`);
+      return regression;
+    } catch (error) {
+      console.error('Error training neural network:', error);
+      return null;
+    }
   }
 
-  // Train LSTM-style network (simplified implementation)
-  async trainLSTMNetwork(trainingSamples, options) {
-    // For brain.js, we'll use a recurrent network as approximation
-    const net = new brain.recurrent.LSTMTimeStep({
-      hiddenLayers: [32, 16],
-      learningRate: 0.01,
-      decayRate: 0.9,
-      ...options
-    });
+  // Train time series analysis model
+  async trainTimeSeriesAnalysis(trainingSamples, options) {
+    if (!trainingSamples || trainingSamples.length < 20) return null;
 
-    // Convert training data to time series format
-    const timeSeriesData = trainingSamples.map(sample => ({
-      input: sample.input,
-      output: sample.output.indexOf(1) // Convert one-hot to digit
-    }));
+    try {
+      // Extract time series patterns
+      const timeSeries = trainingSamples.map(sample => sample.output.indexOf(1));
 
-    const result = net.train(timeSeriesData, {
-      iterations: 1000,
-      errorThresh: 0.005,
-      log: false
-    });
+      // Calculate moving averages and trends
+      const model = {
+        movingAverages: this.calculateMovingAverages(timeSeries, [5, 10, 20]),
+        trends: this.calculateTrends(timeSeries),
+        seasonality: this.detectSeasonality(timeSeries),
+        autocorrelation: this.calculateAutocorrelation(timeSeries)
+      };
 
-    console.log(`LSTM training completed. Error: ${result.error}`);
-    return net;
+      console.log(`Time series analysis completed for ${timeSeries.length} data points`);
+      return model;
+    } catch (error) {
+      console.error('Error training time series analysis:', error);
+      return null;
+    }
   }
 
-  // Train convolutional network for pattern recognition
-  async trainConvolutionalNetwork(trainingSamples, options) {
-    // Brain.js doesn't have native CNN, so we'll use a specialized network
-    const net = new brain.NeuralNetwork({
-      hiddenLayers: [128, 64, 32],
-      activation: 'relu',
-      learningRate: 0.005,
-      ...options
-    });
+  // Train pattern recognition using statistical methods
+  async trainPatternRecognition(trainingSamples, options) {
+    if (!trainingSamples || trainingSamples.length < 20) return null;
 
-    const result = net.train(trainingSamples, {
-      iterations: 1500,
-      errorThresh: 0.003,
-      log: false
-    });
+    try {
+      const patterns = {
+        frequencyAnalysis: this.analyzeFrequencyPatterns(trainingSamples),
+        transitionMatrices: this.buildTransitionMatrices(trainingSamples),
+        clusterAnalysis: this.performClusterAnalysis(trainingSamples),
+        anomalyDetection: this.detectAnomalies(trainingSamples)
+      };
 
-    console.log(`CNN training completed. Error: ${result.error}`);
-    return net;
+      console.log(`Pattern recognition training completed with ${trainingSamples.length} samples`);
+      return patterns;
+    } catch (error) {
+      console.error('Error training pattern recognition:', error);
+      return null;
+    }
   }
 
   // Train Bayesian network for probabilistic prediction
@@ -247,9 +261,9 @@ class MLManager {
     try {
       // Get predictions from all models
       const predictions = {
-        dnn: this.predictWithDNN(models.dnn, recentDigits),
-        lstm: this.predictWithLSTM(models.lstm, recentDigits),
-        cnn: this.predictWithCNN(models.cnn, recentDigits),
+        regression: this.predictWithRegression(models.regression, recentDigits),
+        timeSeries: this.predictWithTimeSeries(models.timeSeries, recentDigits),
+        patterns: this.predictWithPatterns(models.patterns, recentDigits),
         bayesian: this.predictWithBayesian(models.bayesian, recentDigits),
         markov: this.predictWithAdvancedMarkov(models.markov, recentDigits)
       };
@@ -479,14 +493,10 @@ class MLManager {
 
       // Save each model
       for (const [modelName, model] of Object.entries(models)) {
-        if (model && typeof model.toJSON === 'function') {
-          modelData[modelName] = model.toJSON();
-        } else {
-          modelData[modelName] = model; // For non-brain.js models
-        }
+        modelData[modelName] = model; // All models are plain objects now
       }
 
-      fs.writeFileSync(filepath, JSON.stringify(modelData));
+      fs.writeFileSync(filepath, JSON.stringify(modelData, null, 2));
       return true;
     } catch (error) {
       console.error(`Error saving models for ${symbol}:`, error);
@@ -499,22 +509,7 @@ class MLManager {
     try {
       const fs = require('fs');
       const modelData = JSON.parse(fs.readFileSync(filepath, 'utf8'));
-      const models = {};
-
-      for (const [modelName, modelJson] of Object.entries(modelData)) {
-        if (modelName === 'bayesian' || modelName === 'markov') {
-          models[modelName] = modelJson; // Non-brain.js models
-        } else {
-          // Brain.js models
-          const net = modelName.includes('lstm') ?
-            new brain.recurrent.LSTMTimeStep() :
-            new brain.NeuralNetwork();
-          net.fromJSON(modelJson);
-          models[modelName] = net;
-        }
-      }
-
-      this.models.set(symbol, models);
+      this.models.set(symbol, modelData);
       return true;
     } catch (error) {
       console.error(`Error loading models for ${symbol}:`, error);
@@ -558,7 +553,8 @@ class MLManager {
     const patterns = {
       impossibleTransitions: Array.from({ length: 10 }, () => []),
       frequencyThreshold: 0.3, // Max 30% frequency in recent history
-      commonSequences: new Map()
+      commonSequences: new Map(),
+      statisticalProperties: this.calculateStatisticalProperties(ticks)
     };
 
     // Find impossible transitions (transitions that never occur in history)
@@ -588,6 +584,380 @@ class MLManager {
     }
 
     this.patternCache.set(symbol, patterns);
+  }
+
+  // Helper methods for statistical calculations
+  calculateMovingAverages(data, periods) {
+    const results = {};
+    periods.forEach(period => {
+      const averages = [];
+      for (let i = period - 1; i < data.length; i++) {
+        const slice = data.slice(i - period + 1, i + 1);
+        averages.push(ss.mean(slice));
+      }
+      results[`ma_${period}`] = averages;
+    });
+    return results;
+  }
+
+  calculateTrends(data) {
+    if (data.length < 2) return { slope: 0, intercept: 0 };
+
+    const x = Array.from({ length: data.length }, (_, i) => i);
+    const regression = ss.linearRegression(x.map((val, idx) => [val, data[idx]]));
+    return regression;
+  }
+
+  detectSeasonality(data, maxLag = 10) {
+    const autocorr = [];
+    for (let lag = 1; lag <= maxLag; lag++) {
+      const corr = ss.sampleCorrelation(data.slice(0, data.length - lag), data.slice(lag));
+      autocorr.push({ lag, correlation: corr });
+    }
+    return autocorr;
+  }
+
+  calculateAutocorrelation(data, maxLag = 10) {
+    const autocorr = [];
+    for (let lag = 1; lag <= maxLag; lag++) {
+      const corr = ss.sampleCorrelation(data.slice(0, data.length - lag), data.slice(lag));
+      autocorr.push(corr);
+    }
+    return autocorr;
+  }
+
+  performMultipleRegression(features, targets) {
+    // Simplified multiple regression implementation
+    const n = features.length;
+    const m = features[0].length;
+
+    // Add intercept term
+    const X = features.map(row => [1, ...row]);
+    const y = targets;
+
+    // Calculate coefficients using normal equation: (X^T * X)^-1 * X^T * y
+    const XT = this.transpose(X);
+    const XTX = this.matrixMultiply(XT, X);
+    const XTX_inv = this.matrixInverse(XTX);
+    const XTy = this.matrixMultiply(XT, y);
+    const coefficients = this.matrixMultiply(XTX_inv, XTy);
+
+    return { coefficients, intercept: coefficients[0], slopes: coefficients.slice(1) };
+  }
+
+  analyzeFrequencyPatterns(samples) {
+    const digitCounts = Array(10).fill(0);
+    samples.forEach(sample => {
+      const digit = sample.output.indexOf(1);
+      digitCounts[digit]++;
+    });
+
+    const total = samples.length;
+    const frequencies = digitCounts.map(count => count / total);
+
+    return {
+      counts: digitCounts,
+      frequencies,
+      entropy: this.calculateEntropy(frequencies),
+      mostFrequent: digitCounts.indexOf(Math.max(...digitCounts)),
+      leastFrequent: digitCounts.indexOf(Math.min(...digitCounts))
+    };
+  }
+
+  buildTransitionMatrices(samples) {
+    const transitions = Array.from({ length: 10 }, () => Array(10).fill(0));
+    const counts = Array(10).fill(0);
+
+    for (let i = 1; i < samples.length; i++) {
+      const from = samples[i-1].output.indexOf(1);
+      const to = samples[i].output.indexOf(1);
+      transitions[from][to]++;
+      counts[from]++;
+    }
+
+    // Convert to probabilities
+    const probabilities = transitions.map((row, from) =>
+      row.map(count => counts[from] > 0 ? count / counts[from] : 0)
+    );
+
+    return { transitions, probabilities, counts };
+  }
+
+  performClusterAnalysis(samples) {
+    // Simple k-means clustering for digit patterns
+    const k = 5; // Number of clusters
+    const maxIterations = 100;
+
+    // Initialize centroids randomly
+    let centroids = [];
+    for (let i = 0; i < k; i++) {
+      const randomSample = samples[Math.floor(Math.random() * samples.length)];
+      centroids.push([...randomSample.input]);
+    }
+
+    for (let iteration = 0; iteration < maxIterations; iteration++) {
+      // Assign samples to nearest centroid
+      const clusters = Array.from({ length: k }, () => []);
+
+      samples.forEach(sample => {
+        let minDistance = Infinity;
+        let closestCentroid = 0;
+
+        centroids.forEach((centroid, idx) => {
+          const distance = this.euclideanDistance(sample.input, centroid);
+          if (distance < minDistance) {
+            minDistance = distance;
+            closestCentroid = idx;
+          }
+        });
+
+        clusters[closestCentroid].push(sample);
+      });
+
+      // Update centroids
+      const newCentroids = centroids.map((_, idx) => {
+        if (clusters[idx].length === 0) return centroids[idx];
+
+        const clusterInputs = clusters[idx].map(s => s.input);
+        const centroid = [];
+        for (let j = 0; j < clusterInputs[0].length; j++) {
+          const sum = clusterInputs.reduce((acc, input) => acc + input[j], 0);
+          centroid.push(sum / clusterInputs.length);
+        }
+        return centroid;
+      });
+
+      centroids = newCentroids;
+    }
+
+    return { centroids, k };
+  }
+
+  detectAnomalies(samples) {
+    const values = samples.map(s => s.output.indexOf(1));
+    const mean = ss.mean(values);
+    const std = ss.standardDeviation(values);
+
+    const anomalies = [];
+    values.forEach((value, idx) => {
+      const zScore = Math.abs((value - mean) / std);
+      if (zScore > 3) { // Z-score > 3 is considered anomalous
+        anomalies.push({ index: idx, value, zScore });
+      }
+    });
+
+    return {
+      mean,
+      std,
+      anomalyCount: anomalies.length,
+      anomalies
+    };
+  }
+
+  calculateStatisticalProperties(ticks) {
+    const digits = ticks.map(t => t.last_digit);
+    return {
+      mean: ss.mean(digits),
+      median: ss.median(digits),
+      mode: ss.mode(digits),
+      standardDeviation: ss.standardDeviation(digits),
+      variance: ss.variance(digits),
+      skewness: this.calculateSkewness(digits),
+      kurtosis: this.calculateKurtosis(digits),
+      range: ss.max(digits) - ss.min(digits)
+    };
+  }
+
+  calculateEntropy(probabilities) {
+    return probabilities.reduce((entropy, p) => {
+      if (p > 0) {
+        entropy -= p * Math.log2(p);
+      }
+      return entropy;
+    }, 0);
+  }
+
+  calculateSkewness(data) {
+    const mean = ss.mean(data);
+    const std = ss.standardDeviation(data);
+    const n = data.length;
+
+    const skewness = data.reduce((sum, val) => sum + Math.pow((val - mean) / std, 3), 0) / n;
+    return skewness;
+  }
+
+  calculateKurtosis(data) {
+    const mean = ss.mean(data);
+    const std = ss.standardDeviation(data);
+    const n = data.length;
+
+    const kurtosis = data.reduce((sum, val) => sum + Math.pow((val - mean) / std, 4), 0) / n - 3;
+    return kurtosis;
+  }
+
+  euclideanDistance(a, b) {
+    return Math.sqrt(a.reduce((sum, val, idx) => sum + Math.pow(val - b[idx], 2), 0));
+  }
+
+  transpose(matrix) {
+    return matrix[0].map((_, colIndex) => matrix.map(row => row[colIndex]));
+  }
+
+  matrixMultiply(a, b) {
+    const result = [];
+    for (let i = 0; i < a.length; i++) {
+      result[i] = [];
+      for (let j = 0; j < b[0].length; j++) {
+        let sum = 0;
+        for (let k = 0; k < a[0].length; k++) {
+          sum += a[i][k] * b[k][j];
+        }
+        result[i][j] = sum;
+      }
+    }
+    return result;
+  }
+
+  matrixInverse(matrix) {
+    // Simple matrix inversion for small matrices (using Gaussian elimination)
+    const n = matrix.length;
+    const augmented = matrix.map((row, i) => [...row, ...(i === 0 ? [1] : i === 1 ? [0] : [0]), ...(i === 1 ? [1] : i === 0 ? [0] : [0]), ...(i === 2 ? [1] : [0])]);
+
+    // Forward elimination
+    for (let i = 0; i < n; i++) {
+      // Find pivot
+      let maxRow = i;
+      for (let k = i + 1; k < n; k++) {
+        if (Math.abs(augmented[k][i]) > Math.abs(augmented[maxRow][i])) {
+          maxRow = k;
+        }
+      }
+
+      // Swap rows
+      [augmented[i], augmented[maxRow]] = [augmented[maxRow], augmented[i]];
+
+      // Eliminate
+      for (let k = i + 1; k < n; k++) {
+        const factor = augmented[k][i] / augmented[i][i];
+        for (let j = i; j < 2 * n; j++) {
+          augmented[k][j] -= factor * augmented[i][j];
+        }
+      }
+    }
+
+    // Back substitution
+    const inverse = Array.from({ length: n }, () => Array(n).fill(0));
+    for (let i = n - 1; i >= 0; i--) {
+      for (let j = n; j < 2 * n; j++) {
+        inverse[i][j - n] = augmented[i][j] / augmented[i][i];
+      }
+      for (let k = i - 1; k >= 0; k--) {
+        const factor = augmented[k][i] / augmented[i][i];
+        for (let j = n; j < 2 * n; j++) {
+          augmented[k][j] -= factor * augmented[i][j];
+        }
+      }
+    }
+
+    return inverse;
+  }
+
+  // Prediction methods for each model type
+  predictWithRegression(model, recentDigits) {
+    if (!model) return null;
+
+    try {
+      // Convert recent digits to feature vector
+      const features = [];
+      recentDigits.forEach(digit => {
+        const oneHot = Array(10).fill(0);
+        oneHot[digit] = 1;
+        features.push(...oneHot);
+      });
+
+      // Add intercept
+      const input = [1, ...features];
+
+      // Calculate prediction using regression coefficients
+      let prediction = 0;
+      for (let i = 0; i < input.length; i++) {
+        prediction += input[i] * model.coefficients[i];
+      }
+
+      // Convert to digit and probabilities
+      const predictedDigit = Math.round(Math.max(0, Math.min(9, prediction)));
+      const allProbabilities = Array(10).fill(0.1); // Uniform distribution as fallback
+      allProbabilities[predictedDigit] = 0.5; // Higher probability for predicted digit
+
+      return {
+        digit: predictedDigit,
+        confidence: 0.5,
+        allProbabilities
+      };
+    } catch (error) {
+      console.error('Error predicting with regression:', error);
+      return null;
+    }
+  }
+
+  predictWithTimeSeries(model, recentDigits) {
+    if (!model) return null;
+
+    try {
+      // Use moving averages and trends for prediction
+      const series = recentDigits.slice(-10); // Last 10 digits
+      const ma5 = model.movingAverages.ma_5.slice(-1)[0] || ss.mean(series);
+      const trend = model.trends.m || 0;
+
+      // Predict next value using trend
+      const predictedValue = ma5 + trend;
+
+      // Convert to digit
+      const predictedDigit = Math.round(Math.max(0, Math.min(9, predictedValue)));
+      const allProbabilities = Array(10).fill(0.05);
+      allProbabilities[predictedDigit] = 0.5;
+
+      return {
+        digit: predictedDigit,
+        confidence: 0.4,
+        allProbabilities
+      };
+    } catch (error) {
+      console.error('Error predicting with time series:', error);
+      return null;
+    }
+  }
+
+  predictWithPatterns(model, recentDigits) {
+    if (!model) return null;
+
+    try {
+      // Use pattern analysis for prediction
+      const recentStr = recentDigits.slice(-3).join(',');
+      const sequence = model.transitionMatrices.probabilities;
+
+      // Find most likely next digit based on recent sequence
+      const lastDigit = recentDigits[recentDigits.length - 1];
+      const probabilities = sequence[lastDigit];
+
+      let maxProb = 0;
+      let predictedDigit = 0;
+      probabilities.forEach((prob, digit) => {
+        if (prob > maxProb) {
+          maxProb = prob;
+          predictedDigit = digit;
+        }
+      });
+
+      return {
+        digit: predictedDigit,
+        confidence: maxProb,
+        allProbabilities: probabilities
+      };
+    } catch (error) {
+      console.error('Error predicting with patterns:', error);
+      return null;
+    }
   }
 }
 
