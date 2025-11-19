@@ -32,11 +32,18 @@ const logger = winston.createLogger({
   ]
 });
 
+// Startup check: require API token to be present
+const apiToken = process.env.DERIV_API_TOKEN;
+if (!apiToken) {
+  console.error('Missing required environment variable: DERIV_API_TOKEN.\nPlease add DERIV_API_TOKEN to your environment variables or .env file.');
+  process.exit(1);
+}
+
 // Bot configuration
 const CONFIG = {
   // Deriv API settings
   appId: process.env.DERIV_APP_ID || '1089',
-  apiToken: process.env.DERIV_API_TOKEN,
+  apiToken: apiToken,
   websocketUrl: 'wss://ws.derivws.com/websockets/v3',
 
   // Trading settings
