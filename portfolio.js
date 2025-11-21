@@ -96,7 +96,6 @@ class PortfolioManager {
       return 0; // Not enough data
     }
 
-    // Calculate returns for each symbol
     const returns1 = [];
     const returns2 = [];
 
@@ -107,7 +106,6 @@ class PortfolioManager {
       returns2.push(ret2);
     }
 
-    // Calculate correlation coefficient
     const correlation = stats.sampleCorrelation(returns1, returns2);
     return isNaN(correlation) ? 0 : correlation;
   }
@@ -136,15 +134,14 @@ class PortfolioManager {
   canAddPosition(symbol, stake, maxSymbolAllocation = 0.3, minCorrelationThreshold = 0.7) {
     const { allocation, totalAllocated } = this.getAllocation();
 
-    // Check symbol allocation limit
     const currentSymbolAllocation = allocation[symbol] || 0;
-    const newSymbolAllocation = (allocation[symbol] * totalAllocated + stake) / (totalAllocated + stake);
+    const newSymbolAllocation =
+      (allocation[symbol] * totalAllocated + stake) / (totalAllocated + stake);
 
     if (newSymbolAllocation > maxSymbolAllocation) {
       return { allowed: false, reason: `Symbol allocation would exceed ${maxSymbolAllocation * 100}% limit` };
     }
 
-    // Check correlation with existing positions
     const openSymbols = Object.keys(allocation);
     for (const existingSymbol of openSymbols) {
       if (existingSymbol === symbol) continue;
@@ -161,28 +158,23 @@ class PortfolioManager {
     return { allowed: true };
   }
 
-  // Optimize portfolio allocation using Modern Portfolio Theory
+  // Optimize portfolio allocation
   optimizeAllocation(symbols, returns, covariances, riskTolerance = 0.5) {
-    // Simplified Markowitz optimization
-    // This is a basic implementation - in practice, you'd use a proper optimization library
-
     if (symbols.length < 2) return { [symbols[0]]: 1.0 };
 
-    // Calculate efficient frontier (simplified)
     const numAssets = symbols.length;
-    const weights = new Array(numAssets).fill(1 / numAssets); // Equal weight start
+    const weights = new Array(numAssets).fill(1 / numAssets);
 
-    // Simple risk-parity adjustment
     const volatilities = symbols.map((_, i) => Math.sqrt(covariances[i][i]));
     const totalVol = volatilities.reduce((sum, vol) => sum + vol, 0);
 
-    const riskParityWeights = volatilities.map(vol => (totalVol - vol) / (totalVol * (numAssets - 1)));
+    const riskParityWeights = volatilities.map(
+      vol => (totalVol - vol) / (totalVol * (numAssets - 1))
+    );
 
-    // Normalize weights
     const totalWeight = riskParityWeights.reduce((sum, w) => sum + w, 0);
     const normalizedWeights = riskParityWeights.map(w => w / totalWeight);
 
-    // Create allocation object
     const allocation = {};
     symbols.forEach((symbol, i) => {
       allocation[symbol] = normalizedWeights[i];
@@ -191,7 +183,7 @@ class PortfolioManager {
     return allocation;
   }
 
-  // Rebalance portfolio to target allocation
+  // Rebalance portfolio
   rebalancePortfolio(targetAllocation) {
     const currentAllocation = this.getAllocation().allocation;
     const adjustments = {};
@@ -212,7 +204,7 @@ class PortfolioManager {
     return adjustments;
   }
 
-  // Calculate portfolio performance metrics
+  // Calculate performance
   calculatePerformance() {
     const allTrades = this.getAllTrades();
     if (allTrades.length === 0) return null;
@@ -222,17 +214,20 @@ class PortfolioManager {
 
     const totalProfit = allTrades.reduce((sum, t) => sum + t.profit, 0);
     const winRate = winningTrades.length / allTrades.length;
-    const avgWin = winningTrades.length > 0 ? winningTrades.reduce((sum, t) => sum + t.profit, 0) / winningTrades.length : 0;
-    const avgLoss = losingTrades.length > 0 ? Math.abs(losingTrades.reduce((sum, t) => sum + t.profit, 0) / losingTrades.length) : 0;
+    const avgWin = winningTrades.length > 0
+      ? winningTrades.reduce((sum, t) => sum + t.profit, 0) / winningTrades.length
+      : 0;
+    const avgLoss = losingTrades.length > 0
+      ? Math.abs(losingTrades.reduce((sum, t) => sum + t.profit, 0) / losingTrades.length)
+      : 0;
+
     const profitFactor = avgLoss > 0 ? avgWin / avgLoss : avgWin > 0 ? Infinity : 0;
 
-    // Calculate Sharpe ratio
     const returns = allTrades.map(t => t.profit / t.stake);
     const avgReturn = stats.mean(returns);
     const stdReturn = stats.standardDeviation(returns);
     const sharpeRatio = stdReturn > 0 ? avgReturn / stdReturn * Math.sqrt(252) : 0;
 
-    // Calculate maximum drawdown
     let peak = 0;
     let maxDrawdown = 0;
     let runningBalance = 0;
@@ -260,7 +255,7 @@ class PortfolioManager {
     };
   }
 
-  // Get all closed trades across portfolio
+  // Get all closed trades
   getAllTrades() {
     const allTrades = [];
 
@@ -272,13 +267,11 @@ class PortfolioManager {
     return allTrades.sort((a, b) => a.timestamp - b.timestamp);
   }
 
-  // Update portfolio statistics
+  // Update portfolio stats
   updatePortfolioStats() {
     const openPositions = this.getOpenPositions();
     this.portfolioStats.totalAllocated = openPositions.reduce((sum, p) => sum + p.stake, 0);
     this.portfolioStats.lastUpdate = new Date().toISOString();
-
-    // Calculate total value (simplified - assuming all positions are at stake value)
     this.portfolioStats.totalValue = this.portfolioStats.totalAllocated;
   }
 
@@ -306,7 +299,7 @@ class PortfolioManager {
     };
   }
 
-  // Risk assessment for portfolio
+  // Risk assessment
   assessRisk() {
     const allocation = this.getAllocation().allocation;
     const symbols = Object.keys(allocation);
@@ -316,14 +309,12 @@ class PortfolioManager {
     const issues = [];
     let riskScore = 0;
 
-    // Check diversification
     const maxAllocation = Math.max(...Object.values(allocation));
     if (maxAllocation > 0.5) {
       issues.push('Poor diversification - single symbol allocation too high');
       riskScore += 2;
     }
 
-    // Check correlations
     for (let i = 0; i < symbols.length; i++) {
       for (let j = i + 1; j < symbols.length; j++) {
         const correlation = this.getCorrelation(symbols[i], symbols[j]);
@@ -334,17 +325,16 @@ class PortfolioManager {
       }
     }
 
-    // Check position sizes
     const openPositions = this.getOpenPositions();
-    const avgPositionSize = openPositions.length > 0 ?
-      openPositions.reduce((sum, p) => sum + p.stake, 0) / openPositions.length : 0;
+    const avgPositionSize = openPositions.length > 0
+      ? openPositions.reduce((sum, p) => sum + p.stake, 0) / openPositions.length
+      : 0;
 
     if (avgPositionSize > risk.portfolioStats.totalValue * 0.1) {
       issues.push('Average position size too large relative to portfolio');
       riskScore += 1;
     }
 
-    // Determine risk level
     let riskLevel;
     if (riskScore === 0) riskLevel = 'low';
     else if (riskScore <= 2) riskLevel = 'medium';
@@ -358,7 +348,7 @@ class PortfolioManager {
     };
   }
 
-  // Generate risk management recommendations
+  // Risk recommendations
   generateRiskRecommendations(riskLevel, issues) {
     const recommendations = [];
 
@@ -382,40 +372,44 @@ class PortfolioManager {
     return recommendations;
   }
 
-  // Clear all positions (for testing/reset)
+  // Clear all positions
   clearPositions() {
     this.positions.clear();
     this.portfolioStats.symbols.clear();
     this.updatePortfolioStats();
   }
 
-  // Get portfolio status
+  // Portfolio status
   getStatus() {
     return {
       ...this.portfolioStats,
       allocation: this.getAllocation(),
       openPositions: this.getOpenPositions().length,
-      totalPositions: Array.from(this.positions.values()).reduce((sum, pos) => sum + pos.length, 0)
+      totalPositions: Array.from(this.positions.values()).reduce(
+        (sum, pos) => sum + pos.length,
+        0
+      )
     };
   }
-}
 
-module.exports = new PortfolioManager();
-initialize(symbols = []) {
-  // Reset positions and correlations
-  this.positions = new Map();
-  this.correlationMatrix = new Map();
-  this.portfolioStats = {
-    totalValue: 0,
-    totalAllocated: 0,
-    symbols: new Set(),
-    lastUpdate: null
-  };
+  // ✅ NEW initialize() method (correct location inside class)
+  initialize(symbols = []) {
+    this.positions = new Map();
+    this.correlationMatrix = new Map();
+    this.portfolioStats = {
+      totalValue: 0,
+      totalAllocated: 0,
+      symbols: new Set(),
+      lastUpdate: null
+    };
 
-  // Preload symbol correlations
-  if (symbols.length > 1) {
-    this.updateCorrelationMatrix(symbols);
+    if (symbols.length > 1) {
+      this.updateCorrelationMatrix(symbols);
+    }
+
+    return true;
   }
-
-  return true;
 }
+
+// Export instance
+module.exports = new PortfolioManager();
