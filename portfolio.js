@@ -401,3 +401,21 @@ class PortfolioManager {
 }
 
 module.exports = new PortfolioManager();
+initialize(symbols = []) {
+  // Reset positions and correlations
+  this.positions = new Map();
+  this.correlationMatrix = new Map();
+  this.portfolioStats = {
+    totalValue: 0,
+    totalAllocated: 0,
+    symbols: new Set(),
+    lastUpdate: null
+  };
+
+  // Preload symbol correlations
+  if (symbols.length > 1) {
+    this.updateCorrelationMatrix(symbols);
+  }
+
+  return true;
+}
