@@ -1,4 +1,5 @@
 require('dotenv').config();
+const express = require('express');
 const WebSocket = require('ws');
 const winston = require('winston');
 const cron = require('node-cron');
@@ -35,7 +36,7 @@ const logger = winston.createLogger({
 // Startup check: require API token to be present
 const apiToken = process.env.DERIV_API_TOKEN;
 if (!apiToken) {
-  console.error('Missing required environment variable: DERIV_API_TOKEN.\nPlease add DERIV_API_TOKEN to your environment variables or .env file.');
+  logger.error('Missing required environment variable: DERIV_API_TOKEN. Please add DERIV_API_TOKEN to your environment variables or .env file.');
   process.exit(1);
 }
 
@@ -48,24 +49,24 @@ const CONFIG = {
 
   // Trading settings
   symbols: ['R_10', 'R_25', 'R_50', 'R_75', 'R_100'],
-  minSamplesRequired: 10000, // Minimum samples before trading
-  minProbabilityThreshold: 50, // Realistic threshold for better accuracy
-  maxConcurrentTrades: 1, // Reduced for safer trading
-  tradeCooldown: 10000, // Increased cooldown for safety
+  minSamplesRequired: 10000,
+  minProbabilityThreshold: 50,
+  maxConcurrentTrades: 1,
+  tradeCooldown: 10000,
 
   // Risk management
-  riskPerTrade: 0.02, // 2% risk per trade
-  maxDrawdown: 0.15, // 15% max drawdown
-  maxDailyLoss: 0.08, // 8% max daily loss
+  riskPerTrade: 0.02,
+  maxDrawdown: 0.15,
+  maxDailyLoss: 0.08,
 
   // ML settings
-  mlRetrainingInterval: 1800000, // 30 minutes for faster adaptation to 95%+ accuracy
-  backtestInterval: 86400000, // Daily backtest
+  mlRetrainingInterval: 1800000,
+  backtestInterval: 86400000,
 
   // Strategy settings
-  strategy: 'ensemble', // 'frequency', 'markov', 'neural', 'ensemble', 'time_series'
+  strategy: 'ensemble',
   useBacktestValidation: true,
-  backtestWindow: 1000 // ticks for backtest validation
+  backtestWindow: 1000
 };
 
 class DerivBot {
@@ -76,8 +77,8 @@ class DerivBot {
     this.activeTrades = new Map();
     this.lastTradeTime = 0;
     this.symbolSubscriptions = new Map();
-    this.tickBuffers = new Map(); // symbol -> recent ticks
-    this.predictionCache = new Map(); // symbol -> last prediction
+    this.tickBuffers = new Map();
+    this.predictionCache = new Map();
     this.performanceMetrics = {
       totalTrades: 0,
       wins: 0,
@@ -88,6 +89,10 @@ class DerivBot {
       maxDrawdown: 0,
       sharpeRatio: 0
     };
+
+    // reconnect/backoff helpers
+    this.reconnectDelay = 5000; // start at 5s
+    this.maxReconnectDelay = 60000; // cap at 60s
 
     // Initialize modules
     this.initializeModules();
@@ -100,39 +105,41 @@ class DerivBot {
     logger.info('Initializing bot modules...');
 
     // Update risk parameters
-    risk.updateParameters({
-      maxDrawdown: CONFIG.maxDrawdown,
-      maxDailyLoss: CONFIG.maxDailyLoss
-    });
+    if (risk && typeof risk.updateParameters === 'function') {
+      risk.updateParameters({
+        maxDrawdown: CONFIG.maxDrawdown,
+        maxDailyLoss: CONFIG.maxDailyLoss
+      });
+    }
 
     // Initialize portfolio
-    portfolio.initialize(CONFIG.symbols);
+    if (portfolio && typeof portfolio.initialize === 'function') {
+      portfolio.initialize(CONFIG.symbols);
+    }
 
     logger.info('Modules initialized successfully');
   }
 
   scheduleTasks() {
-    // Daily backtest and performance analysis
     cron.schedule('0 2 * * *', async () => { // 2 AM daily
       logger.info('Running scheduled backtest...');
       await this.runScheduledBacktest();
     });
 
-    // ML model retraining
     cron.schedule('0 */1 * * *', async () => { // Every hour
       logger.info('Retraining ML models...');
       await this.retrainModels();
     });
 
-    // Performance reporting
     cron.schedule('0 */4 * * *', () => { // Every 4 hours
       this.generatePerformanceReport();
     });
 
-    // Data cleanup
     cron.schedule('0 3 * * *', () => { // 3 AM daily
-      db.cleanup();
-      logger.info('Database cleanup completed');
+      if (db && typeof db.cleanup === 'function') {
+        db.cleanup();
+        logger.info('Database cleanup completed');
+      }
     });
   }
 
@@ -144,38 +151,50 @@ class DerivBot {
       this.ws.on('open', () => {
         logger.info('WebSocket connected');
         this.isConnected = true;
+        // reset reconnect delay on successful connection
+        this.reconnectDelay = 5000;
         this.authorize();
       });
 
       this.ws.on('message', (data) => {
-        this.handleMessage(JSON.parse(data.toString()));
+        try {
+          const parsed = JSON.parse(data.toString());
+          this.handleMessage(parsed);
+        } catch (err) {
+          logger.error('Failed to parse incoming message', err);
+        }
       });
 
-      this.ws.on('close', () => {
-        logger.warn('WebSocket disconnected');
+      this.ws.on('close', (code, reason) => {
+        logger.warn('WebSocket disconnected', { code, reason });
         this.isConnected = false;
         this.authorized = false;
-        setTimeout(() => this.connect(), 5000); // Reconnect after 5 seconds
+        // Exponential backoff for reconnect
+        setTimeout(() => this.connect(), this.reconnectDelay);
+        this.reconnectDelay = Math.min(this.reconnectDelay * 1.5, this.maxReconnectDelay);
       });
 
       this.ws.on('error', (error) => {
         logger.error('WebSocket error:', error);
+        // ws 'error' will often be followed by 'close' — no need to immediately reconnect here
       });
 
     } catch (error) {
       logger.error('Connection error:', error);
-      setTimeout(() => this.connect(), 5000);
+      setTimeout(() => this.connect(), this.reconnectDelay);
+      this.reconnectDelay = Math.min(this.reconnectDelay * 1.5, this.maxReconnectDelay);
     }
   }
 
   authorize() {
-    if (!this.ws || !CONFIG.apiToken) {
-      logger.error('Cannot authorize: missing WebSocket or API token');
+    if (!this.ws || this.ws.readyState !== WebSocket.OPEN || !CONFIG.apiToken) {
+      logger.error('Cannot authorize: missing WebSocket or API token or socket not open');
       return;
     }
 
     const authRequest = {
       authorize: CONFIG.apiToken
+      // do NOT set req_id here; sendRequest will add a numeric req_id
     };
 
     this.sendRequest(authRequest);
@@ -190,19 +209,15 @@ class DerivBot {
 
     logger.info('Starting trading bot...');
 
-    // Subscribe to tick data for all symbols
     for (const symbol of CONFIG.symbols) {
       await this.subscribeToTicks(symbol);
     }
 
-    // Start the trading loop
     this.startTradingLoop();
   }
 
   async subscribeToTicks(symbol) {
-    if (this.symbolSubscriptions.has(symbol)) {
-      return; // Already subscribed
-    }
+    if (this.symbolSubscriptions.has(symbol)) return;
 
     const tickRequest = {
       ticks: symbol,
@@ -217,26 +232,23 @@ class DerivBot {
   }
 
   startTradingLoop() {
-    // Check for trading opportunities every 2 seconds
     setInterval(async () => {
       if (!this.isConnected || !this.authorized) return;
       if (this.activeTrades.size >= CONFIG.maxConcurrentTrades) return;
       if (Date.now() - this.lastTradeTime < CONFIG.tradeCooldown) return;
 
-      // Check risk management
-      const riskCheck = risk.shouldStopTrading();
+      const riskCheck = (risk && typeof risk.shouldStopTrading === 'function') ? risk.shouldStopTrading() : { stop: false };
       if (riskCheck.stop) {
         logger.warn(`Trading stopped due to risk: ${riskCheck.reason}`);
         return;
       }
 
-      // Evaluate all symbols for trading opportunities
       for (const symbol of CONFIG.symbols) {
         try {
           const opportunity = await this.evaluateTradingOpportunity(symbol);
           if (opportunity) {
             await this.executeTrade(opportunity);
-            break; // Only one trade per cycle
+            break;
           }
         } catch (error) {
           logger.error(`Error evaluating ${symbol}:`, error);
@@ -246,30 +258,24 @@ class DerivBot {
   }
 
   async evaluateTradingOpportunity(symbol) {
-    // Check if we have enough data
-    const tickCount = db.getTickCount(symbol);
-    if (tickCount < CONFIG.minSamplesRequired) {
-      return null; // Not enough data
-    }
+    const tickCount = db.getTickCount ? db.getTickCount(symbol) : 0;
+    if (tickCount < CONFIG.minSamplesRequired) return null;
 
-    // Get recent ticks
-    const recentTicks = db.getRecentTicks(symbol, 100);
+    const recentTicks = db.getRecentTicks ? db.getRecentTicks(symbol, 100) : [];
     if (recentTicks.length < 10) return null;
 
-    // Get digit frequencies
-    const { data: digitFreq, totalSamples } = db.getDigitFrequencies(symbol);
+    const df = db.getDigitFrequencies ? db.getDigitFrequencies(symbol) : { data: {}, totalSamples: 0 };
+    const digitFreq = df.data || {};
+    const totalSamples = df.totalSamples || 0;
     if (totalSamples < CONFIG.minSamplesRequired) return null;
 
-    // Calculate current probabilities
     const probabilities = {};
     for (let digit = 0; digit <= 9; digit++) {
       probabilities[digit] = totalSamples > 0 ? (digitFreq[digit] || 0) / totalSamples * 100 : 0;
     }
 
-    // Get recent digits for pattern analysis
     const recentDigits = recentTicks.map(tick => tick.last_digit);
 
-    // Use selected strategy to predict next digit
     const prediction = await this.generatePrediction(symbol, {
       probabilities,
       recentDigits,
@@ -277,11 +283,8 @@ class DerivBot {
       currentDigit: recentDigits[recentDigits.length - 1]
     });
 
-    if (!prediction || prediction.probability < CONFIG.minProbabilityThreshold) {
-      return null;
-    }
+    if (!prediction || prediction.probability < CONFIG.minProbabilityThreshold) return null;
 
-    // Validate with backtest if enabled
     if (CONFIG.useBacktestValidation) {
       const isValid = await this.validateWithBacktest(symbol, prediction);
       if (!isValid) {
@@ -290,7 +293,6 @@ class DerivBot {
       }
     }
 
-    // Calculate stake size using Kelly Criterion
     const stake = this.calculateStakeSize(symbol, prediction, probabilities);
 
     return {
@@ -307,19 +309,14 @@ class DerivBot {
     switch (CONFIG.strategy) {
       case 'frequency':
         return this.predictWithFrequency(context.probabilities);
-
       case 'markov':
-        return ml.predictWithMarkov(symbol, context.currentDigit);
-
+        return ml.predictWithMarkov ? ml.predictWithMarkov(symbol, context.currentDigit) : null;
       case 'neural':
-        return ml.predict(symbol, context.recentDigits);
-
+        return ml.predict ? ml.predict(symbol, context.recentDigits) : null;
       case 'ensemble':
-        return ml.predictEnsemble(symbol, context.currentDigit, context.recentDigits);
-
+        return ml.predictEnsemble ? ml.predictEnsemble(symbol, context.currentDigit, context.recentDigits) : null;
       case 'time_series':
         return this.predictWithTimeSeries(context.recentDigits);
-
       default:
         return this.predictWithFrequency(context.probabilities);
     }
@@ -328,14 +325,12 @@ class DerivBot {
   predictWithFrequency(probabilities) {
     let maxProb = 0;
     let predictedDigit = null;
-
     for (let digit = 0; digit <= 9; digit++) {
       if (probabilities[digit] > maxProb) {
         maxProb = probabilities[digit];
         predictedDigit = digit;
       }
     }
-
     return predictedDigit !== null ? {
       digit: predictedDigit,
       probability: maxProb,
@@ -344,32 +339,22 @@ class DerivBot {
   }
 
   predictWithTimeSeries(recentDigits) {
-    if (recentDigits.length < 5) return null;
-
-    // Simple trend analysis
+    if (!recentDigits || recentDigits.length < 5) return null;
     const series = recentDigits.slice(-10);
     const trend = series[series.length - 1] - series[series.length - 2];
     const predicted = Math.max(0, Math.min(9, series[series.length - 1] + trend));
-
-    return {
-      digit: Math.round(predicted),
-      probability: 50, // Placeholder
-      confidence: 0.5
-    };
+    return { digit: Math.round(predicted), probability: 50, confidence: 0.5 };
   }
 
   async validateWithBacktest(symbol, prediction) {
     try {
-      // Run quick backtest on recent data
+      if (!backtest || typeof backtest.runBacktest !== 'function') return false;
       const backtestResult = await backtest.runBacktest(CONFIG.strategy, symbol, {
         maxTrades: 50,
         riskPerTrade: CONFIG.riskPerTrade
       });
-
-      // Check if strategy is profitable
       return backtestResult.performance.winRate > 0.5 &&
              backtestResult.performance.profitFactor > 1.1;
-
     } catch (error) {
       logger.error('Backtest validation error:', error);
       return false;
@@ -377,18 +362,17 @@ class DerivBot {
   }
 
   calculateStakeSize(symbol, prediction, probabilities) {
-    const currentBalance = portfolio.getBalance();
-
-    // Use Kelly Criterion
+    const currentBalance = (portfolio && typeof portfolio.getBalance === 'function') ? portfolio.getBalance() : 100; // fallback
     const winRate = prediction.probability / 100;
-    const avgWin = 0.8; // 80% payout
-    const avgLoss = 1.0; // Lose stake
+    const avgWin = 0.8;
+    const avgLoss = 1.0;
 
-    const kellyStake = risk.calculateKellyStake(winRate, avgWin, avgLoss, currentBalance, 0.5);
+    const kellyStake = (risk && typeof risk.calculateKellyStake === 'function') ?
+      risk.calculateKellyStake(winRate, avgWin, avgLoss, currentBalance, 0.5) : currentBalance * 0.01;
+
     const riskStake = currentBalance * CONFIG.riskPerTrade;
-
-    // Apply diversification check
-    const maxSymbolStake = portfolio.getMaxStakeForSymbol(symbol);
+    const maxSymbolStake = (portfolio && typeof portfolio.getMaxStakeForSymbol === 'function') ?
+      portfolio.getMaxStakeForSymbol(symbol) : currentBalance * 0.1;
 
     return Math.min(kellyStake, riskStake, maxSymbolStake, currentBalance * 0.1);
   }
@@ -397,7 +381,6 @@ class DerivBot {
     try {
       logger.info(`Executing trade: ${opportunity.symbol} -> ${opportunity.prediction} ($${opportunity.stake.toFixed(2)})`);
 
-      // Create trade request
       const tradeRequest = {
         buy: 1,
         parameters: {
@@ -412,7 +395,6 @@ class DerivBot {
         }
       };
 
-      // Send trade request
       const response = await this.sendRequestAsync(tradeRequest);
 
       if (response.error) {
@@ -420,8 +402,12 @@ class DerivBot {
         return;
       }
 
-      // Record the trade
-      const tradeId = response.buy.contract_id;
+      const tradeId = response.buy?.contract_id;
+      if (!tradeId) {
+        logger.error('No contract_id returned in buy response', { response });
+        return;
+      }
+
       const tradeRecord = {
         id: tradeId,
         symbol: opportunity.symbol,
@@ -435,21 +421,14 @@ class DerivBot {
       };
 
       this.activeTrades.set(tradeId, tradeRecord);
-      db.insertTrade(
-        opportunity.symbol,
-        Date.now(),
-        opportunity.prediction,
-        opportunity.stake,
-        'pending'
-      );
+      if (db && typeof db.insertTrade === 'function') {
+        db.insertTrade(opportunity.symbol, Date.now(), opportunity.prediction, opportunity.stake, 'pending');
+      }
 
       this.lastTradeTime = Date.now();
-
-      // Subscribe to contract updates
       this.subscribeToContract(tradeId);
 
       logger.info(`Trade ${tradeId} executed successfully`);
-
     } catch (error) {
       logger.error('Trade execution error:', error);
     }
@@ -461,7 +440,6 @@ class DerivBot {
       contract_id: contractId,
       subscribe: 1
     };
-
     this.sendRequest(request);
   }
 
@@ -472,7 +450,6 @@ class DerivBot {
           maxTrades: 100,
           riskPerTrade: CONFIG.riskPerTrade
         });
-
         logger.info(`Backtest ${symbol}: Win Rate ${result.performance.winRate.toFixed(3)}, Profit Factor ${result.performance.profitFactor.toFixed(2)}`);
       }
     } catch (error) {
@@ -483,7 +460,7 @@ class DerivBot {
   async retrainModels() {
     try {
       for (const symbol of CONFIG.symbols) {
-        const ticks = db.getRecentTicks(symbol, 5000);
+        const ticks = db.getRecentTicks(symbol, 5000) || [];
         if (ticks.length >= 1000) {
           await ml.trainModel(symbol, ticks);
           logger.info(`Retrained ML model for ${symbol}`);
@@ -495,20 +472,21 @@ class DerivBot {
   }
 
   generatePerformanceReport() {
-    const stats = db.getTradeStats();
-    const riskReport = risk.generateRiskReport();
+    const statsObj = db.getTradeStats ? db.getTradeStats() : { total_trades: 0, wins: 0, total_profit: 0, avg_profit: 0 };
+    const riskReport = (risk && typeof risk.generateRiskReport === 'function') ? risk.generateRiskReport() : { portfolio: { currentDrawdown: 0 } };
 
     logger.info('=== Performance Report ===');
-    logger.info(`Total Trades: ${stats.total_trades}`);
-    logger.info(`Win Rate: ${((stats.wins / stats.total_trades) * 100).toFixed(2)}%`);
-    logger.info(`Total Profit: $${stats.total_profit.toFixed(2)}`);
-    logger.info(`Average Profit: $${stats.avg_profit.toFixed(2)}`);
+    logger.info(`Total Trades: ${statsObj.total_trades}`);
+    logger.info(`Win Rate: ${statsObj.total_trades ? ((statsObj.wins / statsObj.total_trades) * 100).toFixed(2) : '0.00'}%`);
+    logger.info(`Total Profit: $${(statsObj.total_profit || 0).toFixed(2)}`);
+    logger.info(`Average Profit: $${(statsObj.avg_profit || 0).toFixed(2)}`);
     logger.info(`Current Drawdown: ${(riskReport.portfolio.currentDrawdown * 100).toFixed(2)}%`);
     logger.info('========================');
   }
 
   handleMessage(message) {
     try {
+      // Authorization response
       if (message.msg_type === 'authorize') {
         if (message.error) {
           logger.error('Authorization failed:', message.error);
@@ -518,15 +496,15 @@ class DerivBot {
         logger.info('Successfully authorized');
         this.startTrading();
 
-      } else if (message.msg_type === 'tick') {
-        this.handleTick(message.tick);
+      } else if (message.msg_type === 'tick' || message.tick) {
+        this.handleTick(message.tick || message);
 
-      } else if (message.msg_type === 'proposal_open_contract') {
-        this.handleContractUpdate(message.proposal_open_contract);
+      } else if (message.msg_type === 'proposal_open_contract' || message.proposal_open_contract) {
+        this.handleContractUpdate(message.proposal_open_contract || message);
 
-      } else if (message.msg_type === 'buy') {
-        // Trade confirmation
-        logger.debug('Trade confirmed:', message.buy);
+      } else if (message.msg_type === 'buy' || message.buy) {
+        // buy confirmations handled in sendRequestAsync via req_id; keep debug
+        logger.debug('Buy message:', message.buy || message);
 
       } else if (message.error) {
         logger.error('API Error:', message.error);
@@ -538,20 +516,22 @@ class DerivBot {
   }
 
   handleTick(tick) {
+    if (!tick) return;
     const { symbol, quote, epoch } = tick;
     const lastDigit = parseInt(quote.toString().split('.')[1]?.[0] || '0');
 
-    // Store tick data
-    db.insertTick(symbol, epoch * 1000, quote, lastDigit);
+    if (db && typeof db.insertTick === 'function') {
+      db.insertTick(symbol, epoch * 1000, quote, lastDigit);
+    }
 
-    // Update tick buffer
     const buffer = this.tickBuffers.get(symbol) || [];
     buffer.push({ timestamp: epoch * 1000, quote, last_digit: lastDigit });
     if (buffer.length > 1000) buffer.shift();
     this.tickBuffers.set(symbol, buffer);
 
-    // Update portfolio with latest price
-    portfolio.updatePrice(symbol, quote);
+    if (portfolio && typeof portfolio.updatePrice === 'function') {
+      portfolio.updatePrice(symbol, quote);
+    }
   }
 
   handleContractUpdate(contract) {
@@ -562,21 +542,19 @@ class DerivBot {
     const trade = this.activeTrades.get(contract_id);
 
     if (status === 'won' || status === 'lost') {
-      // Trade completed
       trade.result = status;
       trade.profit = profit || 0;
       trade.payout = trade.stake + profit;
 
-      // Update database
-      db.updateTrade(contract_id, status, trade.payout, trade.profit);
+      if (db && typeof db.updateTrade === 'function') {
+        db.updateTrade(contract_id, status, trade.payout, trade.profit);
+      }
 
-      // Update risk management
-      risk.updatePortfolioStats(status === 'won', trade.stake, trade.profit);
+      if (risk && typeof risk.updatePortfolioStats === 'function') {
+        risk.updatePortfolioStats(status === 'won', trade.stake, trade.profit);
+      }
 
-      // Update performance metrics
       this.updatePerformanceMetrics(trade);
-
-      // Remove from active trades
       this.activeTrades.delete(contract_id);
 
       logger.info(`Trade ${contract_id} completed: ${status}, Profit: $${trade.profit.toFixed(2)}`);
@@ -585,90 +563,28 @@ class DerivBot {
 
   updatePerformanceMetrics(trade) {
     this.performanceMetrics.totalTrades++;
-    if (trade.result === 'won') {
-      this.performanceMetrics.wins++;
-    } else {
-      this.performanceMetrics.losses++;
-    }
-    this.performanceMetrics.totalProfit += trade.profit;
-
-    // Recalculate derived metrics
-    this.performanceMetrics.winRate = this.performanceMetrics.wins / this.performanceMetrics.totalTrades;
-    // Add more metric calculations as needed
+    if (trade.result === 'won') this.performanceMetrics.wins++;
+    else this.performanceMetrics.losses++;
+    this.performanceMetrics.totalProfit += (trade.profit || 0);
+    this.performanceMetrics.winRate = this.performanceMetrics.wins / Math.max(1, this.performanceMetrics.totalTrades);
   }
 
+  // sendRequest uses integer req_id
   sendRequest(request) {
-  if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-    const requestId = Date.now(); // FIXED: req_id must be integer
-    const fullRequest = { ...request, req_id: requestId };
-    this.ws.send(JSON.stringify(fullRequest));
-  }
-}
-
-  sendRequestAsync(request) {
-  return new Promise((resolve, reject) => {
-    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
-      reject(new Error('WebSocket not connected'));
-      return;
-    }
-
-    const requestId = Date.now(); // FIXED: req_id must be integer
-    const fullRequest = { ...request, req_id: requestId };
-
-    const timeout = setTimeout(() => {
-      reject(new Error('Request timeout'));
-    }, 10000);
-
-    const messageHandler = (data) => {
+    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+      const requestId = Number(Date.now()); // integer requirement by Deriv
+      const fullRequest = { ...request, req_id: requestId };
       try {
-        const response = JSON.parse(data.toString());
-        if (response.req_id === requestId) {
-          clearTimeout(timeout);
-          this.ws.removeListener('message', messageHandler);
-          resolve(response);
-        }
-      } catch (error) {
-        clearTimeout(timeout);
-        this.ws.removeListener('message', messageHandler);
-        reject(error);
+        this.ws.send(JSON.stringify(fullRequest));
+      } catch (err) {
+        logger.error('Failed to send request', err);
       }
-    };
-
-    this.ws.on('message', messageHandler);
-    this.ws.send(JSON.stringify(fullRequest));
-  });
-}
-
-  async shutdown() {
-    logger.info('Shutting down bot...');
-
-    if (this.ws) {
-      this.ws.close();
     }
-
-    // Save final performance metrics
-    const finalStats = db.getTradeStats();
-    db.insertPerformance(Date.now(), finalStats.total_profit, this.performanceMetrics.winRate, 0, 0, 0, finalStats.total_trades);
-
-    logger.info('Bot shutdown complete');
   }
-}
 
-// Start the bot
-const bot = new DerivBot();
-
-// Graceful shutdown
-process.on('SIGINT', async () => {
-  await bot.shutdown();
-  process.exit(0);
-});
-
-process.on('SIGTERM', async () => {
-  await bot.shutdown();
-  process.exit(0);
-});
-
-// Connect and start
-bot.connect();
-
-module.exports = bot;
+  // sendRequestAsync resolves when a response with matching numeric req_id arrives
+  sendRequestAsync(request, timeoutMs = 10000) {
+    return new Promise((resolve, reject) => {
+      if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
+        reject(new Error('WebSocket not connected'));
+       
