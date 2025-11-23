@@ -598,46 +598,46 @@ class DerivBot {
   }
 
   sendRequest(request) {
-    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-      const requestId = Math.random().toString(36).substr(2, 9);
-      const fullRequest = { ...request, req_id: requestId };
-      this.ws.send(JSON.stringify(fullRequest));
-    }
+  if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+    const requestId = Date.now(); // FIXED: req_id must be integer
+    const fullRequest = { ...request, req_id: requestId };
+    this.ws.send(JSON.stringify(fullRequest));
   }
+}
 
   sendRequestAsync(request) {
-    return new Promise((resolve, reject) => {
-      if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
-        reject(new Error('WebSocket not connected'));
-        return;
-      }
+  return new Promise((resolve, reject) => {
+    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
+      reject(new Error('WebSocket not connected'));
+      return;
+    }
 
-      const requestId = Math.random().toString(36).substr(2, 9);
-      const fullRequest = { ...request, req_id: requestId };
+    const requestId = Date.now(); // FIXED: req_id must be integer
+    const fullRequest = { ...request, req_id: requestId };
 
-      const timeout = setTimeout(() => {
-        reject(new Error('Request timeout'));
-      }, 10000);
+    const timeout = setTimeout(() => {
+      reject(new Error('Request timeout'));
+    }, 10000);
 
-      const messageHandler = (data) => {
-        try {
-          const response = JSON.parse(data.toString());
-          if (response.req_id === requestId) {
-            clearTimeout(timeout);
-            this.ws.removeListener('message', messageHandler);
-            resolve(response);
-          }
-        } catch (error) {
+    const messageHandler = (data) => {
+      try {
+        const response = JSON.parse(data.toString());
+        if (response.req_id === requestId) {
           clearTimeout(timeout);
           this.ws.removeListener('message', messageHandler);
-          reject(error);
+          resolve(response);
         }
-      };
+      } catch (error) {
+        clearTimeout(timeout);
+        this.ws.removeListener('message', messageHandler);
+        reject(error);
+      }
+    };
 
-      this.ws.on('message', messageHandler);
-      this.ws.send(JSON.stringify(fullRequest));
-    });
-  }
+    this.ws.on('message', messageHandler);
+    this.ws.send(JSON.stringify(fullRequest));
+  });
+}
 
   async shutdown() {
     logger.info('Shutting down bot...');
