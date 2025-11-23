@@ -632,3 +632,6 @@ http
     res.end("Bot running");
   })
   .listen(PORT, () => console.log(`Server running on ${PORT}`));
+// Start the bot logic AFTER the server comes up
+const bot = new DerivBot();
+bot.connect();
