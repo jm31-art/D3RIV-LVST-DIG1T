@@ -587,4 +587,39 @@ class DerivBot {
     return new Promise((resolve, reject) => {
       if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
         reject(new Error('WebSocket not connected'));
-       
+           }
+
+    const requestId = Number(Date.now());
+    const fullRequest = { ...request, req_id: requestId };
+
+    const timeout = setTimeout(() => {
+      delete this.pendingRequests[requestId];
+      reject(new Error(`Timeout waiting for response to req_id ${requestId}`));
+    }, timeoutMs);
+
+    this.pendingRequests[requestId] = (response) => {
+      clearTimeout(timeout);
+      resolve(response);
+    };
+
+    try {
+      this.ws.send(JSON.stringify(fullRequest));
+    } catch (err) {
+      clearTimeout(timeout);
+      delete this.pendingRequests[requestId];
+      reject(err);
+    }
+  });
+}
+
+// End of class
+}
+
+// Export class
+module.exports = DerivBot;
+
+// Start the bot if running directly
+if (require.main === module) {
+  const bot = new DerivBot();
+  bot.connect();
+}
