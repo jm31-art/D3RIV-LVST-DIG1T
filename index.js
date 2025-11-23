@@ -623,3 +623,12 @@ if (require.main === module) {
   const bot = new DerivBot();
   bot.connect();
 }
+const http = require("http");
+const PORT = process.env.PORT || 10000;
+
+http
+  .createServer((req, res) => {
+    res.writeHead(200);
+    res.end("Bot running");
+  })
+  .listen(PORT, () => console.log(`Server running on ${PORT}`));
