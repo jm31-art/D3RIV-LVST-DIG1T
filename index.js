@@ -2,6 +2,9 @@ require('dotenv').config();
 const WebSocket = require('ws');
 const winston = require('winston');
 const cron = require('node-cron');
+const express = require('express');
+const path = require('path');
+const config = require('./config');
 
 // Import our modules
 const db = require('./db');
@@ -39,33 +42,33 @@ if (!apiToken) {
   process.exit(1);
 }
 
-// Bot configuration
+// Bot configuration - using centralized config
 const CONFIG = {
   // Deriv API settings
-  appId: process.env.DERIV_APP_ID || '1089',
+  appId: config.DERIV_APP_ID,
   apiToken: apiToken,
-  websocketUrl: 'wss://ws.derivws.com/websockets/v3',
+  websocketUrl: config.DERIV_WEBSOCKET_URL,
 
   // Trading settings
-  symbols: ['R_10', 'R_25', 'R_50', 'R_75', 'R_100'],
-  minSamplesRequired: 10000, // Minimum samples before trading
-  minProbabilityThreshold: 50, // Realistic threshold for better accuracy
-  maxConcurrentTrades: 1, // Reduced for safer trading
-  tradeCooldown: 10000, // Increased cooldown for safety
+  symbols: config.DEFAULT_SYMBOLS,
+  minSamplesRequired: config.MIN_SAMPLES_REQUIRED,
+  minProbabilityThreshold: config.MIN_PROBABILITY_THRESHOLD,
+  maxConcurrentTrades: config.MAX_CONCURRENT_TRADES,
+  tradeCooldown: config.TRADE_COOLDOWN_MS,
 
   // Risk management
-  riskPerTrade: 0.02, // 2% risk per trade
-  maxDrawdown: 0.15, // 15% max drawdown
-  maxDailyLoss: 0.08, // 8% max daily loss
+  riskPerTrade: config.RISK_PER_TRADE,
+  maxDrawdown: config.MAX_DRAWDOWN,
+  maxDailyLoss: config.MAX_DAILY_LOSS,
 
   // ML settings
-  mlRetrainingInterval: 1800000, // 30 minutes for faster adaptation to 95%+ accuracy
-  backtestInterval: 86400000, // Daily backtest
+  mlRetrainingInterval: config.ML_RETRAINING_INTERVAL_MS,
+  backtestInterval: config.BACKTEST_INTERVAL_MS,
 
   // Strategy settings
-  strategy: 'ensemble', // 'frequency', 'markov', 'neural', 'ensemble', 'time_series'
-  useBacktestValidation: true,
-  backtestWindow: 1000 // ticks for backtest validation
+  strategy: config.DEFAULT_STRATEGY,
+  useBacktestValidation: config.USE_BACKTEST_VALIDATION,
+  backtestWindow: config.BACKTEST_WINDOW_TICKS
 };
 
 class DerivBot {
@@ -73,6 +76,7 @@ class DerivBot {
     this.ws = null;
     this.isConnected = false;
     this.authorized = false;
+    this.tradingEnabled = false;
     this.activeTrades = new Map();
     this.lastTradeTime = 0;
     this.symbolSubscriptions = new Map();
@@ -89,8 +93,15 @@ class DerivBot {
       sharpeRatio: 0
     };
 
+    // WebSocket server for UI
+    this.wss = null;
+    this.uiClients = new Set();
+
     // Initialize modules
     this.initializeModules();
+
+    // Setup WebSocket server for UI
+    this.setupWebSocketServer();
 
     // Schedule periodic tasks
     this.scheduleTasks();
@@ -111,26 +122,264 @@ class DerivBot {
     logger.info('Modules initialized successfully');
   }
 
+  setupWebSocketServer() {
+    // Setup Express server for static files
+    const app = express();
+    const server = require('http').createServer(app);
+
+    // Serve static files from public directory
+    app.use(express.static(path.join(__dirname, 'public')));
+
+    // Serve index.html for root path
+    app.get('/', (req, res) => {
+      res.sendFile(path.join(__dirname, 'public', 'index.html'));
+    });
+
+    // Setup WebSocket server for UI communication
+    this.wss = new WebSocket.Server({ server });
+
+    this.wss.on('connection', (ws) => {
+      logger.info('UI client connected');
+      this.uiClients.add(ws);
+
+      // Send initial status
+      this.sendStatusToUI();
+
+      ws.on('message', (message) => {
+        try {
+          const data = JSON.parse(message.toString());
+          this.handleUIMessage(ws, data);
+        } catch (error) {
+          logger.error('Error parsing UI message:', error);
+        }
+      });
+
+      ws.on('close', () => {
+        logger.info('UI client disconnected');
+        this.uiClients.delete(ws);
+      });
+
+      ws.on('error', (error) => {
+        logger.error('UI WebSocket error:', error);
+        this.uiClients.delete(ws);
+      });
+    });
+
+    // Start server
+    server.listen(config.WEB_SERVER_PORT, () => {
+      logger.info(`Web interface available at http://localhost:${config.WEB_SERVER_PORT}`);
+    });
+  }
+
+  handleUIMessage(ws, message) {
+    switch (message.type) {
+      case 'get_status':
+        this.sendStatusToUI();
+        break;
+      case 'update_config':
+        this.updateConfigFromUI(message);
+        break;
+      case 'start_trading':
+        this.startTrading();
+        break;
+      case 'stop_trading':
+        this.stopTrading();
+        break;
+      case 'run_backtest':
+        this.runBacktestFromUI();
+        break;
+      case 'retrain_models':
+        this.retrainModelsFromUI();
+        break;
+      default:
+        logger.warn('Unknown UI message type:', message.type);
+    }
+  }
+
+  updateConfigFromUI(config) {
+    try {
+      // Update API token if provided
+      if (config.apiToken) {
+        CONFIG.apiToken = config.apiToken;
+        process.env.DERIV_API_TOKEN = config.apiToken;
+      }
+
+      // Update other config parameters
+      if (config.strategy) CONFIG.strategy = config.strategy;
+      if (config.riskPerTrade) CONFIG.riskPerTrade = config.riskPerTrade;
+      if (config.minProbability) CONFIG.minProbabilityThreshold = config.minProbability;
+      if (config.maxDrawdown) CONFIG.maxDrawdown = config.maxDrawdown;
+      if (config.maxConcurrentTrades) CONFIG.maxConcurrentTrades = config.maxConcurrentTrades;
+      if (config.symbols) CONFIG.symbols = config.symbols;
+
+      // Update risk parameters
+      risk.updateParameters({
+        maxDrawdown: config.MAX_DRAWDOWN,
+        maxDailyLoss: config.MAX_DAILY_LOSS,
+        maxConsecutiveLosses: config.MAX_CONSECUTIVE_LOSSES
+      });
+
+      // Reinitialize portfolio with new symbols
+      portfolio.initialize(CONFIG.symbols);
+
+      logger.info('Configuration updated from UI');
+      this.sendStatusToUI();
+    } catch (error) {
+      logger.error('Error updating config from UI:', error);
+    }
+  }
+
+  runBacktestFromUI() {
+    // Run backtest asynchronously
+    setImmediate(async () => {
+      try {
+        for (const symbol of CONFIG.symbols) {
+          const result = await backtest.runBacktest(CONFIG.strategy, symbol, {
+            maxTrades: config.DEFAULT_BACKTEST_TRADES,
+            riskPerTrade: config.RISK_PER_TRADE
+          });
+
+          logger.info(`Backtest completed for ${symbol}: Win Rate ${result.performance.winRate.toFixed(3)}`);
+        }
+      } catch (error) {
+        logger.error('Backtest error from UI:', error);
+      }
+    });
+  }
+
+  retrainModelsFromUI() {
+    // Retrain models asynchronously
+    setImmediate(async () => {
+      try {
+        for (const symbol of CONFIG.symbols) {
+          const ticks = db.getRecentTicks(symbol, 5000);
+          if (ticks.length >= 1000) {
+            await ml.trainModel(symbol, ticks);
+            logger.info(`Retrained ML model for ${symbol}`);
+          }
+        }
+      } catch (error) {
+        logger.error('Model retraining error from UI:', error);
+      }
+    });
+  }
+
+  stopTrading() {
+    // Stop the trading loop by setting a flag
+    this.tradingEnabled = false;
+    logger.info('Trading stopped');
+    this.sendStatusToUI();
+  }
+
+  sendStatusToUI() {
+    const statusMessage = {
+      type: 'status',
+      authorized: this.authorized,
+      tradingEnabled: this.tradingEnabled || false,
+      connected: this.isConnected,
+      strategy: CONFIG.strategy,
+      riskPerTrade: CONFIG.riskPerTrade,
+      activeTrades: this.activeTrades.size,
+      balance: risk.portfolioStats.totalBalance
+    };
+
+    this.broadcastToUI(statusMessage);
+  }
+
+  sendPerformanceToUI() {
+    const performanceData = {
+      totalTrades: this.performanceMetrics.totalTrades,
+      winRate: this.performanceMetrics.winRate,
+      totalProfit: this.performanceMetrics.totalProfit,
+      profitFactor: this.performanceMetrics.profitFactor,
+      currentDrawdown: risk.portfolioStats.currentDrawdown,
+      sharpeRatio: this.performanceMetrics.sharpeRatio
+    };
+
+    this.broadcastToUI({
+      type: 'performance',
+      data: performanceData
+    });
+  }
+
+  sendTradeToUI(tradeData) {
+    this.broadcastToUI({
+      type: 'trade',
+      data: tradeData
+    });
+  }
+
+  sendPortfolioToUI() {
+    const portfolioData = {
+      balance: risk.portfolioStats.totalBalance,
+      activeTrades: this.activeTrades.size
+    };
+
+    this.broadcastToUI({
+      type: 'portfolio',
+      data: portfolioData
+    });
+  }
+
+  sendMLStatusToUI() {
+    const mlData = {
+      trainedModels: CONFIG.symbols.filter(symbol => ml.getModelStatus(symbol).hasNeuralNetwork).length,
+      lastRetraining: new Date().toLocaleString(), // Could track actual last retraining time
+      accuracy: 0.85, // Placeholder - would need to calculate from recent performance
+      currentStrategy: CONFIG.strategy,
+      dataProgress: Math.min(100, (db.getTickCount(CONFIG.symbols[0]) / CONFIG.minSamplesRequired) * 100)
+    };
+
+    this.broadcastToUI({
+      type: 'ml_status',
+      data: mlData
+    });
+  }
+
+  sendMarketDataToUI() {
+    // Calculate some basic market metrics
+    const marketData = {
+      bestSymbol: CONFIG.symbols[0], // Placeholder
+      sentiment: 'Neutral', // Would need sentiment analysis
+      volatility: 0.5, // Placeholder
+      correlation: 'Low' // Placeholder
+    };
+
+    this.broadcastToUI({
+      type: 'market_data',
+      data: marketData
+    });
+  }
+
+  broadcastToUI(message) {
+    const messageStr = JSON.stringify(message);
+    this.uiClients.forEach(client => {
+      if (client.readyState === WebSocket.OPEN) {
+        client.send(messageStr);
+      }
+    });
+  }
+
   scheduleTasks() {
     // Daily backtest and performance analysis
-    cron.schedule('0 2 * * *', async () => { // 2 AM daily
+    cron.schedule(`0 ${config.DAILY_BACKTEST_HOUR} * * *`, async () => {
       logger.info('Running scheduled backtest...');
       await this.runScheduledBacktest();
     });
 
     // ML model retraining
-    cron.schedule('0 */1 * * *', async () => { // Every hour
+    cron.schedule(`0 */${Math.floor(config.ML_RETRAINING_INTERVAL_MS / (1000 * 60 * 60))} * * *`, async () => {
       logger.info('Retraining ML models...');
       await this.retrainModels();
     });
 
     // Performance reporting
-    cron.schedule('0 */4 * * *', () => { // Every 4 hours
+    cron.schedule(`0 */${config.PERFORMANCE_REPORT_INTERVAL_HOURS} * * *`, () => {
       this.generatePerformanceReport();
     });
 
     // Data cleanup
-    cron.schedule('0 3 * * *', () => { // 3 AM daily
+    cron.schedule(`0 ${config.DATABASE_CLEANUP_HOUR} * * *`, () => {
       db.cleanup();
       logger.info('Database cleanup completed');
     });
@@ -139,7 +388,7 @@ class DerivBot {
   async connect() {
     try {
       logger.info('Connecting to Deriv WebSocket...');
-      this.ws = new WebSocket(CONFIG.websocketUrl + '?app_id=' + CONFIG.appId);
+      this.ws = new WebSocket(config.DERIV_WEBSOCKET_URL + '?app_id=' + config.DERIV_APP_ID);
 
       this.ws.on('open', () => {
         logger.info('WebSocket connected');
@@ -155,7 +404,7 @@ class DerivBot {
         logger.warn('WebSocket disconnected');
         this.isConnected = false;
         this.authorized = false;
-        setTimeout(() => this.connect(), 5000); // Reconnect after 5 seconds
+        setTimeout(() => this.connect(), config.WS_RECONNECT_DELAY_MS);
       });
 
       this.ws.on('error', (error) => {
@@ -164,7 +413,7 @@ class DerivBot {
 
     } catch (error) {
       logger.error('Connection error:', error);
-      setTimeout(() => this.connect(), 5000);
+      setTimeout(() => this.connect(), config.WS_RECONNECT_DELAY_MS);
     }
   }
 
@@ -189,6 +438,7 @@ class DerivBot {
     }
 
     logger.info('Starting trading bot...');
+    this.tradingEnabled = true;
 
     // Subscribe to tick data for all symbols
     for (const symbol of CONFIG.symbols) {
@@ -197,6 +447,9 @@ class DerivBot {
 
     // Start the trading loop
     this.startTradingLoop();
+
+    // Send status update to UI
+    this.sendStatusToUI();
   }
 
   async subscribeToTicks(symbol) {
@@ -219,7 +472,7 @@ class DerivBot {
   startTradingLoop() {
     // Check for trading opportunities every 2 seconds
     setInterval(async () => {
-      if (!this.isConnected || !this.authorized) return;
+      if (!this.isConnected || !this.authorized || !this.tradingEnabled) return;
       if (this.activeTrades.size >= CONFIG.maxConcurrentTrades) return;
       if (Date.now() - this.lastTradeTime < CONFIG.tradeCooldown) return;
 
@@ -362,8 +615,8 @@ class DerivBot {
     try {
       // Run quick backtest on recent data
       const backtestResult = await backtest.runBacktest(CONFIG.strategy, symbol, {
-        maxTrades: 50,
-        riskPerTrade: CONFIG.riskPerTrade
+        maxTrades: Math.floor(config.DEFAULT_BACKTEST_TRADES / 2),
+        riskPerTrade: config.RISK_PER_TRADE
       });
 
       // Check if strategy is profitable
@@ -381,16 +634,16 @@ class DerivBot {
 
     // Use Kelly Criterion
     const winRate = prediction.probability / 100;
-    const avgWin = 0.8; // 80% payout
+    const avgWin = config.PAYOUT_MULTIPLIER - 1; // Net payout (1.8 - 1 = 0.8)
     const avgLoss = 1.0; // Lose stake
 
-    const kellyStake = risk.calculateKellyStake(winRate, avgWin, avgLoss, currentBalance, 0.5);
-    const riskStake = currentBalance * CONFIG.riskPerTrade;
+    const kellyStake = risk.calculateKellyStake(winRate, avgWin, avgLoss, currentBalance, config.KELLY_FRACTION);
+    const riskStake = currentBalance * config.RISK_PER_TRADE;
 
     // Apply diversification check
     const maxSymbolStake = portfolio.getMaxStakeForSymbol(symbol);
 
-    return Math.min(kellyStake, riskStake, maxSymbolStake, currentBalance * 0.1);
+    return Math.min(kellyStake, riskStake, maxSymbolStake, currentBalance * config.MAX_STAKE_MULTIPLIER);
   }
 
   async executeTrade(opportunity) {
@@ -469,8 +722,8 @@ class DerivBot {
     try {
       for (const symbol of CONFIG.symbols) {
         const result = await backtest.runBacktest(CONFIG.strategy, symbol, {
-          maxTrades: 100,
-          riskPerTrade: CONFIG.riskPerTrade
+          maxTrades: config.DEFAULT_BACKTEST_TRADES,
+          riskPerTrade: config.RISK_PER_TRADE
         });
 
         logger.info(`Backtest ${symbol}: Win Rate ${result.performance.winRate.toFixed(3)}, Profit Factor ${result.performance.profitFactor.toFixed(2)}`);
@@ -505,6 +758,12 @@ class DerivBot {
     logger.info(`Average Profit: $${stats.avg_profit.toFixed(2)}`);
     logger.info(`Current Drawdown: ${(riskReport.portfolio.currentDrawdown * 100).toFixed(2)}%`);
     logger.info('========================');
+
+    // Send updates to UI
+    this.sendPerformanceToUI();
+    this.sendPortfolioToUI();
+    this.sendMLStatusToUI();
+    this.sendMarketDataToUI();
   }
 
   handleMessage(message) {
@@ -576,6 +835,20 @@ class DerivBot {
       // Update performance metrics
       this.updatePerformanceMetrics(trade);
 
+      // Send trade update to UI
+      this.sendTradeToUI({
+        id: contract_id,
+        symbol: trade.symbol,
+        prediction: trade.prediction,
+        stake: trade.stake,
+        result: status,
+        profit: trade.profit,
+        timestamp: trade.timestamp
+      });
+
+      // Send portfolio update to UI
+      this.sendPortfolioToUI();
+
       // Remove from active trades
       this.activeTrades.delete(contract_id);
 
@@ -617,7 +890,7 @@ class DerivBot {
 
       const timeout = setTimeout(() => {
         reject(new Error('Request timeout'));
-      }, 10000);
+      }, config.WS_REQUEST_TIMEOUT_MS);
 
       const messageHandler = (data) => {
         try {

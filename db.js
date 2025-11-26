@@ -87,8 +87,9 @@ class DatabaseManager {
     const ticks = this.cache.ticks.get(symbol);
     ticks.push({ timestamp, quote, lastDigit });
 
-    // Keep only last 10000 ticks per symbol
-    if (ticks.length > 10000) {
+    // Keep only last MAX_TICKS_PER_SYMBOL ticks per symbol
+    const config = require('./config');
+    if (ticks.length > config.MAX_TICKS_PER_SYMBOL) {
       ticks.shift();
     }
 
@@ -209,12 +210,14 @@ class DatabaseManager {
     };
   }
 
-  // Clean up old data (keep last 30 days of ticks, all trades)
+  // Clean up old data (keep last DATA_RETENTION_DAYS days of ticks, all trades)
   cleanup() {
-    const thirtyDaysAgo = Date.now() - (30 * 24 * 60 * 60 * 1000);
+    const config = require('./config');
+    const retentionMs = config.DATA_RETENTION_DAYS * 24 * 60 * 60 * 1000;
+    const cutoffTime = Date.now() - retentionMs;
 
     for (const [symbol, ticks] of this.cache.ticks) {
-      const filteredTicks = ticks.filter(tick => tick.timestamp >= thirtyDaysAgo);
+      const filteredTicks = ticks.filter(tick => tick.timestamp >= cutoffTime);
       this.cache.ticks.set(symbol, filteredTicks);
     }
 

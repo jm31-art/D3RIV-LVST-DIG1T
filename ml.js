@@ -117,7 +117,7 @@ class MLManager {
     }
   }
 
-  // Train deep neural network (simplified version without brain.js)
+  // Train deep neural network (custom implementation using statistical methods)
   async trainDeepNeuralNetwork(trainingSamples, options) {
     // Simplified neural network implementation using statistical methods
     if (!trainingSamples || trainingSamples.length < 20) return null;
@@ -448,7 +448,7 @@ class MLManager {
   }
 
   // Cross-validate model
-  crossValidate(symbol, ticks, folds = 5) {
+  crossValidate(symbol, ticks, folds = require('./config').BACKTEST_FOLDS) {
     if (!ticks || ticks.length < folds * 10) return null;
 
     const foldSize = Math.floor(ticks.length / folds);

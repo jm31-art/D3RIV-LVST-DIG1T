@@ -6,7 +6,7 @@ A sophisticated Node.js bot that trades on Deriv's last digit prediction market 
 
 ### Advanced Trading Strategies
 - **Ensemble Strategy**: Combines frequency analysis, Markov chains, neural networks, and time-series analysis
-- **Machine Learning**: Brain.js neural networks trained on historical digit patterns
+- **Machine Learning**: Custom statistical models and ensemble methods trained on historical digit patterns
 - **Markov Chain Analysis**: Predicts digit transitions based on historical sequences
 - **Time-Series Analysis**: Autocorrelation and trend analysis for pattern detection
 

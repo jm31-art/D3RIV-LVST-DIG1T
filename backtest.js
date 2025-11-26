@@ -3,6 +3,7 @@ const stats = require('./stats');
 const ml = require('./ml');
 const risk = require('./risk');
 const portfolio = require('./portfolio');
+const config = require('./config');
 
 class BacktestEngine {
   constructor() {
@@ -146,7 +147,7 @@ class BacktestEngine {
             if (nextTick) {
               const actualNextDigit = nextTick.last_digit;
               const isWin = shouldTrade.digit === actualNextDigit;
-              const payout = isWin ? stake * 1.8 : 0; // 80% payout on win
+              const payout = isWin ? stake * config.PAYOUT_MULTIPLIER : 0;
               const profit = payout - stake;
 
               // Record trade
@@ -237,13 +238,13 @@ class BacktestEngine {
   calculateBacktestStake(balance, riskPerTrade, predictedDigit, probabilities) {
     // Use Kelly criterion for position sizing
     const winRate = probabilities[predictedDigit] / 100;
-    const avgWin = 0.8; // 80% payout
+    const avgWin = config.PAYOUT_MULTIPLIER - 1; // Net payout
     const avgLoss = 1.0; // Lose stake on loss
 
-    const kellyStake = risk.calculateKellyStake(winRate, avgWin, avgLoss, balance, 0.5); // Half Kelly
+    const kellyStake = risk.calculateKellyStake(winRate, avgWin, avgLoss, balance, config.KELLY_FRACTION);
     const riskStake = balance * riskPerTrade;
 
-    return Math.min(kellyStake, riskStake, balance * 0.1); // Max 10% of balance
+    return Math.min(kellyStake, riskStake, balance * config.MAX_STAKE_MULTIPLIER);
   }
 
   // Simple time series prediction using autocorrelation
