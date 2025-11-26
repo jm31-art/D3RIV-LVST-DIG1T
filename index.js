@@ -367,8 +367,19 @@ class DerivBot {
       await this.runScheduledBacktest();
     });
 
-    // ML model retraining
-    cron.schedule(`0 */${Math.floor(config.ML_RETRAINING_INTERVAL_MS / (1000 * 60 * 60))} * * *`, async () => {
+    // ML model retraining - use minutes for intervals < 1 hour
+    const mlIntervalHours = config.ML_RETRAINING_INTERVAL_MS / (1000 * 60 * 60);
+    let mlCronExpression;
+    if (mlIntervalHours >= 1) {
+      // Use hours for intervals >= 1 hour
+      mlCronExpression = `0 */${Math.floor(mlIntervalHours)} * * *`;
+    } else {
+      // Use minutes for intervals < 1 hour
+      const mlIntervalMinutes = Math.floor(config.ML_RETRAINING_INTERVAL_MS / (1000 * 60));
+      mlCronExpression = `*/${mlIntervalMinutes} * * * *`;
+    }
+
+    cron.schedule(mlCronExpression, async () => {
       logger.info('Retraining ML models...');
       await this.retrainModels();
     });
