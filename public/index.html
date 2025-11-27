@@ -97,8 +97,11 @@
                 <h3>⚙️ Configuration</h3>
 
                 <div class="control-group">
-                    <label for="api-token">API Token:</label>
-                    <input type="password" id="api-token" placeholder="Enter your Deriv API token">
+                    <label for="api-token">
+                        🔑 Deriv API Token:
+                        <small style="display: block; color: #666; font-weight: normal;">Required to connect to your Deriv account</small>
+                    </label>
+                    <input type="password" id="api-token" placeholder="Enter your Deriv API token here">
                 </div>
 
                 <div class="control-group">
@@ -148,9 +151,15 @@
                 </div>
 
                 <div class="button-group">
-                    <button class="btn-primary" id="update-config">Update Configuration</button>
-                    <button class="btn-secondary" id="run-backtest">Run Backtest</button>
-                    <button class="btn-secondary" id="retrain-models">Retrain Models</button>
+                    <button class="btn-primary" id="update-config" title="Connect to Deriv API and apply all trading settings above">
+                        🔌 Connect & Apply Settings
+                    </button>
+                    <button class="btn-secondary" id="run-backtest" title="Test strategy performance on historical data" disabled>
+                        📊 Run Backtest
+                    </button>
+                    <button class="btn-secondary" id="retrain-models" title="Retrain AI models with latest market data" disabled>
+                        🧠 Retrain AI Models
+                    </button>
                 </div>
             </div>
         </div>

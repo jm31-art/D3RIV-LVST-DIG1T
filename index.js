@@ -527,6 +527,13 @@ class DerivBot {
 
     // Check for trading opportunities every 2 seconds
     setInterval(async () => {
+      // Auto-enable trading when connected and authorized
+      if (this.isConnected && this.authorized && !this.tradingEnabled) {
+        logger.info('Auto-enabling trading - bot is ready to trade');
+        this.tradingEnabled = true;
+        this.sendStatusToUI();
+      }
+
       // Debug logging for trading conditions
       if (!this.isConnected) {
         logger.debug('Trading loop: Not connected to WebSocket');

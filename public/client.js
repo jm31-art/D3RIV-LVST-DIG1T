@@ -4,6 +4,9 @@
 
   // DOM element references
   const connectionStatus = document.getElementById('connection-status');
+  const connectionText = document.getElementById('connection-text');
+  const tradingStatus = document.getElementById('trading-status');
+  const tradingText = document.getElementById('trading-text');
   const apiTokenInput = document.getElementById('api-token');
   const tradingStrategySelect = document.getElementById('trading-strategy');
   const riskPerTradeInput = document.getElementById('risk-per-trade');
@@ -17,14 +20,15 @@
   const runBacktestBtn = document.getElementById('run-backtest');
   const retrainModelsBtn = document.getElementById('retrain-models');
 
-  // Live trading status elements
+  // Live trading elements
   const activeTradesEl = document.getElementById('active-trades').querySelector('.metric-value');
   const currentBalanceEl = document.getElementById('current-balance').querySelector('.metric-value');
   const lastTradeTimeEl = document.getElementById('last-trade-time').querySelector('.metric-value');
   const currentStrategyDisplayEl = document.getElementById('current-strategy-display').querySelector('.metric-value');
-
-  // Current symbol display
   const currentSymbolEl = document.getElementById('current-symbol').querySelector('.metric-value');
+
+  // Live trade feed
+  const liveTradeFeed = document.getElementById('live-trade-feed');
 
   // Trade history
   const tradeListEl = document.getElementById('trade-list');
@@ -113,6 +117,8 @@
 
     if (data.authorized) {
       updateConnectionStatus('Authorized', 'status-connected');
+      // Show connection message when authorized
+      addConnectionMessage('Bot connected to websocket - API token updated');
     } else {
       updateConnectionStatus('Connected (Not Authorized)', 'status-authorizing');
     }
@@ -120,8 +126,9 @@
     // Update trading status
     if (tradingEnabled) {
       updateTradingStatus('Active', 'status-connected');
+      addConnectionMessage('Trading started automatically - bot is now active');
     } else {
-      updateTradingStatus('Stopped', 'status-disconnected');
+      updateTradingStatus('Waiting for data', 'status-disconnected');
     }
 
     // Update live trading status
@@ -157,8 +164,12 @@
     if (currentSymbolEl) currentSymbolEl.textContent = data.currentSymbol || 'R_100';
   }
 
-  // Add trade to history
+  // Add trade to history and live feed
   function addTradeToHistory(tradeData) {
+    // Add to live trade feed first (more prominent)
+    addToLiveTradeFeed(tradeData);
+
+    // Also add to trade history
     if (!tradeListEl) return;
 
     const tradeItem = document.createElement('div');
@@ -181,6 +192,39 @@
     // Keep only last 50 trades
     while (tradeListEl.children.length > 50) {
       tradeListEl.removeChild(tradeListEl.lastChild);
+    }
+  }
+
+  // Add trade to live feed
+  function addToLiveTradeFeed(tradeData) {
+    if (!liveTradeFeed) return;
+
+    const tradeItem = document.createElement('div');
+    tradeItem.className = `trade-item ${tradeData.result}`;
+
+    const timestamp = new Date(tradeData.timestamp).toLocaleTimeString();
+    const profit = tradeData.profit !== undefined ? `$${tradeData.profit.toFixed(2)}` : 'Pending';
+    const profitClass = tradeData.profit > 0 ? 'profit-positive' : tradeData.profit < 0 ? 'profit-negative' : '';
+
+    tradeItem.innerHTML = `
+      <div class="trade-symbol">${tradeData.symbol}</div>
+      <div class="trade-details">
+        ${tradeData.prediction} | $${tradeData.stake} | ${timestamp}
+      </div>
+      <div class="trade-result ${tradeData.result} ${profitClass}">${tradeData.result.toUpperCase()} (${profit})</div>
+    `;
+
+    // Insert at the top of the live feed
+    liveTradeFeed.insertBefore(tradeItem, liveTradeFeed.firstChild);
+
+    // Keep only last 20 trades in live feed
+    while (liveTradeFeed.children.length > 20) {
+      liveTradeFeed.removeChild(liveTradeFeed.lastChild);
+    }
+
+    // Update last trade time
+    if (lastTradeTimeEl) {
+      lastTradeTimeEl.textContent = timestamp;
     }
   }
 
