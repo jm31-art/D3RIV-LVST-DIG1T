@@ -523,11 +523,31 @@ class DerivBot {
   }
 
   startTradingLoop() {
+    logger.info('Trading loop started - checking for opportunities every 2 seconds');
+
     // Check for trading opportunities every 2 seconds
     setInterval(async () => {
-      if (!this.isConnected || !this.authorized || !this.tradingEnabled) return;
-      if (this.activeTrades.size >= CONFIG.maxConcurrentTrades) return;
-      if (Date.now() - this.lastTradeTime < CONFIG.tradeCooldown) return;
+      // Debug logging for trading conditions
+      if (!this.isConnected) {
+        logger.debug('Trading loop: Not connected to WebSocket');
+        return;
+      }
+      if (!this.authorized) {
+        logger.debug('Trading loop: Not authorized');
+        return;
+      }
+      if (!this.tradingEnabled) {
+        logger.debug('Trading loop: Trading not enabled');
+        return;
+      }
+      if (this.activeTrades.size >= CONFIG.maxConcurrentTrades) {
+        logger.debug(`Trading loop: Max concurrent trades reached (${this.activeTrades.size}/${CONFIG.maxConcurrentTrades})`);
+        return;
+      }
+      if (Date.now() - this.lastTradeTime < CONFIG.tradeCooldown) {
+        logger.debug('Trading loop: Trade cooldown active');
+        return;
+      }
 
       // Check risk management
       const riskCheck = risk.shouldStopTrading();
@@ -536,13 +556,18 @@ class DerivBot {
         return;
       }
 
+      logger.debug('Trading loop: Evaluating trading opportunities...');
+
       // Evaluate all symbols for trading opportunities
       for (const symbol of CONFIG.symbols) {
         try {
           const opportunity = await this.evaluateTradingOpportunity(symbol);
           if (opportunity) {
+            logger.info(`Found trading opportunity: ${symbol} -> ${opportunity.prediction} (${opportunity.probability.toFixed(2)}% confidence)`);
             await this.executeTrade(opportunity);
             break; // Only one trade per cycle
+          } else {
+            logger.debug(`No opportunity found for ${symbol}`);
           }
         } catch (error) {
           logger.error(`Error evaluating ${symbol}:`, error);
@@ -554,17 +579,26 @@ class DerivBot {
   async evaluateTradingOpportunity(symbol) {
     // Check if we have enough data
     const tickCount = db.getTickCount(symbol);
+    logger.debug(`Evaluating ${symbol}: ${tickCount} ticks available (need ${CONFIG.minSamplesRequired})`);
+
     if (tickCount < CONFIG.minSamplesRequired) {
+      logger.debug(`Not enough data for ${symbol}: ${tickCount} < ${CONFIG.minSamplesRequired}`);
       return null; // Not enough data
     }
 
     // Get recent ticks
     const recentTicks = db.getRecentTicks(symbol, 100);
-    if (recentTicks.length < 10) return null;
+    if (recentTicks.length < 10) {
+      logger.debug(`Not enough recent ticks for ${symbol}: ${recentTicks.length}`);
+      return null;
+    }
 
     // Get digit frequencies
     const { data: digitFreq, totalSamples } = db.getDigitFrequencies(symbol);
-    if (totalSamples < CONFIG.minSamplesRequired) return null;
+    if (totalSamples < CONFIG.minSamplesRequired) {
+      logger.debug(`Not enough frequency data for ${symbol}: ${totalSamples} < ${CONFIG.minSamplesRequired}`);
+      return null;
+    }
 
     // Calculate current probabilities
     const probabilities = {};
@@ -583,7 +617,15 @@ class DerivBot {
       currentDigit: recentDigits[recentDigits.length - 1]
     });
 
-    if (!prediction || prediction.probability < CONFIG.minProbabilityThreshold) {
+    if (!prediction) {
+      logger.debug(`No prediction generated for ${symbol}`);
+      return null;
+    }
+
+    logger.debug(`Prediction for ${symbol}: digit ${prediction.digit}, probability ${prediction.probability.toFixed(2)}% (threshold: ${CONFIG.minProbabilityThreshold}%)`);
+
+    if (prediction.probability < CONFIG.minProbabilityThreshold) {
+      logger.debug(`Prediction probability too low for ${symbol}: ${prediction.probability} < ${CONFIG.minProbabilityThreshold}`);
       return null;
     }
 

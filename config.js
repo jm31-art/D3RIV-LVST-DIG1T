@@ -8,8 +8,8 @@ module.exports = {
 
   // Trading settings - Volatility Indices (1s)
   DEFAULT_SYMBOLS: ['R_10', 'R_25', 'R_50', 'R_75', 'R_100'],
-  MIN_SAMPLES_REQUIRED: 10000, // Minimum samples before trading
-  MIN_PROBABILITY_THRESHOLD: 50, // Realistic threshold for better accuracy
+  MIN_SAMPLES_REQUIRED: 100, // Minimum samples before trading (reduced for faster testing)
+  MIN_PROBABILITY_THRESHOLD: 12, // Lower threshold for testing (can be increased later)
   MAX_CONCURRENT_TRADES: 1, // Reduced for safer trading
   TRADE_COOLDOWN_MS: 10000, // Increased cooldown for safety
 
