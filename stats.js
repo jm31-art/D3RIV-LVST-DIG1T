@@ -293,6 +293,25 @@ class StatsAnalyzer {
   }
 
   /**
+   * Calculate sample correlation between two arrays
+   * @param {Array<number>} array1 - First array of numbers
+   * @param {Array<number>} array2 - Second array of numbers
+   * @returns {number} Sample correlation coefficient
+   */
+  sampleCorrelation(array1, array2) {
+    if (!array1 || !array2 || array1.length !== array2.length || array1.length < 2) {
+      return 0;
+    }
+
+    try {
+      return ss.sampleCorrelation(array1, array2);
+    } catch (error) {
+      console.error('Error calculating sample correlation:', error);
+      return 0;
+    }
+  }
+
+  /**
    * Calculate statistical measures
    */
   calculateStats(digits) {
@@ -351,6 +370,36 @@ class StatsAnalyzer {
   arraysEqual(a, b) {
     if (a.length !== b.length) return false;
     return a.every((val, index) => val === b[index]);
+  }
+
+  /**
+   * Calculate mean of array
+   * @param {Array<number>} array - Array of numbers
+   * @returns {number} Mean value
+   */
+  mean(array) {
+    if (!array || array.length === 0) return 0;
+    try {
+      return ss.mean(array);
+    } catch (error) {
+      console.error('Error calculating mean:', error);
+      return 0;
+    }
+  }
+
+  /**
+   * Calculate standard deviation of array
+   * @param {Array<number>} array - Array of numbers
+   * @returns {number} Standard deviation
+   */
+  standardDeviation(array) {
+    if (!array || array.length < 2) return 0;
+    try {
+      return ss.standardDeviation(array);
+    } catch (error) {
+      console.error('Error calculating standard deviation:', error);
+      return 0;
+    }
   }
 
   /**
