@@ -26,17 +26,9 @@
         <div class="dashboard">
             <div class="card">
                 <h3>💰 Account Overview</h3>
-                <div class="metric" id="current-balance">
-                    <span class="metric-label">Current Balance</span>
-                    <span class="metric-value">$1000.00</span>
-                </div>
                 <div class="metric" id="total-profit">
                     <span class="metric-label">Total Profit</span>
                     <span class="metric-value">$0.00</span>
-                </div>
-                <div class="metric positive" id="win-rate">
-                    <span class="metric-label">Win Rate</span>
-                    <span class="metric-value">0.00%</span>
                 </div>
                 <div class="metric" id="total-trades">
                     <span class="metric-label">Total Trades</span>
@@ -50,17 +42,9 @@
                     <span class="metric-label">Active Trades</span>
                     <span class="metric-value">0</span>
                 </div>
-                <div class="metric" id="last-trade-time">
-                    <span class="metric-label">Last Trade</span>
-                    <span class="metric-value">Never</span>
-                </div>
-                <div class="metric" id="current-strategy-display">
-                    <span class="metric-label">Current Strategy</span>
-                    <span class="metric-value">Ensemble</span>
-                </div>
                 <div class="metric" id="current-symbol">
                     <span class="metric-label">Trading Symbol</span>
-                    <span class="metric-value">R_100</span>
+                    <span class="metric-value">None</span>
                 </div>
             </div>
         </div>
@@ -153,12 +137,6 @@
                 <div class="button-group">
                     <button class="btn-primary" id="update-config" title="Connect to Deriv API and apply all trading settings above">
                         🔌 Connect & Apply Settings
-                    </button>
-                    <button class="btn-secondary" id="run-backtest" title="Test strategy performance on historical data" disabled>
-                        📊 Run Backtest
-                    </button>
-                    <button class="btn-secondary" id="retrain-models" title="Retrain AI models with latest market data" disabled>
-                        🧠 Retrain AI Models
                     </button>
                 </div>
             </div>

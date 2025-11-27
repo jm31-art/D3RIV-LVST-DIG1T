@@ -7,7 +7,7 @@ module.exports = {
   DERIV_WEBSOCKET_URL: 'wss://ws.derivws.com/websockets/v3',
 
   // Trading settings - Volatility Indices (1s)
-  DEFAULT_SYMBOLS: ['R_10', 'R_25', 'R_50', 'R_75', 'R_100'],
+  DEFAULT_SYMBOLS: ['R_10', 'R_25', 'R_50', 'R_75', 'R_100'], // 10, 25, 50, 75, 100 index (1s)
   MIN_SAMPLES_REQUIRED: 10, // Minimum samples before trading (very fast start)
   MIN_PROBABILITY_THRESHOLD: 12, // Lower threshold for testing (can be increased later)
   MAX_CONCURRENT_TRADES: 1, // Reduced for safer trading

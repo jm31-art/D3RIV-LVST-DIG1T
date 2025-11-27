@@ -17,14 +17,9 @@
   const updateConfigBtn = document.getElementById('update-config');
   const startTradingBtn = document.getElementById('start-trading');
   const stopTradingBtn = document.getElementById('stop-trading');
-  const runBacktestBtn = document.getElementById('run-backtest');
-  const retrainModelsBtn = document.getElementById('retrain-models');
 
   // Live trading elements
   const activeTradesEl = document.getElementById('active-trades').querySelector('.metric-value');
-  const currentBalanceEl = document.getElementById('current-balance').querySelector('.metric-value');
-  const lastTradeTimeEl = document.getElementById('last-trade-time').querySelector('.metric-value');
-  const currentStrategyDisplayEl = document.getElementById('current-strategy-display').querySelector('.metric-value');
   const currentSymbolEl = document.getElementById('current-symbol').querySelector('.metric-value');
 
   // Live trade feed
@@ -117,8 +112,6 @@
 
     if (data.authorized) {
       updateConnectionStatus('Authorized', 'status-connected');
-      // Show connection message when authorized
-      addConnectionMessage('Bot connected to websocket - API token updated');
     } else {
       updateConnectionStatus('Connected (Not Authorized)', 'status-authorizing');
     }
@@ -126,9 +119,8 @@
     // Update trading status
     if (tradingEnabled) {
       updateTradingStatus('Active', 'status-connected');
-      addConnectionMessage('Trading started automatically - bot is now active');
     } else {
-      updateTradingStatus('Waiting for data', 'status-disconnected');
+      updateTradingStatus('Ready', 'status-disconnected');
     }
 
     // Update live trading status
@@ -158,10 +150,7 @@
   // Update live trading status
   function updateLiveTradingStatus(data) {
     if (activeTradesEl) activeTradesEl.textContent = data.activeTrades || 0;
-    if (currentBalanceEl) currentBalanceEl.textContent = '$' + (data.balance || 1000).toFixed(2);
-    if (lastTradeTimeEl) lastTradeTimeEl.textContent = data.lastTradeTime || 'Never';
-    if (currentStrategyDisplayEl) currentStrategyDisplayEl.textContent = data.strategy || 'Ensemble';
-    if (currentSymbolEl) currentSymbolEl.textContent = data.currentSymbol || 'R_100';
+    if (currentSymbolEl) currentSymbolEl.textContent = data.currentSymbol || 'None';
   }
 
   // Add trade to history and live feed
@@ -206,12 +195,16 @@
     const profit = tradeData.profit !== undefined ? `$${tradeData.profit.toFixed(2)}` : 'Pending';
     const profitClass = tradeData.profit > 0 ? 'profit-positive' : tradeData.profit < 0 ? 'profit-negative' : '';
 
+    // Show signal information and result
+    const signalInfo = tradeData.confidence ? `Signal: ${tradeData.prediction} (${(tradeData.confidence * 100).toFixed(1)}% confidence)` : `Signal: ${tradeData.prediction}`;
+    const resultText = tradeData.result === 'won' ? `✅ WIN (+${profit})` : tradeData.result === 'lost' ? `❌ LOSS (${profit})` : '⏳ PENDING';
+
     tradeItem.innerHTML = `
       <div class="trade-symbol">${tradeData.symbol}</div>
       <div class="trade-details">
-        ${tradeData.prediction} | $${tradeData.stake} | ${timestamp}
+        ${signalInfo} | Stake: $${tradeData.stake} | ${timestamp}
       </div>
-      <div class="trade-result ${tradeData.result} ${profitClass}">${tradeData.result.toUpperCase()} (${profit})</div>
+      <div class="trade-result ${tradeData.result} ${profitClass}">${resultText}</div>
     `;
 
     // Insert at the top of the live feed
@@ -220,11 +213,6 @@
     // Keep only last 20 trades in live feed
     while (liveTradeFeed.children.length > 20) {
       liveTradeFeed.removeChild(liveTradeFeed.lastChild);
-    }
-
-    // Update last trade time
-    if (lastTradeTimeEl) {
-      lastTradeTimeEl.textContent = timestamp;
     }
   }
 
@@ -289,13 +277,11 @@
 
       if (isConnected) {
         ws.send(JSON.stringify(config));
-        // Update local display immediately
-        if (currentStrategyDisplayEl) currentStrategyDisplayEl.textContent = config.strategy;
-        // Show connection message if API token was provided
+        // Show connection message only after manual connect button press
         if (config.apiToken) {
-          addConnectionMessage('Bot connected to websocket - API token updated');
+          addConnectionMessage('🔌 Bot connected to websocket - API token updated and authorized');
         }
-        alert('Configuration updated successfully!');
+        alert('Configuration updated and connected successfully!');
       } else {
         alert('Not connected to bot backend');
       }
@@ -326,27 +312,6 @@
     });
   }
 
-  if (runBacktestBtn) {
-    runBacktestBtn.addEventListener('click', () => {
-      if (isConnected) {
-        ws.send(JSON.stringify({ type: 'run_backtest' }));
-        alert('Backtest started. Results will be available shortly.');
-      } else {
-        alert('Not connected to bot backend');
-      }
-    });
-  }
-
-  if (retrainModelsBtn) {
-    retrainModelsBtn.addEventListener('click', () => {
-      if (isConnected) {
-        ws.send(JSON.stringify({ type: 'retrain_models' }));
-        alert('Model retraining started. This may take several minutes.');
-      } else {
-        alert('Not connected to bot backend');
-      }
-    });
-  }
 
   // Request initial status on load
   setTimeout(() => {

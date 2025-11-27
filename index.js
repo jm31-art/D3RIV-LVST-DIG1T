@@ -280,7 +280,7 @@ class DerivBot {
       strategy: CONFIG.strategy,
       riskPerTrade: CONFIG.riskPerTrade,
       activeTrades: this.activeTrades.size,
-      balance: risk.portfolioStats.totalBalance
+      currentSymbol: CONFIG.symbols[0] || 'None' // Show first symbol as current
     };
 
     this.broadcastToUI(statusMessage);
@@ -303,9 +303,16 @@ class DerivBot {
   }
 
   sendTradeToUI(tradeData) {
+    // Add signal information for live feed
+    const enhancedTradeData = {
+      ...tradeData,
+      confidence: tradeData.confidence || 0,
+      strategy: tradeData.strategy || CONFIG.strategy
+    };
+
     this.broadcastToUI({
       type: 'trade',
-      data: tradeData
+      data: enhancedTradeData
     });
   }
 
@@ -451,7 +458,7 @@ class DerivBot {
     };
 
     this.sendRequest(authRequest);
-    logger.info('Authorization request sent - will start trading automatically when authorized');
+    logger.info('Authorization request sent - waiting for manual trading start');
   }
 
   async fetchAccountBalance() {
@@ -490,7 +497,7 @@ class DerivBot {
       return;
     }
 
-    logger.info('Starting trading bot...');
+    logger.info('🚀 Starting trading bot manually...');
     this.tradingEnabled = true;
 
     // Subscribe to tick data for all symbols
@@ -501,8 +508,10 @@ class DerivBot {
     // Start the trading loop
     this.startTradingLoop();
 
-    // Send status update to UI
+    // Send status update to UI with current symbol
     this.sendStatusToUI();
+
+    logger.info(`Trading started - monitoring ${CONFIG.symbols.length} symbols`);
   }
 
   async subscribeToTicks(symbol) {
@@ -523,18 +532,11 @@ class DerivBot {
   }
 
   startTradingLoop() {
-    logger.info('Trading loop started - checking for opportunities every 2 seconds');
+    logger.info('Trading loop initialized - waiting for manual start command');
 
     // Check for trading opportunities every 2 seconds
     setInterval(async () => {
-      // Auto-enable trading when connected and authorized
-      if (this.isConnected && this.authorized && !this.tradingEnabled) {
-        logger.info('Auto-enabling trading - bot is ready to trade');
-        this.tradingEnabled = true;
-        this.sendStatusToUI();
-      }
-
-      // Debug logging for trading conditions
+      // Only trade if manually enabled by user
       if (!this.isConnected) {
         logger.debug('Trading loop: Not connected to WebSocket');
         return;
@@ -544,7 +546,7 @@ class DerivBot {
         return;
       }
       if (!this.tradingEnabled) {
-        logger.debug('Trading loop: Trading not enabled');
+        logger.debug('Trading loop: Trading not enabled (waiting for manual start)');
         return;
       }
       if (this.activeTrades.size >= CONFIG.maxConcurrentTrades) {
@@ -916,13 +918,10 @@ class DerivBot {
           return;
         }
         this.authorized = true;
-        logger.info('Successfully authorized - fetching account balance and starting trading automatically');
+        logger.info('Successfully authorized - waiting for manual trading start command');
 
-        // Fetch account balance
+        // Fetch account balance (but don't start trading)
         this.fetchAccountBalance();
-
-        // Auto-start trading when authorized
-        setTimeout(() => this.startTrading(), 1000);
 
       } else if (message.msg_type === 'tick') {
         this.handleTick(message.tick);
