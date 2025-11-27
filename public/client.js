@@ -30,29 +30,8 @@
   // Live trade feed
   const liveTradeFeed = document.getElementById('live-trade-feed');
 
-  // Performance metrics elements
-  const totalTradesEl = document.getElementById('total-trades').querySelector('.metric-value');
-  const winRateEl = document.getElementById('win-rate').querySelector('.metric-value');
-  const totalProfitEl = document.getElementById('total-profit').querySelector('.metric-value');
-  const profitFactorEl = document.getElementById('profit-factor').querySelector('.metric-value');
-  const currentDrawdownEl = document.getElementById('current-drawdown').querySelector('.metric-value');
-  const sharpeRatioEl = document.getElementById('sharpe-ratio').querySelector('.metric-value');
-
-  // Risk management elements
-  const portfolioBalanceEl = document.getElementById('portfolio-balance').querySelector('.metric-value');
-
-  // AI/ML status elements
-  const mlModelsTrainedEl = document.getElementById('ml-models-trained').querySelector('.metric-value');
-  const lastRetrainingEl = document.getElementById('last-retraining').querySelector('.metric-value');
-  const predictionAccuracyEl = document.getElementById('prediction-accuracy').querySelector('.metric-value');
-  const currentStrategyEl = document.getElementById('current-strategy').querySelector('.metric-value');
-  const dataProgressEl = document.getElementById('data-progress');
-
-  // Market analysis elements
-  const bestSymbolEl = document.getElementById('best-symbol').querySelector('.metric-value');
-  const marketSentimentEl = document.getElementById('market-sentiment').querySelector('.metric-value');
-  const volatilityIndexEl = document.getElementById('volatility-index').querySelector('.metric-value');
-  const correlationMatrixEl = document.getElementById('correlation-matrix').querySelector('.metric-value');
+  // Current symbol display
+  const currentSymbolEl = document.getElementById('current-symbol').querySelector('.metric-value');
 
   // Trade history
   const tradeListEl = document.getElementById('trade-list');
@@ -101,12 +80,6 @@
         break;
       case 'portfolio':
         updatePortfolioInfo(message.data);
-        break;
-      case 'ml_status':
-        updateMLStatus(message.data);
-        break;
-      case 'market_data':
-        updateMarketData(message.data);
         break;
       case 'error':
         showError(message.message);
@@ -163,9 +136,6 @@
     if (totalTradesEl) totalTradesEl.textContent = data.totalTrades || 0;
     if (winRateEl) winRateEl.textContent = data.winRate ? (data.winRate * 100).toFixed(2) + '%' : '0.00%';
     if (totalProfitEl) totalProfitEl.textContent = data.totalProfit ? '$' + data.totalProfit.toFixed(2) : '$0.00';
-    if (profitFactorEl) profitFactorEl.textContent = data.profitFactor ? data.profitFactor.toFixed(2) : '0.00';
-    if (currentDrawdownEl) currentDrawdownEl.textContent = data.currentDrawdown ? (data.currentDrawdown * 100).toFixed(2) + '%' : '0.00%';
-    if (sharpeRatioEl) sharpeRatioEl.textContent = data.sharpeRatio ? data.sharpeRatio.toFixed(2) : '0.00';
   }
 
   // Update portfolio information
@@ -184,22 +154,6 @@
     if (riskPerTradeDisplayEl) riskPerTradeDisplayEl.textContent = data.riskPerTrade ? (data.riskPerTrade * 100).toFixed(2) + '%' : '2.00%';
   }
 
-  // Update ML status
-  function updateMLStatus(data) {
-    if (mlModelsTrainedEl) mlModelsTrainedEl.textContent = `${data.trainedModels || 0}/5`;
-    if (lastRetrainingEl) lastRetrainingEl.textContent = data.lastRetraining || 'Never';
-    if (predictionAccuracyEl) predictionAccuracyEl.textContent = data.accuracy ? (data.accuracy * 100).toFixed(2) + '%' : '0.00%';
-    if (currentStrategyEl) currentStrategyEl.textContent = data.currentStrategy || 'Ensemble';
-    if (dataProgressEl) dataProgressEl.style.width = `${data.dataProgress || 0}%`;
-  }
-
-  // Update market data
-  function updateMarketData(data) {
-    if (bestSymbolEl) bestSymbolEl.textContent = data.bestSymbol || 'None';
-    if (marketSentimentEl) marketSentimentEl.textContent = data.sentiment || 'Neutral';
-    if (volatilityIndexEl) volatilityIndexEl.textContent = data.volatility ? data.volatility.toFixed(2) : '0.00';
-    if (correlationMatrixEl) correlationMatrixEl.textContent = data.correlation || 'Low';
-  }
 
   // Add trade to live feed
   function addToLiveTradeFeed(tradeData) {

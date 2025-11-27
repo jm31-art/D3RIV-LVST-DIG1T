@@ -6,7 +6,7 @@ module.exports = {
   DERIV_APP_ID: process.env.DERIV_APP_ID || '1089',
   DERIV_WEBSOCKET_URL: 'wss://ws.derivws.com/websockets/v3',
 
-  // Trading settings
+  // Trading settings - Volatility Indices (1s)
   DEFAULT_SYMBOLS: ['R_10', 'R_25', 'R_50', 'R_75', 'R_100'],
   MIN_SAMPLES_REQUIRED: 10000, // Minimum samples before trading
   MIN_PROBABILITY_THRESHOLD: 50, // Realistic threshold for better accuracy

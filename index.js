@@ -439,7 +439,7 @@ class DerivBot {
     };
 
     this.sendRequest(authRequest);
-    logger.info('Authorization request sent');
+    logger.info('Authorization request sent - will start trading automatically when authorized');
   }
 
   async startTrading() {
@@ -773,8 +773,6 @@ class DerivBot {
     // Send updates to UI
     this.sendPerformanceToUI();
     this.sendPortfolioToUI();
-    this.sendMLStatusToUI();
-    this.sendMarketDataToUI();
   }
 
   handleMessage(message) {
@@ -785,8 +783,9 @@ class DerivBot {
           return;
         }
         this.authorized = true;
-        logger.info('Successfully authorized');
-        this.startTrading();
+        logger.info('Successfully authorized - starting trading automatically');
+        // Auto-start trading when authorized
+        setTimeout(() => this.startTrading(), 1000);
 
       } else if (message.msg_type === 'tick') {
         this.handleTick(message.tick);
