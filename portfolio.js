@@ -6,6 +6,7 @@ class PortfolioManager {
   constructor() {
     this.positions = new Map(); // symbol -> positions array
     this.correlationMatrix = new Map(); // symbol pair -> correlation
+    this.latestPrices = new Map(); // symbol -> latest price
     this.portfolioStats = {
       totalValue: 0,
       totalAllocated: 0,
@@ -392,10 +393,25 @@ class PortfolioManager {
     };
   }
 
+  // Update latest price for a symbol
+  updatePrice(symbol, price) {
+    this.latestPrices.set(symbol, {
+      price: parseFloat(price),
+      timestamp: Date.now()
+    });
+  }
+
+  // Get latest price for a symbol
+  getLatestPrice(symbol) {
+    const priceData = this.latestPrices.get(symbol);
+    return priceData ? priceData.price : null;
+  }
+
   // ✅ NEW initialize() method (correct location inside class)
   initialize(symbols = []) {
     this.positions = new Map();
     this.correlationMatrix = new Map();
+    this.latestPrices = new Map();
     this.portfolioStats = {
       totalValue: 0,
       totalAllocated: 0,
