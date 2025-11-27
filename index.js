@@ -389,6 +389,18 @@ class DerivBot {
       this.generatePerformanceReport();
     });
 
+    // Autonomous backtesting (run every 6 hours)
+    cron.schedule('0 */6 * * *', async () => {
+      logger.info('Running autonomous backtest...');
+      await this.runAutonomousBacktest();
+    });
+
+    // Autonomous model retraining (run every 12 hours)
+    cron.schedule('0 */12 * * *', async () => {
+      logger.info('Running autonomous model retraining...');
+      await this.runAutonomousRetraining();
+    });
+
     // Data cleanup
     cron.schedule(`0 ${config.DATABASE_CLEANUP_HOUR} * * *`, () => {
       db.cleanup();
@@ -440,6 +452,36 @@ class DerivBot {
 
     this.sendRequest(authRequest);
     logger.info('Authorization request sent - will start trading automatically when authorized');
+  }
+
+  async fetchAccountBalance() {
+    try {
+      const balanceRequest = {
+        balance: 1,
+        account: 'all' // Get balance for all accounts
+      };
+
+      const response = await this.sendRequestAsync(balanceRequest);
+
+      if (response.error) {
+        logger.error('Failed to fetch account balance:', response.error);
+        return;
+      }
+
+      // Update portfolio with real balance
+      if (response.balance && response.balance.balance) {
+        const realBalance = parseFloat(response.balance.balance);
+        risk.portfolioStats.totalBalance = realBalance;
+        risk.portfolioStats.peakBalance = Math.max(risk.portfolioStats.peakBalance, realBalance);
+
+        logger.info(`Fetched real account balance: $${realBalance.toFixed(2)}`);
+
+        // Send updated balance to UI
+        this.sendPortfolioToUI();
+      }
+    } catch (error) {
+      logger.error('Error fetching account balance:', error);
+    }
   }
 
   async startTrading() {
@@ -758,6 +800,48 @@ class DerivBot {
     }
   }
 
+  async runAutonomousBacktest() {
+    try {
+      for (const symbol of CONFIG.symbols) {
+        const result = await backtest.runBacktest(CONFIG.strategy, symbol, {
+          maxTrades: config.DEFAULT_BACKTEST_TRADES,
+          riskPerTrade: config.RISK_PER_TRADE
+        });
+
+        logger.info(`Autonomous backtest ${symbol}: Win Rate ${result.performance.winRate.toFixed(3)}`);
+
+        // Send results to UI if connected
+        this.broadcastToUI({
+          type: 'backtest_result',
+          symbol,
+          performance: result.performance
+        });
+      }
+    } catch (error) {
+      logger.error('Autonomous backtest error:', error);
+    }
+  }
+
+  async runAutonomousRetraining() {
+    try {
+      for (const symbol of CONFIG.symbols) {
+        const ticks = db.getRecentTicks(symbol, 5000);
+        if (ticks.length >= 1000) {
+          await ml.trainModel(symbol, ticks);
+          logger.info(`Autonomous retraining completed for ${symbol}`);
+
+          // Send update to UI if connected
+          this.broadcastToUI({
+            type: 'retraining_complete',
+            symbol
+          });
+        }
+      }
+    } catch (error) {
+      logger.error('Autonomous retraining error:', error);
+    }
+  }
+
   generatePerformanceReport() {
     const stats = db.getTradeStats();
     const riskReport = risk.generateRiskReport();
@@ -783,7 +867,11 @@ class DerivBot {
           return;
         }
         this.authorized = true;
-        logger.info('Successfully authorized - starting trading automatically');
+        logger.info('Successfully authorized - fetching account balance and starting trading automatically');
+
+        // Fetch account balance
+        this.fetchAccountBalance();
+
         // Auto-start trading when authorized
         setTimeout(() => this.startTrading(), 1000);
 
@@ -792,6 +880,10 @@ class DerivBot {
 
       } else if (message.msg_type === 'proposal_open_contract') {
         this.handleContractUpdate(message.proposal_open_contract);
+
+      } else if (message.msg_type === 'balance') {
+        // Balance update
+        logger.debug('Balance received:', message.balance);
 
       } else if (message.msg_type === 'buy') {
         // Trade confirmation
@@ -882,7 +974,7 @@ class DerivBot {
 
   sendRequest(request) {
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-      const requestId = Math.random().toString(36).substr(2, 9);
+      const requestId = Math.floor(Math.random() * 1000000) + 1; // Generate integer req_id
       const fullRequest = { ...request, req_id: requestId };
       this.ws.send(JSON.stringify(fullRequest));
     }
@@ -895,7 +987,7 @@ class DerivBot {
         return;
       }
 
-      const requestId = Math.random().toString(36).substr(2, 9);
+      const requestId = Math.floor(Math.random() * 1000000) + 1; // Generate integer req_id
       const fullRequest = { ...request, req_id: requestId };
 
       const timeout = setTimeout(() => {

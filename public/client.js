@@ -4,9 +4,6 @@
 
   // DOM element references
   const connectionStatus = document.getElementById('connection-status');
-  const connectionText = document.getElementById('connection-text');
-  const tradingStatus = document.getElementById('trading-status');
-  const tradingText = document.getElementById('trading-text');
   const apiTokenInput = document.getElementById('api-token');
   const tradingStrategySelect = document.getElementById('trading-strategy');
   const riskPerTradeInput = document.getElementById('risk-per-trade');
@@ -25,10 +22,6 @@
   const currentBalanceEl = document.getElementById('current-balance').querySelector('.metric-value');
   const lastTradeTimeEl = document.getElementById('last-trade-time').querySelector('.metric-value');
   const currentStrategyDisplayEl = document.getElementById('current-strategy-display').querySelector('.metric-value');
-  const riskPerTradeDisplayEl = document.getElementById('risk-per-trade-display').querySelector('.metric-value');
-
-  // Live trade feed
-  const liveTradeFeed = document.getElementById('live-trade-feed');
 
   // Current symbol display
   const currentSymbolEl = document.getElementById('current-symbol').querySelector('.metric-value');
@@ -80,6 +73,12 @@
         break;
       case 'portfolio':
         updatePortfolioInfo(message.data);
+        break;
+      case 'backtest_result':
+        addConnectionMessage(`Autonomous backtest completed for ${message.symbol}: Win Rate ${(message.performance.winRate * 100).toFixed(2)}%`);
+        break;
+      case 'retraining_complete':
+        addConnectionMessage(`Autonomous model retraining completed for ${message.symbol}`);
         break;
       case 'error':
         showError(message.message);
@@ -133,14 +132,18 @@
 
   // Update performance metrics display
   function updatePerformanceMetrics(data) {
-    if (totalTradesEl) totalTradesEl.textContent = data.totalTrades || 0;
-    if (winRateEl) winRateEl.textContent = data.winRate ? (data.winRate * 100).toFixed(2) + '%' : '0.00%';
-    if (totalProfitEl) totalProfitEl.textContent = data.totalProfit ? '$' + data.totalProfit.toFixed(2) : '$0.00';
+    // Only update elements that exist in simplified UI
+    const totalTradesEl = document.getElementById('total-trades');
+    const winRateEl = document.getElementById('win-rate');
+    const totalProfitEl = document.getElementById('total-profit');
+
+    if (totalTradesEl) totalTradesEl.querySelector('.metric-value').textContent = data.totalTrades || 0;
+    if (winRateEl) winRateEl.querySelector('.metric-value').textContent = data.winRate ? (data.winRate * 100).toFixed(2) + '%' : '0.00%';
+    if (totalProfitEl) totalProfitEl.querySelector('.metric-value').textContent = data.totalProfit ? '$' + data.totalProfit.toFixed(2) : '$0.00';
   }
 
   // Update portfolio information
   function updatePortfolioInfo(data) {
-    if (portfolioBalanceEl) portfolioBalanceEl.textContent = '$' + (data.balance || 1000).toFixed(2);
     if (activeTradesEl) activeTradesEl.textContent = data.activeTrades || 0;
     if (currentBalanceEl) currentBalanceEl.textContent = '$' + (data.balance || 1000).toFixed(2);
   }
@@ -151,48 +154,11 @@
     if (currentBalanceEl) currentBalanceEl.textContent = '$' + (data.balance || 1000).toFixed(2);
     if (lastTradeTimeEl) lastTradeTimeEl.textContent = data.lastTradeTime || 'Never';
     if (currentStrategyDisplayEl) currentStrategyDisplayEl.textContent = data.strategy || 'Ensemble';
-    if (riskPerTradeDisplayEl) riskPerTradeDisplayEl.textContent = data.riskPerTrade ? (data.riskPerTrade * 100).toFixed(2) + '%' : '2.00%';
-  }
-
-
-  // Add trade to live feed
-  function addToLiveTradeFeed(tradeData) {
-    if (!liveTradeFeed) return;
-
-    const tradeItem = document.createElement('div');
-    tradeItem.className = `trade-item ${tradeData.result}`;
-
-    const timestamp = new Date(tradeData.timestamp).toLocaleTimeString();
-    const profit = tradeData.profit !== undefined ? `$${tradeData.profit.toFixed(2)}` : 'Pending';
-    const profitClass = tradeData.profit > 0 ? 'profit-positive' : tradeData.profit < 0 ? 'profit-negative' : '';
-
-    tradeItem.innerHTML = `
-      <div class="trade-symbol">${tradeData.symbol}</div>
-      <div class="trade-details">
-        ${tradeData.prediction} | $${tradeData.stake} | ${timestamp}
-      </div>
-      <div class="trade-result ${tradeData.result} ${profitClass}">${tradeData.result.toUpperCase()} (${profit})</div>
-    `;
-
-    // Insert at the top of the feed
-    liveTradeFeed.insertBefore(tradeItem, liveTradeFeed.firstChild);
-
-    // Keep only last 20 trades in live feed
-    while (liveTradeFeed.children.length > 20) {
-      liveTradeFeed.removeChild(liveTradeFeed.lastChild);
-    }
-
-    // Update last trade time
-    if (lastTradeTimeEl) {
-      lastTradeTimeEl.textContent = timestamp;
-    }
+    if (currentSymbolEl) currentSymbolEl.textContent = data.currentSymbol || 'R_100';
   }
 
   // Add trade to history
   function addTradeToHistory(tradeData) {
-    // Add to live feed first
-    addToLiveTradeFeed(tradeData);
-
     if (!tradeListEl) return;
 
     const tradeItem = document.createElement('div');
@@ -234,11 +200,33 @@
     }
   }
 
+  // Add connection message to trade history
+  function addConnectionMessage(message) {
+    if (!tradeListEl) return;
+
+    const messageItem = document.createElement('div');
+    messageItem.className = 'trade-item connection';
+
+    const timestamp = new Date().toLocaleString();
+    messageItem.innerHTML = `
+      <div class="trade-symbol">System</div>
+      <div class="trade-details">${message}</div>
+      <div class="trade-result connection">${timestamp}</div>
+    `;
+
+    // Insert at the top of the list
+    tradeListEl.insertBefore(messageItem, tradeListEl.firstChild);
+
+    // Keep only last 50 items
+    while (tradeListEl.children.length > 50) {
+      tradeListEl.removeChild(tradeListEl.lastChild);
+    }
+  }
+
   // Show error message
   function showError(message) {
     console.error('Bot error:', message);
-    // Could implement a toast notification system here
-    alert(`Error: ${message}`);
+    addConnectionMessage(`Error: ${message}`);
   }
 
   // Event listeners for UI controls
@@ -259,7 +247,10 @@
         ws.send(JSON.stringify(config));
         // Update local display immediately
         if (currentStrategyDisplayEl) currentStrategyDisplayEl.textContent = config.strategy;
-        if (riskPerTradeDisplayEl) riskPerTradeDisplayEl.textContent = (config.riskPerTrade * 100).toFixed(2) + '%';
+        // Show connection message if API token was provided
+        if (config.apiToken) {
+          addConnectionMessage('Bot connected to websocket - API token updated');
+        }
         alert('Configuration updated successfully!');
       } else {
         alert('Not connected to bot backend');
