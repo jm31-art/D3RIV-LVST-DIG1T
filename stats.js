@@ -403,6 +403,114 @@ class StatsAnalyzer {
   }
 
   /**
+   * Detect market regime (trend vs range)
+   * @param {Array<number>} digits - Array of last digits
+   * @param {number} window - Analysis window size
+   * @returns {Object} Market regime analysis
+   */
+  detectMarketRegime(digits, window = 100) {
+    if (digits.length < window) {
+      return { regime: 'unknown', confidence: 0 };
+    }
+
+    const recent = digits.slice(-window);
+
+    // Calculate trend strength using linear regression
+    const x = Array.from({ length: recent.length }, (_, i) => i);
+    const regression = ss.linearRegression(x.map((val, idx) => [val, recent[idx]]));
+    const slope = regression.m;
+    const rSquared = this.calculateRSquared(recent, x, regression);
+
+    // Calculate volatility (standard deviation)
+    const volatility = ss.standardDeviation(recent);
+
+    // Calculate average range (high - low in windows)
+    const ranges = [];
+    for (let i = 0; i < recent.length - 10; i += 10) {
+      const slice = recent.slice(i, i + 10);
+      ranges.push(Math.max(...slice) - Math.min(...slice));
+    }
+    const avgRange = ranges.length > 0 ? ss.mean(ranges) : 0;
+
+    // Determine regime based on slope and volatility
+    let regime = 'sideways';
+    let confidence = 0;
+
+    // Strong trend: high slope and high R-squared
+    if (Math.abs(slope) > 0.01 && rSquared > 0.3) {
+      regime = slope > 0 ? 'uptrend' : 'downtrend';
+      confidence = Math.min(1.0, rSquared * 2);
+    }
+    // Ranging market: low slope, moderate volatility
+    else if (volatility > 1.5 && avgRange > 3) {
+      regime = 'ranging';
+      confidence = Math.min(1.0, volatility / 3);
+    }
+
+    return {
+      regime,
+      confidence,
+      slope,
+      rSquared,
+      volatility,
+      avgRange,
+      trendStrength: Math.abs(slope) * rSquared
+    };
+  }
+
+  /**
+   * Calculate R-squared for regression
+   */
+  calculateRSquared(y, x, regression) {
+    const yMean = ss.mean(y);
+    const totalSumSquares = y.reduce((sum, val) => sum + Math.pow(val - yMean, 2), 0);
+    const residualSumSquares = y.reduce((sum, val, idx) => {
+      const predicted = regression.m * x[idx] + regression.b;
+      return sum + Math.pow(val - predicted, 2);
+    }, 0);
+
+    return totalSumSquares > 0 ? 1 - (residualSumSquares / totalSumSquares) : 0;
+  }
+
+  /**
+   * Analyze market microstructure
+   * @param {Array<Object>} ticks - Array of tick data
+   * @returns {Object} Microstructure analysis
+   */
+  analyzeMarketMicrostructure(ticks) {
+    if (!ticks || ticks.length < 50) {
+      return { analysis: 'insufficient_data' };
+    }
+
+    // Calculate bid-ask spread (simplified using quote changes)
+    const quoteChanges = [];
+    for (let i = 1; i < ticks.length; i++) {
+      quoteChanges.push(Math.abs(ticks[i].quote - ticks[i-1].quote));
+    }
+
+    const avgSpread = ss.mean(quoteChanges);
+    const spreadVolatility = ss.standardDeviation(quoteChanges);
+
+    // Calculate order flow (simplified using digit changes)
+    const digitChanges = [];
+    for (let i = 1; i < ticks.length; i++) {
+      digitChanges.push(ticks[i].last_digit - ticks[i-1].last_digit);
+    }
+
+    const buyPressure = digitChanges.filter(change => change > 0).length / digitChanges.length;
+    const sellPressure = digitChanges.filter(change => change < 0).length / digitChanges.length;
+
+    return {
+      avgSpread,
+      spreadVolatility,
+      buyPressure,
+      sellPressure,
+      orderFlow: buyPressure - sellPressure,
+      marketEfficiency: spreadVolatility > avgSpread * 2 ? 'inefficient' : 'efficient'
+    };
+  }
+
+  /**
    * Clear cache
    */
   clearCache() {

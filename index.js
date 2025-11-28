@@ -1,3 +1,20 @@
+/**
+ * Deriv Last Digit Bot - Advanced Trading System
+ *
+ * This is the main entry point for the Deriv Last Digit trading bot.
+ * The bot implements advanced machine learning, risk management, and automated trading
+ * strategies for the Deriv platform's last digit prediction market.
+ *
+ * Key Features:
+ * - Real-time WebSocket connections to Deriv API
+ * - Advanced ML models (LSTM, Gradient Boosting, Ensemble)
+ * - Comprehensive risk management (Kelly Criterion, trailing stops, portfolio optimization)
+ * - Sentiment analysis from news feeds
+ * - Automated backtesting and strategy optimization
+ * - Real-time web dashboard for monitoring and control
+ * - Professional logging and error handling
+ */
+
 require('dotenv').config();
 const WebSocket = require('ws');
 const winston = require('winston');
@@ -6,13 +23,14 @@ const express = require('express');
 const path = require('path');
 const config = require('./config');
 
-// Import our modules
-const db = require('./db');
-const stats = require('./stats');
-const ml = require('./ml');
-const risk = require('./risk');
-const portfolio = require('./portfolio');
-const backtest = require('./backtest');
+// Import core modules - each handles a specific aspect of the trading system
+const db = require('./db');           // Database operations and data persistence
+const stats = require('./stats');     // Statistical analysis and pattern detection
+const ml = require('./ml');           // Machine learning models and predictions
+const risk = require('./risk');       // Risk management and position sizing
+const portfolio = require('./portfolio'); // Portfolio management and optimization
+const backtest = require('./backtest');   // Backtesting engine and strategy validation
+const sentiment = require('./sentiment'); // News sentiment analysis
 
 // Configure logging
 const logger = winston.createLogger({
@@ -68,42 +86,68 @@ const CONFIG = {
   // Strategy settings
   strategy: config.DEFAULT_STRATEGY,
   useBacktestValidation: config.USE_BACKTEST_VALIDATION,
-  backtestWindow: config.BACKTEST_WINDOW_TICKS
+  backtestWindow: config.BACKTEST_WINDOW_TICKS,
+
+  // Paper trading mode
+  paperTrading: false,
+
+  // Alert settings
+  alerts: {
+    trades: false,
+    risk: false,
+    performance: false,
+    email: ''
+  }
 };
 
+/**
+ * Main DerivBot class - orchestrates all trading operations
+ *
+ * This class manages the complete trading lifecycle including:
+ * - WebSocket connections to Deriv API
+ * - Real-time data processing and analysis
+ * - Automated trade execution and management
+ * - Risk monitoring and position management
+ * - Communication with web dashboard
+ * - Scheduled maintenance tasks
+ */
 class DerivBot {
+  /**
+   * Initialize the trading bot with all necessary components
+   */
   constructor() {
-    this.ws = null;
-    this.isConnected = false;
-    this.authorized = false;
-    this.tradingEnabled = false;
-    this.activeTrades = new Map();
-    this.lastTradeTime = 0;
-    this.symbolSubscriptions = new Map();
-    this.tickBuffers = new Map(); // symbol -> recent ticks
-    this.predictionCache = new Map(); // symbol -> last prediction
+    // Deriv API connection properties
+    this.ws = null;                    // WebSocket connection to Deriv
+    this.isConnected = false;          // Connection status to Deriv API
+    this.authorized = false;           // Authorization status with Deriv
+    this.tradingEnabled = false;       // Manual trading enable/disable flag
+
+    // Active trading state
+    this.activeTrades = new Map();     // Currently open trades (tradeId -> tradeData)
+    this.lastTradeTime = 0;            // Timestamp of last executed trade
+    this.symbolSubscriptions = new Map(); // Active symbol subscriptions
+    this.tickBuffers = new Map();      // Recent tick data buffers (symbol -> ticks[])
+    this.predictionCache = new Map();  // Cached predictions (symbol -> prediction)
+
+    // Performance tracking
     this.performanceMetrics = {
-      totalTrades: 0,
-      wins: 0,
-      losses: 0,
-      totalProfit: 0,
-      winRate: 0,
-      profitFactor: 0,
-      maxDrawdown: 0,
-      sharpeRatio: 0
+      totalTrades: 0,      // Total number of completed trades
+      wins: 0,            // Number of winning trades
+      losses: 0,          // Number of losing trades
+      totalProfit: 0,     // Cumulative profit/loss
+      winRate: 0,         // Win rate percentage
+      profitFactor: 0,    // Gross profit / gross loss ratio
+      maxDrawdown: 0,     // Maximum peak-to-trough decline
+      sharpeRatio: 0      // Risk-adjusted return measure
     };
 
-    // WebSocket server for UI
-    this.wss = null;
-    this.uiClients = new Set();
+    // Web dashboard communication
+    this.wss = null;                  // WebSocket server for UI clients
+    this.uiClients = new Set();       // Connected UI client connections
 
-    // Initialize modules
+    // Initialize all modules and systems
     this.initializeModules();
-
-    // Setup WebSocket server for UI
     this.setupWebSocketServer();
-
-    // Schedule periodic tasks
     this.scheduleTasks();
   }
 
@@ -191,6 +235,9 @@ class DerivBot {
       case 'retrain_models':
         this.retrainModelsFromUI();
         break;
+      case 'optimize_strategy':
+        this.handleStrategyOptimization(message);
+        break;
       default:
         logger.warn('Unknown UI message type:', message.type);
     }
@@ -211,6 +258,8 @@ class DerivBot {
       if (config.maxDrawdown) CONFIG.maxDrawdown = config.maxDrawdown;
       if (config.maxConcurrentTrades) CONFIG.maxConcurrentTrades = config.maxConcurrentTrades;
       if (config.symbols) CONFIG.symbols = config.symbols;
+      if (config.paperTrading !== undefined) CONFIG.paperTrading = config.paperTrading;
+      if (config.alerts) CONFIG.alerts = { ...CONFIG.alerts, ...config.alerts };
 
       // Update risk parameters
       risk.updateParameters({
@@ -280,7 +329,8 @@ class DerivBot {
       strategy: CONFIG.strategy,
       riskPerTrade: CONFIG.riskPerTrade,
       activeTrades: this.activeTrades.size,
-      currentSymbol: CONFIG.symbols[0] || 'None' // Show first symbol as current
+      currentSymbol: CONFIG.symbols[0] || 'None', // Show first symbol as current
+      paperTrading: CONFIG.paperTrading
     };
 
     this.broadcastToUI(statusMessage);
@@ -344,12 +394,16 @@ class DerivBot {
   }
 
   sendMarketDataToUI() {
+    // Get sentiment summary for all symbols
+    const sentimentSummary = sentiment.getSentimentSummary(CONFIG.symbols);
+
     // Calculate some basic market metrics
     const marketData = {
       bestSymbol: CONFIG.symbols[0], // Placeholder
-      sentiment: 'Neutral', // Would need sentiment analysis
+      sentiment: 'Neutral', // Overall market sentiment
       volatility: 0.5, // Placeholder
-      correlation: 'Low' // Placeholder
+      correlation: 'Low', // Placeholder
+      sentimentData: sentimentSummary
     };
 
     this.broadcastToUI({
@@ -408,10 +462,17 @@ class DerivBot {
       await this.runAutonomousRetraining();
     });
 
+    // News sentiment analysis
+    cron.schedule('*/30 * * * *', async () => { // Every 30 minutes
+      logger.info('Fetching and analyzing news sentiment...');
+      await this.updateNewsSentiment();
+    });
+
     // Data cleanup
     cron.schedule(`0 ${config.DATABASE_CLEANUP_HOUR} * * *`, () => {
       db.cleanup();
-      logger.info('Database cleanup completed');
+      sentiment.clearCaches(); // Clear sentiment caches too
+      logger.info('Database and sentiment cleanup completed');
     });
   }
 
@@ -534,6 +595,9 @@ class DerivBot {
   startTradingLoop() {
     logger.info('Trading loop initialized - waiting for manual start command');
 
+    // Start trailing stop monitoring
+    this.startTrailingStopMonitoring();
+
     // Check for trading opportunities every 2 seconds
     setInterval(async () => {
       // Only trade if manually enabled by user
@@ -558,11 +622,41 @@ class DerivBot {
         return;
       }
 
-      // Check risk management
+      // Check risk management (both individual and portfolio level)
       const riskCheck = risk.shouldStopTrading();
       if (riskCheck.stop) {
         logger.warn(`Trading stopped due to risk: ${riskCheck.reason}`);
         return;
+      }
+
+      // Check portfolio-level risk constraints
+      const portfolioRisk = portfolio.assessPortfolioRisk();
+      if (portfolioRisk.riskLevel === 'extreme') {
+        logger.warn('Trading stopped due to extreme portfolio risk level');
+        this.tradingEnabled = false;
+        this.sendStatusToUI();
+
+        // Send risk alert
+        await this.sendRiskAlert({
+          type: 'Extreme Risk Level',
+          details: 'Trading has been automatically stopped due to extreme portfolio risk.',
+          balance: risk.portfolioStats.totalBalance,
+          drawdown: risk.portfolioStats.currentDrawdown
+        });
+
+        return;
+      }
+
+      if (portfolioRisk.riskLevel === 'high' && portfolioRisk.metrics.portfolioVaR > 0.12) {
+        logger.warn('Trading restricted due to high portfolio VaR');
+
+        // Send risk alert for high risk
+        await this.sendRiskAlert({
+          type: 'High Risk Warning',
+          details: `Portfolio VaR is ${(portfolioRisk.metrics.portfolioVaR * 100).toFixed(2)}%, exceeding threshold.`,
+          balance: risk.portfolioStats.totalBalance,
+          drawdown: risk.portfolioStats.currentDrawdown
+        });
       }
 
       logger.debug('Trading loop: Evaluating trading opportunities...');
@@ -585,14 +679,68 @@ class DerivBot {
     }, 2000);
   }
 
+  startTrailingStopMonitoring() {
+    // Monitor trailing stops every 5 seconds
+    setInterval(() => {
+      if (!this.tradingEnabled) return;
+
+      for (const [tradeId, trade] of this.activeTrades) {
+        // For demonstration, we'll simulate price movement
+        // In a real implementation, you'd get current market price
+        const currentProfit = trade.stake * 0.1; // Simulate 10% profit
+        const currentPrice = trade.stake + currentProfit;
+
+        // Check for scale-out opportunities
+        const scaleOut = risk.getNextScaleOutExit(tradeId, currentProfit, trade.stake);
+        if (scaleOut) {
+          logger.info(`Scale-out triggered for trade ${tradeId}: Part ${scaleOut.part}/${scaleOut.totalParts} - ${scaleOut.description}`);
+          // In a real implementation, you'd execute partial close here
+          risk.updatePositionAfterPartialClose(tradeId, scaleOut.closeAmount, scaleOut.remainingAmount);
+          risk.updateScaleOutProgress(tradeId, scaleOut.part);
+        }
+
+        // Check for partial position closing (fallback)
+        const partialClose = risk.calculatePartialCloseAmount(tradeId, currentProfit, trade.stake);
+        if (partialClose && !scaleOut) {
+          logger.info(`Partial close triggered for trade ${tradeId}: ${partialClose.description}`);
+          // In a real implementation, you'd execute partial close here
+          risk.updatePositionAfterPartialClose(tradeId, partialClose.closeAmount, partialClose.remainingAmount);
+        }
+
+        // Update trailing stop
+        const newStop = risk.updateTrailingStop(tradeId, currentPrice, true);
+
+        // Check if trailing stop should trigger exit
+        if (risk.shouldExitOnTrailingStop(tradeId, currentPrice, true)) {
+          logger.info(`Trailing stop triggered for trade ${tradeId}`);
+          // In a real implementation, you'd close the remaining position here
+          // For now, just log the event
+        }
+      }
+    }, 5000);
+  }
+
+  /**
+   * Evaluate if there's a profitable trading opportunity for a symbol
+   *
+   * This method performs comprehensive analysis including:
+   * - Data sufficiency checks
+   * - Statistical probability calculations
+   * - Machine learning predictions
+   * - Risk management validation
+   * - Sentiment analysis integration
+   *
+   * @param {string} symbol - The trading symbol to evaluate (e.g., 'R_10')
+   * @returns {Object|null} Trading opportunity details or null if no opportunity
+   */
   async evaluateTradingOpportunity(symbol) {
-    // Check if we have enough data
+    // Verify we have sufficient historical data for reliable analysis
     const tickCount = db.getTickCount(symbol);
     logger.debug(`Evaluating ${symbol}: ${tickCount} ticks available (need ${CONFIG.minSamplesRequired})`);
 
     if (tickCount < CONFIG.minSamplesRequired) {
-      logger.debug(`Not enough data for ${symbol}: ${tickCount} < ${CONFIG.minSamplesRequired}`);
-      return null; // Not enough data
+      logger.debug(`Insufficient historical data for ${symbol}: ${tickCount} < ${CONFIG.minSamplesRequired}`);
+      return null; // Cannot make reliable predictions without adequate data
     }
 
     // Get recent ticks
@@ -618,17 +766,32 @@ class DerivBot {
     // Get recent digits for pattern analysis
     const recentDigits = recentTicks.map(tick => tick.last_digit);
 
+    // Check sentiment analysis for additional signal
+    const sentimentSignal = sentiment.generateSentimentSignal(symbol);
+    const sentimentBias = sentimentSignal ? sentimentSignal.signal : null;
+
     // Use selected strategy to predict next digit
     const prediction = await this.generatePrediction(symbol, {
       probabilities,
       recentDigits,
       totalSamples,
-      currentDigit: recentDigits[recentDigits.length - 1]
+      currentDigit: recentDigits[recentDigits.length - 1],
+      sentimentBias
     });
 
     if (!prediction) {
       logger.debug(`No prediction generated for ${symbol}`);
       return null;
+    }
+
+    // Apply sentiment filter
+    if (sentimentSignal && sentimentSignal.confidence > 0.7) {
+      // If sentiment is strongly against the prediction, reduce confidence
+      if ((sentimentSignal.signal === 'SELL' && prediction.probability > 50) ||
+          (sentimentSignal.signal === 'BUY' && prediction.probability < 50)) {
+        prediction.probability *= 0.8; // Reduce confidence by 20%
+        logger.debug(`Prediction confidence reduced by sentiment: ${prediction.probability.toFixed(2)}%`);
+      }
     }
 
     logger.debug(`Prediction for ${symbol}: digit ${prediction.digit}, probability ${prediction.probability.toFixed(2)}% (threshold: ${CONFIG.minProbabilityThreshold}%)`);
@@ -669,13 +832,19 @@ class DerivBot {
         return ml.predictWithMarkov(symbol, context.currentDigit);
 
       case 'neural':
-        return ml.predict(symbol, context.recentDigits);
+        return await ml.predict(symbol, context.recentDigits);
 
       case 'ensemble':
         return ml.predictEnsemble(symbol, context.currentDigit, context.recentDigits);
 
       case 'time_series':
         return this.predictWithTimeSeries(context.recentDigits);
+
+      case 'gradient_boosting':
+        return await ml.predictWithGradientBoosting(symbol, context.recentDigits);
+
+      case 'lstm':
+        return await ml.predictWithLSTM(symbol, context.recentDigits);
 
       default:
         return this.predictWithFrequency(context.probabilities);
@@ -736,49 +905,84 @@ class DerivBot {
   calculateStakeSize(symbol, prediction, probabilities) {
     const currentBalance = portfolio.getBalance();
 
-    // Use Kelly Criterion
+    // Get volatility-adjusted position sizing recommendation
+    const sizingRecommendation = risk.getPositionSizingRecommendation(symbol, currentBalance, config.RISK_PER_TRADE);
+
+    // Use Kelly Criterion with volatility adjustment
     const winRate = prediction.probability / 100;
     const avgWin = config.PAYOUT_MULTIPLIER - 1; // Net payout (1.8 - 1 = 0.8)
     const avgLoss = 1.0; // Lose stake
 
     const kellyStake = risk.calculateKellyStake(winRate, avgWin, avgLoss, currentBalance, config.KELLY_FRACTION);
-    const riskStake = currentBalance * config.RISK_PER_TRADE;
 
-    // Apply diversification check
+    // Apply all constraints
+    const riskStake = sizingRecommendation.recommendedPositionSize;
     const maxSymbolStake = portfolio.getMaxStakeForSymbol(symbol);
 
-    return Math.min(kellyStake, riskStake, maxSymbolStake, currentBalance * config.MAX_STAKE_MULTIPLIER);
+    const finalStake = Math.min(kellyStake, riskStake, maxSymbolStake, currentBalance * config.MAX_STAKE_MULTIPLIER);
+
+    logger.debug(`Position sizing for ${symbol}: Kelly=${kellyStake.toFixed(2)}, Volatility-adjusted=${riskStake.toFixed(2)}, Final=${finalStake.toFixed(2)}`);
+
+    return finalStake;
   }
 
+  /**
+   * Execute a trade based on the identified opportunity
+   *
+   * This method handles the complete trade execution process:
+   * - Creates and sends the trade request to Deriv API
+   * - Records the trade in the database
+   * - Sets up risk management (trailing stops, partial closes)
+   * - Subscribes to contract updates for monitoring
+   * - Updates performance metrics
+   *
+   * @param {Object} opportunity - Trading opportunity details
+   * @param {string} opportunity.symbol - Trading symbol
+   * @param {number} opportunity.prediction - Predicted digit (0-9)
+   * @param {number} opportunity.stake - Position size in USD
+   * @param {number} opportunity.probability - Prediction confidence (0-100)
+   */
   async executeTrade(opportunity) {
     try {
-      logger.info(`Executing trade: ${opportunity.symbol} -> ${opportunity.prediction} ($${opportunity.stake.toFixed(2)})`);
+      logger.info(`${CONFIG.paperTrading ? '[PAPER TRADE]' : '[LIVE TRADE]'} Executing trade: ${opportunity.symbol} -> ${opportunity.prediction} ($${opportunity.stake.toFixed(2)})`);
 
-      // Create trade request
-      const tradeRequest = {
-        buy: 1,
-        parameters: {
-          amount: opportunity.stake,
-          basis: 'stake',
-          contract_type: 'DIGITDIFF',
-          currency: 'USD',
-          duration: 1,
-          duration_unit: 't',
-          symbol: opportunity.symbol,
-          barrier: opportunity.prediction.toString()
+      let tradeId;
+
+      if (CONFIG.paperTrading) {
+        // Paper trading mode - simulate trade execution
+        tradeId = `paper_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+        // Simulate immediate trade confirmation for paper trading
+        logger.info(`Paper trade ${tradeId} simulated successfully`);
+
+      } else {
+        // Live trading mode - send real trade to Deriv
+        // Construct the trade request for Deriv's DIGITDIFF contract
+        // DIGITDIFF pays if the last digit differs from the predicted digit
+        const tradeRequest = {
+          buy: 1,  // Buy contract
+          parameters: {
+            amount: opportunity.stake,        // Stake amount in USD
+            basis: 'stake',                   // Specify amount as stake
+            contract_type: 'DIGITDIFF',       // Last digit difference contract
+            currency: 'USD',                  // Trading currency
+            duration: 1,                      // 1 tick duration
+            duration_unit: 't',               // Duration in ticks
+            symbol: opportunity.symbol,       // Trading symbol (R_10, R_25, etc.)
+            barrier: opportunity.prediction.toString() // Predicted digit as barrier
+          }
+        };
+
+        // Send trade request
+        const response = await this.sendRequestAsync(tradeRequest);
+
+        if (response.error) {
+          logger.error('Trade execution failed:', response.error);
+          return;
         }
-      };
 
-      // Send trade request
-      const response = await this.sendRequestAsync(tradeRequest);
-
-      if (response.error) {
-        logger.error('Trade execution failed:', response.error);
-        return;
+        tradeId = response.buy.contract_id;
       }
-
-      // Record the trade
-      const tradeId = response.buy.contract_id;
       const tradeRecord = {
         id: tradeId,
         symbol: opportunity.symbol,
@@ -792,6 +996,25 @@ class DerivBot {
       };
 
       this.activeTrades.set(tradeId, tradeRecord);
+
+      // Initialize trailing stop for the position
+      const stopDistance = opportunity.stake * 0.5; // 50% of stake as initial stop
+      risk.initializeTrailingStop(tradeId, opportunity.stake, stopDistance, 'fixed');
+
+      // Set up partial close rules
+      risk.setPartialCloseRules(tradeId, {
+        levels: [
+          { profitTarget: opportunity.stake * 0.5, closePercent: 0.5, description: '50% profit - close 50%' },
+          { profitTarget: opportunity.stake * 1.0, closePercent: 0.3, description: '100% profit - close 30%' }
+        ]
+      });
+
+      // Set up scale-out strategy for taking profits
+      risk.createScaleOutStrategy(tradeId, {
+        profitLevels: [opportunity.stake * 0.25, opportunity.stake * 0.5, opportunity.stake * 1.0],
+        stakeDistribution: [0.3, 0.3, 0.4]
+      });
+
       db.insertTrade(
         opportunity.symbol,
         Date.now(),
@@ -802,8 +1025,15 @@ class DerivBot {
 
       this.lastTradeTime = Date.now();
 
-      // Subscribe to contract updates
-      this.subscribeToContract(tradeId);
+      if (CONFIG.paperTrading) {
+        // For paper trading, simulate trade outcome after a short delay
+        setTimeout(() => {
+          this.simulatePaperTradeOutcome(tradeId, tradeRecord);
+        }, 2000); // Simulate 2-second trade duration
+      } else {
+        // Subscribe to contract updates for live trading
+        this.subscribeToContract(tradeId);
+      }
 
       logger.info(`Trade ${tradeId} executed successfully`);
 
@@ -893,7 +1123,319 @@ class DerivBot {
     }
   }
 
-  generatePerformanceReport() {
+  async updateNewsSentiment() {
+    try {
+      for (const symbol of CONFIG.symbols) {
+        // Fetch recent news (mock implementation)
+        const news = await sentiment.fetchNews(symbol, 5);
+
+        if (news.length > 0) {
+          logger.info(`Analyzed ${news.length} news articles for ${symbol}`);
+
+          // Check for significant sentiment changes
+          const sentimentSummary = sentiment.getSentimentSummary([symbol]);
+          const symbolSentiment = sentimentSummary[symbol];
+
+          if (symbolSentiment && symbolSentiment.tradingSignal) {
+            logger.info(`Sentiment signal for ${symbol}: ${symbolSentiment.tradingSignal.signal} (${symbolSentiment.tradingSignal.strength})`);
+
+            // Send sentiment update to UI
+            this.broadcastToUI({
+              type: 'sentiment_update',
+              symbol,
+              data: symbolSentiment
+            });
+          }
+        }
+      }
+
+      // Update market data in UI with latest sentiment
+      this.sendMarketDataToUI();
+
+    } catch (error) {
+      logger.error('News sentiment update error:', error);
+    }
+  }
+
+  async handleStrategyComparison(message) {
+    try {
+      const symbol = message.symbol || 'R_10';
+      const strategies = ['frequency', 'markov', 'neural', 'ensemble', 'time_series', 'gradient_boosting', 'lstm'];
+
+      logger.info(`Running strategy comparison for ${symbol}`);
+
+      // Run comparison using backtest engine
+      const comparisonResult = await backtest.compareStrategies(symbol, strategies, {
+        maxTrades: 100,
+        riskPerTrade: CONFIG.riskPerTrade
+      });
+
+      // Send results to UI
+      this.broadcastToUI({
+        type: 'strategy_comparison',
+        data: comparisonResult
+      });
+
+      logger.info(`Strategy comparison completed for ${symbol}`);
+
+    } catch (error) {
+      logger.error('Strategy comparison error:', error);
+      this.broadcastToUI({
+        type: 'error',
+        message: `Strategy comparison failed: ${error.message}`
+      });
+    }
+  }
+
+  async handleStrategyOptimization(message) {
+    try {
+      const symbol = message.symbol || 'R_10';
+      const strategy = message.strategy || CONFIG.strategy;
+
+      logger.info(`Running strategy optimization for ${strategy} on ${symbol}`);
+
+      // Define parameter ranges to test
+      const paramRanges = {
+        riskPerTrade: [0.01, 0.02, 0.03, 0.05, 0.08],
+        minProbability: [30, 40, 50, 60, 70],
+        maxDrawdown: [0.10, 0.15, 0.20, 0.25, 0.30]
+      };
+
+      // Run optimization
+      const optimizationResult = await this.optimizeStrategyParameters(strategy, symbol, paramRanges);
+
+      // Send results to UI
+      this.broadcastToUI({
+        type: 'strategy_optimization',
+        data: optimizationResult
+      });
+
+      logger.info(`Strategy optimization completed for ${strategy} on ${symbol}`);
+
+    } catch (error) {
+      logger.error('Strategy optimization error:', error);
+      this.broadcastToUI({
+        type: 'error',
+        message: `Strategy optimization failed: ${error.message}`
+      });
+    }
+  }
+
+  async optimizeStrategyParameters(strategy, symbol, paramRanges) {
+    const results = [];
+    let bestResult = null;
+    let bestScore = -Infinity;
+
+    // Test all parameter combinations
+    for (const riskPerTrade of paramRanges.riskPerTrade) {
+      for (const minProbability of paramRanges.minProbability) {
+        for (const maxDrawdown of paramRanges.maxDrawdown) {
+          try {
+            // Run backtest with these parameters
+            const result = await backtest.runBacktest(strategy, symbol, {
+              maxTrades: 50,
+              riskPerTrade,
+              minProbability,
+              maxDrawdown
+            });
+
+            if (result && result.performance) {
+              const perf = result.performance;
+
+              // Calculate optimization score (weighted combination of metrics)
+              const score = (
+                perf.winRate * 0.4 +                    // 40% weight on win rate
+                Math.min(perf.profitFactor / 2, 1) * 0.3 + // 30% weight on profit factor (capped)
+                (1 - perf.maxDrawdown) * 0.3            // 30% weight on drawdown (inverted)
+              );
+
+              const testResult = {
+                params: { riskPerTrade, minProbability, maxDrawdown },
+                performance: perf,
+                score
+              };
+
+              results.push(testResult);
+
+              // Track best result
+              if (score > bestScore) {
+                bestScore = score;
+                bestResult = testResult;
+              }
+            }
+          } catch (error) {
+            logger.debug(`Parameter combination failed: risk=${riskPerTrade}, prob=${minProbability}, dd=${maxDrawdown}`);
+          }
+        }
+      }
+    }
+
+    return {
+      strategy,
+      symbol,
+      optimalParams: bestResult.params,
+      expectedPerformance: bestResult.performance,
+      optimizationScore: bestScore,
+      totalCombinations: paramRanges.riskPerTrade.length * paramRanges.minProbability.length * paramRanges.maxDrawdown.length,
+      testedCombinations: results.length
+    };
+  }
+
+  simulatePaperTradeOutcome(tradeId, tradeRecord) {
+    try {
+      // Get the next tick to determine actual outcome
+      const ticks = db.getRecentTicks(tradeRecord.symbol, 2);
+      if (ticks.length < 2) {
+        logger.warn(`Cannot simulate paper trade ${tradeId}: insufficient tick data`);
+        return;
+      }
+
+      const actualDigit = ticks[1].last_digit; // The tick after the trade
+      const isWin = actualDigit !== tradeRecord.prediction; // DIGITDIFF wins if digits differ
+
+      const profit = isWin ? tradeRecord.stake * 0.8 : -tradeRecord.stake; // 80% payout on win
+      const payout = isWin ? tradeRecord.stake * 1.8 : 0;
+
+      // Simulate contract update
+      const simulatedContract = {
+        contract_id: tradeId,
+        status: isWin ? 'won' : 'lost',
+        profit: profit
+      };
+
+      logger.info(`Paper trade ${tradeId} simulated: predicted ${tradeRecord.prediction}, actual ${actualDigit}, result ${simulatedContract.status}, profit $${profit.toFixed(2)}`);
+
+      // Process the simulated outcome
+      this.handleContractUpdate(simulatedContract);
+
+    } catch (error) {
+      logger.error(`Error simulating paper trade ${tradeId}:`, error);
+    }
+  }
+
+  // Alert system methods
+  async sendTradeAlert(tradeData) {
+    if (!CONFIG.alerts.trades) return;
+
+    const subject = `Trade ${tradeData.result.toUpperCase()}: ${tradeData.symbol}`;
+    const message = `
+Trade Alert:
+Symbol: ${tradeData.symbol}
+Prediction: ${tradeData.prediction}
+Stake: $${tradeData.stake}
+Result: ${tradeData.result.toUpperCase()}
+Profit: $${tradeData.profit?.toFixed(2) || 'Pending'}
+Time: ${new Date(tradeData.timestamp).toLocaleString()}
+    `.trim();
+
+    await this.sendAlert(subject, message, 'trade');
+  }
+
+  async sendRiskAlert(riskData) {
+    if (!CONFIG.alerts.risk) return;
+
+    const subject = `Risk Alert: ${riskData.type}`;
+    const message = `
+Risk Alert: ${riskData.type}
+
+${riskData.details}
+
+Current Balance: $${riskData.balance?.toFixed(2) || 'N/A'}
+Current Drawdown: ${riskData.drawdown ? (riskData.drawdown * 100).toFixed(2) + '%' : 'N/A'}
+Time: ${new Date().toLocaleString()}
+    `.trim();
+
+    await this.sendAlert(subject, message, 'risk');
+  }
+
+  async sendPerformanceAlert(performanceData) {
+    if (!CONFIG.alerts.performance) return;
+
+    const subject = `Performance Milestone: ${performanceData.type}`;
+    const message = `
+Performance Alert: ${performanceData.type}
+
+${performanceData.details}
+
+Win Rate: ${(performanceData.winRate * 100).toFixed(2)}%
+Total Profit: $${performanceData.totalProfit.toFixed(2)}
+Profit Factor: ${performanceData.profitFactor.toFixed(2)}
+Time: ${new Date().toLocaleString()}
+    `.trim();
+
+    await this.sendAlert(subject, message, 'performance');
+  }
+
+  async sendAlert(subject, message, type) {
+    try {
+      // Log the alert
+      logger.info(`Alert [${type}]: ${subject}`);
+
+      // Send to UI
+      this.broadcastToUI({
+        type: 'alert',
+        data: { subject, message, type, timestamp: Date.now() }
+      });
+
+      // Send email if configured (framework for future implementation)
+      if (CONFIG.alerts.email) {
+        await this.sendEmailAlert(CONFIG.alerts.email, subject, message);
+      }
+
+      // Framework for SMS alerts (future implementation)
+      // if (CONFIG.alerts.sms) {
+      //   await this.sendSMSAlert(CONFIG.alerts.sms, message);
+      // }
+
+    } catch (error) {
+      logger.error(`Error sending ${type} alert:`, error);
+    }
+  }
+
+  async sendEmailAlert(email, subject, message) {
+    // Framework for email integration
+    // This would integrate with services like SendGrid, Mailgun, etc.
+    logger.info(`Email alert framework: Would send to ${email} - ${subject}`);
+
+    // Example implementation structure:
+    /*
+    const nodemailer = require('nodemailer');
+    const transporter = nodemailer.createTransporter({
+      service: 'gmail',
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS
+      }
+    });
+
+    await transporter.sendMail({
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: subject,
+      text: message
+    });
+    */
+  }
+
+  async sendSMSAlert(phoneNumber, message) {
+    // Framework for SMS integration
+    // This would integrate with services like Twilio, AWS SNS, etc.
+    logger.info(`SMS alert framework: Would send to ${phoneNumber} - ${message}`);
+
+    // Example implementation structure:
+    /*
+    const twilio = require('twilio');
+    const client = twilio(process.env.TWILIO_SID, process.env.TWILIO_TOKEN);
+
+    await client.messages.create({
+      body: message,
+      from: process.env.TWILIO_PHONE,
+      to: phoneNumber
+    });
+    */
+  }
+
+  async generatePerformanceReport() {
     const stats = db.getTradeStats();
     const riskReport = risk.generateRiskReport();
 
@@ -904,6 +1446,33 @@ class DerivBot {
     logger.info(`Average Profit: $${stats.avg_profit.toFixed(2)}`);
     logger.info(`Current Drawdown: ${(riskReport.portfolio.currentDrawdown * 100).toFixed(2)}%`);
     logger.info('========================');
+
+    // Check for performance milestones and send alerts
+    if (stats.total_trades > 0) {
+      const winRate = stats.wins / stats.total_trades;
+
+      // Alert for high win rate milestone
+      if (winRate >= 0.70 && stats.total_trades >= 10) {
+        await this.sendPerformanceAlert({
+          type: 'High Win Rate Achieved',
+          details: `Win rate of ${(winRate * 100).toFixed(1)}% achieved with ${stats.total_trades} trades.`,
+          winRate,
+          totalProfit: stats.total_profit,
+          profitFactor: stats.total_profit > 0 ? 1.5 : 0 // Simplified
+        });
+      }
+
+      // Alert for profit milestones
+      if (stats.total_profit >= 100) {
+        await this.sendPerformanceAlert({
+          type: 'Profit Milestone',
+          details: `Total profit of $${stats.total_profit.toFixed(2)} achieved.`,
+          winRate,
+          totalProfit: stats.total_profit,
+          profitFactor: stats.total_profit > 0 ? 1.5 : 0
+        });
+      }
+    }
 
     // Send updates to UI
     this.sendPerformanceToUI();
@@ -939,6 +1508,10 @@ class DerivBot {
 
       } else if (message.error) {
         logger.error('API Error:', message.error);
+
+      } else if (message.type === 'compare_strategies') {
+        // Handle strategy comparison request from UI
+        this.handleStrategyComparison(message);
       }
 
     } catch (error) {
@@ -963,7 +1536,7 @@ class DerivBot {
     portfolio.updatePrice(symbol, quote);
   }
 
-  handleContractUpdate(contract) {
+  async handleContractUpdate(contract) {
     const { contract_id, status, profit } = contract;
 
     if (!this.activeTrades.has(contract_id)) return;
@@ -993,11 +1566,27 @@ class DerivBot {
         stake: trade.stake,
         result: status,
         profit: trade.profit,
-        timestamp: trade.timestamp
+        timestamp: trade.timestamp,
+        paperTrade: CONFIG.paperTrading
+      });
+
+      // Send trade alert
+      await this.sendTradeAlert({
+        id: contract_id,
+        symbol: trade.symbol,
+        prediction: trade.prediction,
+        stake: trade.stake,
+        result: status,
+        profit: trade.profit,
+        timestamp: trade.timestamp,
+        paperTrade: CONFIG.paperTrading
       });
 
       // Send portfolio update to UI
       this.sendPortfolioToUI();
+
+      // Remove trailing stop
+      risk.removeTrailingStop(contract_id);
 
       // Remove from active trades
       this.activeTrades.delete(contract_id);

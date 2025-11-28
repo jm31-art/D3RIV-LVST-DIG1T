@@ -12,7 +12,8 @@ class DatabaseManager {
       ticks: new Map(),
       trades: [],
       performance: null,
-      digitFrequencies: new Map()
+      digitFrequencies: new Map(),
+      timeframes: new Map() // symbol -> { '1m': [], '5m': [], '15m': [] }
     };
 
     // Load existing data
@@ -95,6 +96,9 @@ class DatabaseManager {
 
     // Update digit frequencies
     this.updateDigitFrequency(symbol, lastDigit);
+
+    // Update multi-timeframe data
+    this.updateTimeframeData(symbol, timestamp, quote, lastDigit);
 
     return { changes: 1 };
   }
@@ -207,6 +211,100 @@ class DatabaseManager {
       losses,
       total_profit: totalProfit,
       avg_profit: avgProfit
+    };
+  }
+
+  // Update multi-timeframe data
+  updateTimeframeData(symbol, timestamp, quote, lastDigit) {
+    if (!this.cache.timeframes.has(symbol)) {
+      this.cache.timeframes.set(symbol, {
+        '1m': [],
+        '5m': [],
+        '15m': []
+      });
+    }
+
+    const timeframes = this.cache.timeframes.get(symbol);
+    const date = new Date(timestamp);
+
+    // Update each timeframe
+    this.updateTimeframeBar(timeframes['1m'], date, quote, lastDigit, 1);
+    this.updateTimeframeBar(timeframes['5m'], date, quote, lastDigit, 5);
+    this.updateTimeframeBar(timeframes['15m'], date, quote, lastDigit, 15);
+  }
+
+  // Update a specific timeframe bar
+  updateTimeframeBar(bars, date, quote, lastDigit, minutes) {
+    const intervalMs = minutes * 60 * 1000;
+    const barTime = Math.floor(date.getTime() / intervalMs) * intervalMs;
+
+    let currentBar = bars[bars.length - 1];
+
+    // Check if we need a new bar
+    if (!currentBar || currentBar.timestamp !== barTime) {
+      currentBar = {
+        timestamp: barTime,
+        open: quote,
+        high: quote,
+        low: quote,
+        close: quote,
+        digits: [lastDigit],
+        volume: 1
+      };
+      bars.push(currentBar);
+
+      // Keep only last 1000 bars per timeframe
+      if (bars.length > 1000) {
+        bars.shift();
+      }
+    } else {
+      // Update existing bar
+      currentBar.high = Math.max(currentBar.high, quote);
+      currentBar.low = Math.min(currentBar.low, quote);
+      currentBar.close = quote;
+      currentBar.digits.push(lastDigit);
+      currentBar.volume++;
+    }
+  }
+
+  // Get multi-timeframe data for a symbol
+  getTimeframeData(symbol, timeframe = '1m', limit = 100) {
+    const timeframes = this.cache.timeframes.get(symbol);
+    if (!timeframes) return [];
+
+    const bars = timeframes[timeframe] || [];
+    return bars.slice(-limit);
+  }
+
+  // Get higher timeframe confirmation
+  getHigherTimeframeSignal(symbol, currentTimeframe = '1m') {
+    const timeframeMap = { '1m': '5m', '5m': '15m' };
+    const higherTimeframe = timeframeMap[currentTimeframe];
+
+    if (!higherTimeframe) return null;
+
+    const higherBars = this.getTimeframeData(symbol, higherTimeframe, 5);
+    if (higherBars.length < 2) return null;
+
+    const recentBar = higherBars[higherBars.length - 1];
+    const prevBar = higherBars[higherBars.length - 2];
+
+    // Simple trend analysis on higher timeframe
+    const trend = recentBar.close > recentBar.open ? 'bullish' : 'bearish';
+    const prevTrend = prevBar.close > prevBar.open ? 'bullish' : 'bearish';
+
+    // Calculate digit distribution in higher timeframe
+    const digitCounts = Array(10).fill(0);
+    recentBar.digits.forEach(digit => digitCounts[digit]++);
+
+    const dominantDigit = digitCounts.indexOf(Math.max(...digitCounts));
+
+    return {
+      trend,
+      trendChanged: trend !== prevTrend,
+      dominantDigit,
+      digitDistribution: digitCounts,
+      barStrength: recentBar.volume
     };
   }
 

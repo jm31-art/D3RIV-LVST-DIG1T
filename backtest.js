@@ -207,7 +207,7 @@ class BacktestEngine {
 
       case 'neural':
         // Neural network strategy
-        const nnPrediction = ml.predict(context.symbol || 'test', context.recentDigits);
+        const nnPrediction = await ml.predict(context.symbol || 'test', context.recentDigits);
         return nnPrediction ? {
           digit: nnPrediction.digit,
           confidence: nnPrediction.confidence
@@ -227,6 +227,22 @@ class BacktestEngine {
         return tsPrediction ? {
           digit: tsPrediction.digit,
           confidence: tsPrediction.confidence
+        } : null;
+
+      case 'gradient_boosting':
+        // Gradient boosting strategy
+        const gbPrediction = await ml.predictWithGradientBoosting(context.symbol || 'test', context.recentDigits);
+        return gbPrediction ? {
+          digit: gbPrediction.digit,
+          confidence: gbPrediction.confidence
+        } : null;
+
+      case 'lstm':
+        // LSTM deep learning strategy
+        const lstmPrediction = await ml.predictWithLSTM(context.symbol || 'test', context.recentDigits);
+        return lstmPrediction ? {
+          digit: lstmPrediction.digit,
+          confidence: lstmPrediction.confidence
         } : null;
 
       default:
