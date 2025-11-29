@@ -908,9 +908,9 @@ class DerivBot {
     // Get volatility-adjusted position sizing recommendation
     const sizingRecommendation = risk.getPositionSizingRecommendation(symbol, currentBalance, config.RISK_PER_TRADE);
 
-    // Use Kelly Criterion with volatility adjustment
+    // Use Kelly Criterion for DIGITMATCH (pays 9:1 when digit matches exactly)
     const winRate = prediction.probability / 100;
-    const avgWin = config.PAYOUT_MULTIPLIER - 1; // Net payout (1.8 - 1 = 0.8)
+    const avgWin = 9.0 - 1; // Net payout (9.0 - 1 = 8.0) for DIGITMATCH
     const avgLoss = 1.0; // Lose stake
 
     const kellyStake = risk.calculateKellyStake(winRate, avgWin, avgLoss, currentBalance, config.KELLY_FRACTION);
@@ -947,14 +947,14 @@ class DerivBot {
       const modeText = CONFIG.tradingMode === 'live' ? 'LIVE' : 'DEMO';
       logger.info(`[${modeText} TRADE] Executing trade: ${opportunity.symbol} -> ${opportunity.prediction} ($${opportunity.stake.toFixed(2)})`);
 
-      // Construct the trade request for Deriv's DIGITDIFF contract
-      // DIGITDIFF pays if the last digit differs from the predicted digit
+      // Construct the trade request for Deriv's DIGITMATCH contract
+      // DIGITMATCH pays if the last digit matches the predicted digit (this is what you want!)
       const tradeRequest = {
         buy: 1,  // Buy contract
         parameters: {
           amount: opportunity.stake,        // Stake amount in USD
           basis: 'stake',                   // Specify amount as stake
-          contract_type: 'DIGITDIFF',       // Last digit difference contract
+          contract_type: 'DIGITMATCH',      // Last digit match contract - PAYS WHEN DIGIT MATCHES!
           currency: 'USD',                  // Trading currency
           duration: 1,                      // 1 tick duration
           duration_unit: 't',               // Duration in ticks

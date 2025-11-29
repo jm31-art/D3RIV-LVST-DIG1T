@@ -53,7 +53,7 @@ module.exports = {
   UI_DISPLAY_MS: 7000,
 
   // Trading parameters
-  PAYOUT_MULTIPLIER: 1.8, // 80% payout on win
+  PAYOUT_MULTIPLIER: 9.0, // 9x payout for DIGITMATCH (when digit matches exactly)
   KELLY_FRACTION: 0.5, // Half Kelly for conservatism
   MAX_STAKE_MULTIPLIER: 0.1, // Max 10% of balance
 
