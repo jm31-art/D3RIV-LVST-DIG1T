@@ -31,6 +31,7 @@ const risk = require('./risk');       // Risk management and position sizing
 const portfolio = require('./portfolio'); // Portfolio management and optimization
 const backtest = require('./backtest');   // Backtesting engine and strategy validation
 const sentiment = require('./sentiment'); // News sentiment analysis
+const microstructure = require('./microstructure'); // Market microstructure analysis
 
 // Configure logging
 const logger = winston.createLogger({
@@ -773,6 +774,10 @@ class DerivBot {
     // Use advanced multi-timeframe pattern recognition
     const advancedPatterns = stats.detectAdvancedPatterns(recentTicks.map(t => t.last_digit));
 
+    // Analyze market microstructure for additional edge
+    const microstructureAnalysis = microstructure.analyzeOrderFlow(recentTicks, symbol);
+    const microstructureSignals = microstructureAnalysis.signals || [];
+
     // Generate prediction using pattern analysis
     const prediction = await this.generatePrediction(symbol, {
       probabilities,
@@ -780,7 +785,8 @@ class DerivBot {
       totalSamples,
       currentDigit: recentDigits[recentDigits.length - 1],
       sentimentBias,
-      advancedPatterns
+      advancedPatterns,
+      microstructureSignals
     });
 
     if (!prediction) {
@@ -828,7 +834,7 @@ class DerivBot {
   }
 
   async generatePrediction(symbol, context) {
-    const { advancedPatterns } = context;
+    const { advancedPatterns, microstructureSignals } = context;
 
     // First priority: Advanced pattern recognition
     if (advancedPatterns && advancedPatterns.hasPattern && advancedPatterns.recommendedAction) {
@@ -844,6 +850,37 @@ class DerivBot {
           method: `pattern_${patternAction.pattern}`,
           pattern: patternAction
         };
+      }
+    }
+
+    // Second priority: Microstructure signals
+    if (microstructureSignals && microstructureSignals.length > 0) {
+      const bestSignal = microstructureSignals.reduce((best, signal) =>
+        signal.confidence > best.confidence ? signal : best, microstructureSignals[0]);
+
+      if (bestSignal.confidence > 0.7) {
+        let targetDigit = null;
+
+        // Convert microstructure signal to digit prediction
+        if (bestSignal.type === 'price_clustering' && bestSignal.targetDigit !== undefined) {
+          targetDigit = bestSignal.targetDigit;
+        } else if (bestSignal.type === 'order_flow_imbalance') {
+          // Bias toward higher or lower digits based on order flow
+          targetDigit = bestSignal.action === 'bias_higher_digits' ?
+            Math.floor(Math.random() * 5) + 5 : Math.floor(Math.random() * 5);
+        }
+
+        if (targetDigit !== null) {
+          logger.debug(`Microstructure-based prediction: ${bestSignal.type} -> digit ${targetDigit} (${bestSignal.confidence.toFixed(2)} confidence)`);
+
+          return {
+            digit: targetDigit,
+            probability: bestSignal.confidence * 100,
+            confidence: bestSignal.confidence,
+            method: `microstructure_${bestSignal.type}`,
+            microstructure: bestSignal
+          };
+        }
       }
     }
 
@@ -1369,6 +1406,13 @@ class DerivBot {
     buffer.push({ timestamp: epoch * 1000, quote, last_digit: lastDigit });
     if (buffer.length > 1000) buffer.shift();
     this.tickBuffers.set(symbol, buffer);
+
+    // Update microstructure analysis with new tick data
+    microstructure.updateWithNewTick(symbol, {
+      timestamp: epoch * 1000,
+      quote,
+      last_digit: lastDigit
+    });
 
     // Update portfolio with latest price
     portfolio.updatePrice(symbol, quote);
