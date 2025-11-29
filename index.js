@@ -66,17 +66,15 @@ const CONFIG = {
   appId: config.DERIV_APP_ID,
   websocketUrl: config.DERIV_WEBSOCKET_URL,
 
-  // Trading mode settings
-  tradingMode: process.env.TRADING_MODE || 'demo', // 'demo' or 'live'
-  demoApiToken: config.DEMO_API_TOKEN,
-  liveApiToken: config.LIVE_API_TOKEN,
+  // API token from environment
+  apiToken: apiToken,
 
-  // Current API token (set based on mode)
-  apiToken: '',
+  // Trading mode (auto-detected based on account)
+  tradingMode: 'unknown', // Will be set to 'demo' or 'live' after account check
 
   // Trading settings
   symbols: config.DEFAULT_SYMBOLS,
-  minSamplesRequired: config.MIN_SAMPLES_REQUIRED,
+  minSamplesRequired: 100, // Reduced for faster trading start
   minProbabilityThreshold: config.MIN_PROBABILITY_THRESHOLD,
   maxConcurrentTrades: config.MAX_CONCURRENT_TRADES,
   tradeCooldown: config.TRADE_COOLDOWN_MS,
@@ -95,25 +93,9 @@ const CONFIG = {
   useBacktestValidation: config.USE_BACKTEST_VALIDATION,
   backtestWindow: config.BACKTEST_WINDOW_TICKS,
 
-  // Paper trading mode (deprecated - use tradingMode instead)
-  paperTrading: false,
-
 };
 
-// Set API token based on trading mode
-if (CONFIG.tradingMode === 'live') {
-  CONFIG.apiToken = CONFIG.liveApiToken || apiToken;
-  if (!CONFIG.apiToken) {
-    console.error('Live trading mode requires LIVE_API_TOKEN environment variable.');
-    process.exit(1);
-  }
-} else {
-  CONFIG.apiToken = CONFIG.demoApiToken || apiToken;
-  if (!CONFIG.apiToken) {
-    console.error('Demo trading mode requires DEMO_API_TOKEN environment variable.');
-    process.exit(1);
-  }
-}
+// API token is already set from environment variable
 
 /**
  * Main DerivBot class - orchestrates all trading operations
@@ -238,9 +220,6 @@ class DerivBot {
       case 'update_config':
         this.updateConfigFromUI(message);
         break;
-      case 'start_trading':
-        this.startTrading();
-        break;
       case 'stop_trading':
         this.stopTrading();
         break;
@@ -250,9 +229,6 @@ class DerivBot {
       case 'retrain_models':
         this.retrainModelsFromUI();
         break;
-      case 'optimize_strategy':
-        this.handleStrategyOptimization(message);
-        break;
       default:
         logger.warn('Unknown UI message type:', message.type);
     }
@@ -260,18 +236,17 @@ class DerivBot {
 
   updateConfigFromUI(config) {
     try {
-      // Update trading mode and API tokens
-      if (config.tradingMode) {
-        CONFIG.tradingMode = config.tradingMode;
-        if (config.tradingMode === 'live' && config.liveApiToken) {
-          CONFIG.liveApiToken = config.liveApiToken;
-          CONFIG.apiToken = config.liveApiToken;
-          process.env.LIVE_API_TOKEN = config.liveApiToken;
-        } else if (config.tradingMode === 'demo' && config.demoApiToken) {
-          CONFIG.demoApiToken = config.demoApiToken;
-          CONFIG.apiToken = config.demoApiToken;
-          process.env.DEMO_API_TOKEN = config.demoApiToken;
+      // Update API token if provided
+      if (config.apiToken && config.apiToken.trim()) {
+        CONFIG.apiToken = config.apiToken.trim();
+        process.env.DERIV_API_TOKEN = config.apiToken.trim();
+        logger.info('API token updated from UI');
+
+        // Reconnect with new token
+        if (this.ws) {
+          this.ws.close();
         }
+        setTimeout(() => this.connect(), 1000);
       }
 
       // Update other config parameters
@@ -286,13 +261,13 @@ class DerivBot {
       risk.updateParameters({
         maxDrawdown: CONFIG.maxDrawdown,
         maxDailyLoss: CONFIG.maxDailyLoss,
-        maxConsecutiveLosses: config.MAX_CONSECUTIVE_LOSSES || 5
+        maxConsecutiveLosses: 5
       });
 
       // Reinitialize portfolio with new symbols
       portfolio.initialize(CONFIG.symbols);
 
-      logger.info(`Configuration updated from UI - Trading Mode: ${CONFIG.tradingMode.toUpperCase()}`);
+      logger.info('Configuration updated from UI');
       this.sendStatusToUI();
     } catch (error) {
       logger.error('Error updating config from UI:', error);
@@ -542,7 +517,7 @@ class DerivBot {
     };
 
     this.sendRequest(authRequest);
-    logger.info('Authorization request sent - waiting for manual trading start');
+    logger.info('Authorization request sent - will auto-detect account type and start trading');
   }
 
   async fetchAccountBalance() {
@@ -581,7 +556,7 @@ class DerivBot {
       return;
     }
 
-    logger.info('🚀 Starting trading bot manually...');
+    logger.info(`🚀 Starting ${CONFIG.tradingMode.toUpperCase()} trading automatically...`);
     this.tradingEnabled = true;
 
     // Subscribe to tick data for all symbols
@@ -592,10 +567,10 @@ class DerivBot {
     // Start the trading loop
     this.startTradingLoop();
 
-    // Send status update to UI with current symbol
+    // Send status update to UI
     this.sendStatusToUI();
 
-    logger.info(`Trading started - monitoring ${CONFIG.symbols.length} symbols`);
+    logger.info(`Trading started - monitoring ${CONFIG.symbols.length} symbols in ${CONFIG.tradingMode.toUpperCase()} mode`);
   }
 
   async subscribeToTicks(symbol) {
@@ -1310,10 +1285,19 @@ class DerivBot {
           return;
         }
         this.authorized = true;
-        logger.info('Successfully authorized - waiting for manual trading start command');
 
-        // Fetch account balance (but don't start trading)
+        // Auto-detect account type based on account info
+        if (message.authorize && message.authorize.account_list) {
+          const account = message.authorize.account_list.find(acc => acc.account_type === 'trading');
+          if (account) {
+            CONFIG.tradingMode = account.is_virtual ? 'demo' : 'live';
+            logger.info(`Account type detected: ${CONFIG.tradingMode.toUpperCase()} (${account.is_virtual ? 'Virtual Money' : 'Real Money'})`);
+          }
+        }
+
+        // Fetch account balance and start trading automatically
         this.fetchAccountBalance();
+        this.startTrading();
 
       } else if (message.msg_type === 'tick') {
         this.handleTick(message.tick);
