@@ -91,13 +91,6 @@ const CONFIG = {
   // Paper trading mode
   paperTrading: false,
 
-  // Alert settings
-  alerts: {
-    trades: false,
-    risk: false,
-    performance: false,
-    email: ''
-  }
 };
 
 /**
@@ -259,7 +252,6 @@ class DerivBot {
       if (config.maxConcurrentTrades) CONFIG.maxConcurrentTrades = config.maxConcurrentTrades;
       if (config.symbols) CONFIG.symbols = config.symbols;
       if (config.paperTrading !== undefined) CONFIG.paperTrading = config.paperTrading;
-      if (config.alerts) CONFIG.alerts = { ...CONFIG.alerts, ...config.alerts };
 
       // Update risk parameters
       risk.updateParameters({
@@ -636,13 +628,6 @@ class DerivBot {
         this.tradingEnabled = false;
         this.sendStatusToUI();
 
-        // Send risk alert
-        await this.sendRiskAlert({
-          type: 'Extreme Risk Level',
-          details: 'Trading has been automatically stopped due to extreme portfolio risk.',
-          balance: risk.portfolioStats.totalBalance,
-          drawdown: risk.portfolioStats.currentDrawdown
-        });
 
         return;
       }
@@ -650,13 +635,6 @@ class DerivBot {
       if (portfolioRisk.riskLevel === 'high' && portfolioRisk.metrics.portfolioVaR > 0.12) {
         logger.warn('Trading restricted due to high portfolio VaR');
 
-        // Send risk alert for high risk
-        await this.sendRiskAlert({
-          type: 'High Risk Warning',
-          details: `Portfolio VaR is ${(portfolioRisk.metrics.portfolioVaR * 100).toFixed(2)}%, exceeding threshold.`,
-          balance: risk.portfolioStats.totalBalance,
-          drawdown: risk.portfolioStats.currentDrawdown
-        });
       }
 
       logger.debug('Trading loop: Evaluating trading opportunities...');
@@ -1313,127 +1291,6 @@ class DerivBot {
     }
   }
 
-  // Alert system methods
-  async sendTradeAlert(tradeData) {
-    if (!CONFIG.alerts.trades) return;
-
-    const subject = `Trade ${tradeData.result.toUpperCase()}: ${tradeData.symbol}`;
-    const message = `
-Trade Alert:
-Symbol: ${tradeData.symbol}
-Prediction: ${tradeData.prediction}
-Stake: $${tradeData.stake}
-Result: ${tradeData.result.toUpperCase()}
-Profit: $${tradeData.profit?.toFixed(2) || 'Pending'}
-Time: ${new Date(tradeData.timestamp).toLocaleString()}
-    `.trim();
-
-    await this.sendAlert(subject, message, 'trade');
-  }
-
-  async sendRiskAlert(riskData) {
-    if (!CONFIG.alerts.risk) return;
-
-    const subject = `Risk Alert: ${riskData.type}`;
-    const message = `
-Risk Alert: ${riskData.type}
-
-${riskData.details}
-
-Current Balance: $${riskData.balance?.toFixed(2) || 'N/A'}
-Current Drawdown: ${riskData.drawdown ? (riskData.drawdown * 100).toFixed(2) + '%' : 'N/A'}
-Time: ${new Date().toLocaleString()}
-    `.trim();
-
-    await this.sendAlert(subject, message, 'risk');
-  }
-
-  async sendPerformanceAlert(performanceData) {
-    if (!CONFIG.alerts.performance) return;
-
-    const subject = `Performance Milestone: ${performanceData.type}`;
-    const message = `
-Performance Alert: ${performanceData.type}
-
-${performanceData.details}
-
-Win Rate: ${(performanceData.winRate * 100).toFixed(2)}%
-Total Profit: $${performanceData.totalProfit.toFixed(2)}
-Profit Factor: ${performanceData.profitFactor.toFixed(2)}
-Time: ${new Date().toLocaleString()}
-    `.trim();
-
-    await this.sendAlert(subject, message, 'performance');
-  }
-
-  async sendAlert(subject, message, type) {
-    try {
-      // Log the alert
-      logger.info(`Alert [${type}]: ${subject}`);
-
-      // Send to UI
-      this.broadcastToUI({
-        type: 'alert',
-        data: { subject, message, type, timestamp: Date.now() }
-      });
-
-      // Send email if configured (framework for future implementation)
-      if (CONFIG.alerts.email) {
-        await this.sendEmailAlert(CONFIG.alerts.email, subject, message);
-      }
-
-      // Framework for SMS alerts (future implementation)
-      // if (CONFIG.alerts.sms) {
-      //   await this.sendSMSAlert(CONFIG.alerts.sms, message);
-      // }
-
-    } catch (error) {
-      logger.error(`Error sending ${type} alert:`, error);
-    }
-  }
-
-  async sendEmailAlert(email, subject, message) {
-    // Framework for email integration
-    // This would integrate with services like SendGrid, Mailgun, etc.
-    logger.info(`Email alert framework: Would send to ${email} - ${subject}`);
-
-    // Example implementation structure:
-    /*
-    const nodemailer = require('nodemailer');
-    const transporter = nodemailer.createTransporter({
-      service: 'gmail',
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS
-      }
-    });
-
-    await transporter.sendMail({
-      from: process.env.EMAIL_USER,
-      to: email,
-      subject: subject,
-      text: message
-    });
-    */
-  }
-
-  async sendSMSAlert(phoneNumber, message) {
-    // Framework for SMS integration
-    // This would integrate with services like Twilio, AWS SNS, etc.
-    logger.info(`SMS alert framework: Would send to ${phoneNumber} - ${message}`);
-
-    // Example implementation structure:
-    /*
-    const twilio = require('twilio');
-    const client = twilio(process.env.TWILIO_SID, process.env.TWILIO_TOKEN);
-
-    await client.messages.create({
-      body: message,
-      from: process.env.TWILIO_PHONE,
-      to: phoneNumber
-    });
-    */
-  }
 
   async generatePerformanceReport() {
     const stats = db.getTradeStats();
@@ -1451,27 +1308,6 @@ Time: ${new Date().toLocaleString()}
     if (stats.total_trades > 0) {
       const winRate = stats.wins / stats.total_trades;
 
-      // Alert for high win rate milestone
-      if (winRate >= 0.70 && stats.total_trades >= 10) {
-        await this.sendPerformanceAlert({
-          type: 'High Win Rate Achieved',
-          details: `Win rate of ${(winRate * 100).toFixed(1)}% achieved with ${stats.total_trades} trades.`,
-          winRate,
-          totalProfit: stats.total_profit,
-          profitFactor: stats.total_profit > 0 ? 1.5 : 0 // Simplified
-        });
-      }
-
-      // Alert for profit milestones
-      if (stats.total_profit >= 100) {
-        await this.sendPerformanceAlert({
-          type: 'Profit Milestone',
-          details: `Total profit of $${stats.total_profit.toFixed(2)} achieved.`,
-          winRate,
-          totalProfit: stats.total_profit,
-          profitFactor: stats.total_profit > 0 ? 1.5 : 0
-        });
-      }
     }
 
     // Send updates to UI
@@ -1570,17 +1406,6 @@ Time: ${new Date().toLocaleString()}
         paperTrade: CONFIG.paperTrading
       });
 
-      // Send trade alert
-      await this.sendTradeAlert({
-        id: contract_id,
-        symbol: trade.symbol,
-        prediction: trade.prediction,
-        stake: trade.stake,
-        result: status,
-        profit: trade.profit,
-        timestamp: trade.timestamp,
-        paperTrade: CONFIG.paperTrading
-      });
 
       // Send portfolio update to UI
       this.sendPortfolioToUI();

@@ -620,11 +620,12 @@ class RiskManager {
     if (!position) return false;
 
     // Update position size
-    position.originalStake = position.originalStake || position.stake;
-    position.stake = remainingAmount;
+    position.originalStake = position.originalStake || position.entryPrice; // Use entryPrice as fallback
+    position.currentStake = remainingAmount;
+    position.closedAmount = (position.closedAmount || 0) + closedAmount;
 
-    // Adjust trailing stop for remaining position
-    if (position.trailingType === 'fixed') {
+    // Adjust trailing stop for remaining position if it exists
+    if (position.trailingType === 'fixed' && position.trailingAmount) {
       position.trailingAmount = position.trailingAmount * (remainingAmount / position.originalStake);
     }
 
@@ -639,9 +640,9 @@ class RiskManager {
     return {
       rules: rules || null,
       position: position ? {
-        currentStake: position.stake,
-        originalStake: position.originalStake || position.stake,
-        closedAmount: (position.originalStake || position.stake) - position.stake
+        currentStake: position.currentStake || position.entryPrice,
+        originalStake: position.originalStake || position.entryPrice,
+        closedAmount: position.closedAmount || 0
       } : null
     };
   }

@@ -105,13 +105,14 @@ describe('Stats Module', () => {
     });
 
     test('should analyze market microstructure', () => {
-      const mockTicks = [
-        { quote: 1.2345, last_digit: 5 },
-        { quote: 1.2346, last_digit: 6 },
-        { quote: 1.2344, last_digit: 4 },
-        { quote: 1.2347, last_digit: 7 },
-        { quote: 1.2343, last_digit: 3 }
-      ];
+      // Generate more mock ticks to meet minimum requirement
+      const mockTicks = [];
+      for (let i = 0; i < 60; i++) {
+        mockTicks.push({
+          quote: 1.2345 + (Math.random() - 0.5) * 0.01,
+          last_digit: Math.floor(Math.random() * 10)
+        });
+      }
 
       const result = stats.analyzeMarketMicrostructure(mockTicks);
       expect(result).toHaveProperty('avgSpread');

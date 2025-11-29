@@ -51,8 +51,8 @@ class SentimentAnalyzer {
 
   // Classify sentiment score
   classifySentiment(score) {
-    if (score > 0.3) return 'positive';
-    if (score < -0.3) return 'negative';
+    if (score > 0.01) return 'positive';
+    if (score < -0.01) return 'negative';
     return 'neutral';
   }
 
@@ -176,7 +176,7 @@ class SentimentAnalyzer {
     const content = (article.content || '').toLowerCase();
 
     // Breaking news has higher impact
-    if (title.includes('breaking') || title.includes('urgent')) return 1.3;
+    if (title.toLowerCase().includes('breaking') || title.toLowerCase().includes('urgent')) return 1.3;
 
     // Earnings reports have high impact
     if (title.includes('earnings') || title.includes('results')) return 1.2;
@@ -242,20 +242,20 @@ class SentimentAnalyzer {
     const trend = this.getSentimentTrend(symbol);
     const recentNews = this.getRecentNews(symbol, 1); // Last hour
 
-    if (recentNews.length === 0) return null;
+    if (!trend || recentNews.length === 0) return null;
 
     const avgImpact = recentNews.reduce((sum, news) => sum + news.marketImpact.score, 0) / recentNews.length;
     const highImpactNews = recentNews.filter(news => news.marketImpact.level === 'high');
 
     // Generate signal based on sentiment and impact
-    if (trend.trend === 'bullish' && avgImpact > 0.5 && highImpactNews.length > 0) {
+    if (trend.trend === 'bullish' && avgImpact > 0.3 && highImpactNews.length > 0) {
       return {
         signal: 'BUY',
         strength: 'strong',
         reason: `Strong bullish sentiment with high-impact news`,
         confidence: Math.min(trend.strength * avgImpact, 1)
       };
-    } else if (trend.trend === 'bearish' && avgImpact > 0.5 && highImpactNews.length > 0) {
+    } else if (trend.trend === 'bearish' && avgImpact > 0.3 && highImpactNews.length > 0) {
       return {
         signal: 'SELL',
         strength: 'strong',

@@ -15,10 +15,6 @@
   const maxConcurrentTradesInput = document.getElementById('max-concurrent-trades');
   const symbolsSelect = document.getElementById('symbols');
   const paperTradingCheckbox = document.getElementById('paperTrading');
-  const alertTradesCheckbox = document.getElementById('alertTrades');
-  const alertRiskCheckbox = document.getElementById('alertRisk');
-  const alertPerformanceCheckbox = document.getElementById('alertPerformance');
-  const alertEmailInput = document.getElementById('alertEmail');
   const updateConfigBtn = document.getElementById('update-config');
   const startTradingBtn = document.getElementById('start-trading');
   const stopTradingBtn = document.getElementById('stop-trading');
@@ -109,9 +105,6 @@
         break;
       case 'strategy_optimization':
         displayStrategyOptimization(message.data);
-        break;
-      case 'alert':
-        displayAlert(message.data);
         break;
       case 'backtest_result':
         addConnectionMessage(`Autonomous backtest completed for ${message.symbol}: Win Rate ${(message.performance.winRate * 100).toFixed(2)}%`);
@@ -327,12 +320,6 @@
         maxConcurrentTrades: maxConcurrentTradesInput ? parseInt(maxConcurrentTradesInput.value) : 1,
         symbols: symbolsSelect ? Array.from(symbolsSelect.selectedOptions).map(opt => opt.value) : ['R_10', 'R_25', 'R_50', 'R_75', 'R_100'],
         paperTrading: paperTradingCheckbox ? paperTradingCheckbox.checked : false,
-        alerts: {
-          trades: alertTradesCheckbox ? alertTradesCheckbox.checked : false,
-          risk: alertRiskCheckbox ? alertRiskCheckbox.checked : false,
-          performance: alertPerformanceCheckbox ? alertPerformanceCheckbox.checked : false,
-          email: alertEmailInput ? alertEmailInput.value : ''
-        }
       };
 
       if (isConnected) {
@@ -884,77 +871,6 @@
     strategyComparisonResults.innerHTML = html;
   }
 
-  // Alert display function
-  function displayAlert(alertData) {
-    // Create alert notification
-    const alertDiv = document.createElement('div');
-    alertDiv.className = `alert-notification alert-${alertData.type}`;
-    alertDiv.style.cssText = `
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      background: ${getAlertColor(alertData.type)};
-      color: white;
-      padding: 15px 20px;
-      border-radius: 8px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-      z-index: 1000;
-      max-width: 400px;
-      font-size: 14px;
-      animation: slideIn 0.3s ease-out;
-    `;
-
-    alertDiv.innerHTML = `
-      <div style="font-weight: bold; margin-bottom: 5px;">${alertData.subject}</div>
-      <div style="white-space: pre-line;">${alertData.message}</div>
-      <div style="margin-top: 10px; font-size: 12px; opacity: 0.8;">${new Date(alertData.timestamp).toLocaleString()}</div>
-    `;
-
-    // Add close button
-    const closeBtn = document.createElement('button');
-    closeBtn.textContent = '×';
-    closeBtn.style.cssText = `
-      position: absolute;
-      top: 5px;
-      right: 10px;
-      background: none;
-      border: none;
-      color: white;
-      font-size: 20px;
-      cursor: pointer;
-      opacity: 0.8;
-    `;
-    closeBtn.onclick = () => document.body.removeChild(alertDiv);
-    alertDiv.appendChild(closeBtn);
-
-    document.body.appendChild(alertDiv);
-
-    // Auto-remove after 10 seconds
-    setTimeout(() => {
-      if (document.body.contains(alertDiv)) {
-        document.body.removeChild(alertDiv);
-      }
-    }, 10000);
-
-    // Add CSS animation
-    const style = document.createElement('style');
-    style.textContent = `
-      @keyframes slideIn {
-        from { transform: translateX(100%); opacity: 0; }
-        to { transform: translateX(0); opacity: 1; }
-      }
-    `;
-    document.head.appendChild(style);
-  }
-
-  function getAlertColor(type) {
-    switch (type) {
-      case 'trade': return '#3498db';
-      case 'risk': return '#e74c3c';
-      case 'performance': return '#27ae60';
-      default: return '#95a5a6';
-    }
-  }
 
   // Strategy optimization functionality
   if (optimizeStrategyBtn) {
