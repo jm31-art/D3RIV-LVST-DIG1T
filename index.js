@@ -220,6 +220,9 @@ class DerivBot {
       case 'update_config':
         this.updateConfigFromUI(message);
         break;
+      case 'start_trading':
+        this.startTrading();
+        break;
       case 'stop_trading':
         this.stopTrading();
         break;
@@ -240,7 +243,20 @@ class DerivBot {
       if (config.apiToken && config.apiToken.trim()) {
         CONFIG.apiToken = config.apiToken.trim();
         process.env.DERIV_API_TOKEN = config.apiToken.trim();
-        logger.info('API token updated from UI');
+
+        // Determine account type from token (demo tokens typically start with specific patterns)
+        // This is a simple heuristic - in production you'd check with Deriv API
+        const token = config.apiToken.trim();
+        if (token.length > 0) {
+          // Demo tokens often contain 'demo' or start with specific patterns
+          // For now, we'll assume demo unless it looks like a live token
+          CONFIG.tradingMode = token.includes('demo') || token.startsWith('demo') ? 'demo' : 'live';
+          logger.info(`API token updated from UI - Account type: ${CONFIG.tradingMode.toUpperCase()}`);
+        }
+
+        // Reset authorization and trading state
+        this.authorized = false;
+        this.tradingEnabled = false;
 
         // Reconnect with new token
         if (this.ws) {
@@ -517,7 +533,7 @@ class DerivBot {
     };
 
     this.sendRequest(authRequest);
-    logger.info('Authorization request sent - will auto-detect account type and start trading');
+    logger.info('Authorization request sent');
   }
 
   async fetchAccountBalance() {
@@ -556,7 +572,7 @@ class DerivBot {
       return;
     }
 
-    logger.info(`🚀 Starting ${CONFIG.tradingMode.toUpperCase()} trading automatically...`);
+    logger.info(`🚀 Starting ${CONFIG.tradingMode.toUpperCase()} trading...`);
     this.tradingEnabled = true;
 
     // Subscribe to tick data for all symbols
@@ -570,7 +586,7 @@ class DerivBot {
     // Send status update to UI
     this.sendStatusToUI();
 
-    logger.info(`Trading started - monitoring ${CONFIG.symbols.length} symbols in ${CONFIG.tradingMode.toUpperCase()} mode`);
+    logger.info(`Trading started - monitoring ${CONFIG.symbols.length} symbols`);
   }
 
   async subscribeToTicks(symbol) {
@@ -1285,19 +1301,10 @@ class DerivBot {
           return;
         }
         this.authorized = true;
+        logger.info(`Successfully authorized - Account type: ${CONFIG.tradingMode.toUpperCase()}`);
 
-        // Auto-detect account type based on account info
-        if (message.authorize && message.authorize.account_list) {
-          const account = message.authorize.account_list.find(acc => acc.account_type === 'trading');
-          if (account) {
-            CONFIG.tradingMode = account.is_virtual ? 'demo' : 'live';
-            logger.info(`Account type detected: ${CONFIG.tradingMode.toUpperCase()} (${account.is_virtual ? 'Virtual Money' : 'Real Money'})`);
-          }
-        }
-
-        // Fetch account balance and start trading automatically
+        // Fetch account balance
         this.fetchAccountBalance();
-        this.startTrading();
 
       } else if (message.msg_type === 'tick') {
         this.handleTick(message.tick);

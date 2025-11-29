@@ -15,6 +15,7 @@
   const maxConcurrentTradesInput = document.getElementById('max-concurrent-trades');
   const symbolsSelect = document.getElementById('symbols');
   const updateConfigBtn = document.getElementById('update-config');
+  const startTradingBtn = document.getElementById('start-trading');
   const stopTradingBtn = document.getElementById('stop-trading');
 
   // Live trading elements
@@ -121,7 +122,7 @@
       const modeText = data.tradingMode === 'live' ? 'Active (LIVE)' : 'Active (DEMO)';
       updateTradingStatus(modeText, 'status-connected');
     } else {
-      updateTradingStatus('Ready', 'status-disconnected');
+      updateTradingStatus('Ready to Trade', 'status-disconnected');
     }
 
     // Update live trading status
@@ -221,6 +222,9 @@
 
   // Update trading button states
   function updateTradingButtons() {
+    if (startTradingBtn) {
+      startTradingBtn.disabled = !isConnected || !botAuthorized || tradingEnabled;
+    }
     if (stopTradingBtn) {
       stopTradingBtn.disabled = !tradingEnabled;
     }
@@ -285,6 +289,18 @@
     });
   }
 
+
+  if (startTradingBtn) {
+    startTradingBtn.addEventListener('click', () => {
+      if (confirm('Are you sure you want to start trading? This will begin automated trades.')) {
+        if (isConnected) {
+          ws.send(JSON.stringify({ type: 'start_trading' }));
+        } else {
+          alert('Not connected to bot backend');
+        }
+      }
+    });
+  }
 
   if (stopTradingBtn) {
     stopTradingBtn.addEventListener('click', () => {
