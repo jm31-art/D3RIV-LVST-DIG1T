@@ -1248,6 +1248,11 @@ class DerivBot {
       }
     }
 
+    // Check if we found any valid results
+    if (!bestResult) {
+      throw new Error(`No valid optimization results found for strategy ${strategy} on ${symbol}. All parameter combinations failed.`);
+    }
+
     return {
       strategy,
       symbol,

@@ -202,16 +202,28 @@ button {
     padding: 30px;
     border-top: 1px solid #e9ecef;
 }
+
+#trade-list {
+    max-height: 400px;
+    overflow-y: auto;
+    border-radius: 8px;
+    background: white;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
+}
+
 .trade-item {
     display: flex;
     justify-content: space-between;
     align-items: center;
     padding: 15px;
     background: white;
-    margin-bottom: 10px;
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    margin-bottom: 1px;
     border-left: 4px solid #bdc3c7;
+    transition: background-color 0.2s ease;
+}
+
+.trade-item:hover {
+    background-color: #f8f9fa;
 }
 .trade-item.won { border-left-color: #27ae60; }
 .trade-item.lost { border-left-color: #e74c3c; }

@@ -220,12 +220,12 @@
       <div class="trade-result ${tradeData.result}">${tradeData.result.toUpperCase()} (${profit})</div>
     `;
 
-    // Insert at the top of the list
-    tradeListEl.insertBefore(tradeItem, tradeListEl.firstChild);
+    // Insert at the bottom of the list (to prevent auto-scrolling)
+    tradeListEl.appendChild(tradeItem);
 
     // Keep only last 50 trades
     while (tradeListEl.children.length > 50) {
-      tradeListEl.removeChild(tradeListEl.lastChild);
+      tradeListEl.removeChild(tradeListEl.firstChild);
     }
   }
 
@@ -292,12 +292,12 @@
       <div class="trade-result connection">${timestamp}</div>
     `;
 
-    // Insert at the top of the list
-    tradeListEl.insertBefore(messageItem, tradeListEl.firstChild);
+    // Insert at the bottom of the list (to prevent auto-scrolling)
+    tradeListEl.appendChild(messageItem);
 
     // Keep only last 50 items
     while (tradeListEl.children.length > 50) {
-      tradeListEl.removeChild(tradeListEl.lastChild);
+      tradeListEl.removeChild(tradeListEl.firstChild);
     }
   }
 
