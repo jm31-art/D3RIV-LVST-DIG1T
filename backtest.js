@@ -126,14 +126,18 @@ class BacktestEngine {
       }
 
       // Check if we should trade based on strategy
-      if (i >= 10 && totalSamples >= 100) { // Wait for sufficient data
+      if (i >= 50 && totalSamples >= 100) { // Wait for sufficient data for pattern analysis
+        // Get advanced pattern analysis for backtesting
+        const advancedPatterns = stats.detectAdvancedPatterns(recentDigits);
+
         const shouldTrade = await this.shouldTrade(strategy, {
           currentDigit: lastDigit,
           probabilities,
           recentDigits,
           totalSamples,
           tickIndex: i,
-          totalTicks: ticks.length
+          totalTicks: ticks.length,
+          advancedPatterns
         });
 
         if (shouldTrade && shouldTrade.digit !== null) {
@@ -185,6 +189,22 @@ class BacktestEngine {
 
   // Determine if strategy should trade
   async shouldTrade(strategy, context) {
+    // First priority: Advanced pattern recognition
+    if (context.advancedPatterns && context.advancedPatterns.hasPattern && context.advancedPatterns.recommendedAction) {
+      const patternAction = context.advancedPatterns.recommendedAction;
+
+      if (patternAction.action !== 'hold' && patternAction.targetDigit !== null) {
+        console.log(`Pattern-based prediction: ${patternAction.action} -> digit ${patternAction.targetDigit} (${patternAction.confidence.toFixed(2)} confidence)`);
+
+        return {
+          digit: patternAction.targetDigit,
+          confidence: patternAction.confidence,
+          method: `pattern_${patternAction.pattern}`
+        };
+      }
+    }
+
+    // Fallback to traditional strategies
     switch (strategy) {
       case 'frequency':
         // Simple frequency-based strategy

@@ -770,13 +770,17 @@ class DerivBot {
     const sentimentSignal = sentiment.generateSentimentSignal(symbol);
     const sentimentBias = sentimentSignal ? sentimentSignal.signal : null;
 
-    // Use selected strategy to predict next digit
+    // Use advanced multi-timeframe pattern recognition
+    const advancedPatterns = stats.detectAdvancedPatterns(recentTicks.map(t => t.last_digit));
+
+    // Generate prediction using pattern analysis
     const prediction = await this.generatePrediction(symbol, {
       probabilities,
       recentDigits,
       totalSamples,
       currentDigit: recentDigits[recentDigits.length - 1],
-      sentimentBias
+      sentimentBias,
+      advancedPatterns
     });
 
     if (!prediction) {
@@ -824,6 +828,26 @@ class DerivBot {
   }
 
   async generatePrediction(symbol, context) {
+    const { advancedPatterns } = context;
+
+    // First priority: Advanced pattern recognition
+    if (advancedPatterns && advancedPatterns.hasPattern && advancedPatterns.recommendedAction) {
+      const patternAction = advancedPatterns.recommendedAction;
+
+      if (patternAction.action !== 'hold' && patternAction.targetDigit !== null) {
+        logger.debug(`Pattern-based prediction: ${patternAction.action} -> digit ${patternAction.targetDigit} (${patternAction.confidence.toFixed(2)} confidence)`);
+
+        return {
+          digit: patternAction.targetDigit,
+          probability: patternAction.confidence * 100,
+          confidence: patternAction.confidence,
+          method: `pattern_${patternAction.pattern}`,
+          pattern: patternAction
+        };
+      }
+    }
+
+    // Fallback to traditional strategies
     switch (CONFIG.strategy) {
       case 'frequency':
         return this.predictWithFrequency(context.probabilities);

@@ -34,37 +34,66 @@ class StatsAnalyzer {
   }
 
   /**
-   * Detect patterns in digit sequences
+   * Multi-timeframe pattern recognition for advanced digit prediction
    * @param {Array<number>} digits - Array of last digits
-   * @returns {Object} Pattern analysis results
+   * @param {Object} options - Analysis options
+   * @returns {Object} Comprehensive pattern analysis across timeframes
    */
-  detectPatterns(digits) {
-    if (digits.length < 20) {
-      return { hasPattern: false, pattern: null, confidence: 0 };
+  detectAdvancedPatterns(digits, options = {}) {
+    if (digits.length < 50) {
+      return { hasPattern: false, patterns: {}, confidence: 0 };
     }
 
-    const patterns = {
-      alternating: this.checkAlternatingPattern(digits),
-      repeating: this.checkRepeatingPattern(digits),
-      trending: this.checkTrendingPattern(digits),
-      cyclic: this.checkCyclicPattern(digits)
+    // Analyze multiple timeframes
+    const timeframes = {
+      '1min': digits.slice(-60),    // ~1 minute (60 ticks)
+      '5min': digits.slice(-300),   // ~5 minutes (300 ticks)
+      '15min': digits.slice(-900)   // ~15 minutes (900 ticks)
     };
 
-    // Find the strongest pattern
-    let bestPattern = null;
-    let maxConfidence = 0;
+    const patternAnalysis = {};
 
-    for (const [type, result] of Object.entries(patterns)) {
-      if (result.confidence > maxConfidence) {
-        maxConfidence = result.confidence;
-        bestPattern = { type, ...result };
+    for (const [timeframe, data] of Object.entries(timeframes)) {
+      if (data.length >= 20) {
+        patternAnalysis[timeframe] = {
+          alternating: this.checkAlternatingPattern(data),
+          repeating: this.checkRepeatingPattern(data),
+          trending: this.checkTrendingPattern(data),
+          cyclic: this.checkCyclicPattern(data),
+          volatility: this.analyzeVolatilityClusters(data),
+          momentum: this.detectMomentumShifts(data),
+          meanReversion: this.checkMeanReversion(data),
+          breakout: this.detectBreakoutPatterns(data),
+          fractal: this.analyzeFractalPatterns(data)
+        };
       }
     }
 
+    // Cross-timeframe analysis
+    const crossTimeframeSignals = this.analyzeCrossTimeframeSignals(patternAnalysis);
+
+    // Find the strongest overall pattern
+    const bestPatterns = this.findStrongestPatterns(patternAnalysis, crossTimeframeSignals);
+
     return {
-      hasPattern: maxConfidence > 0.7,
-      pattern: bestPattern,
-      confidence: maxConfidence
+      hasPattern: bestPatterns.overallConfidence > 0.6,
+      patterns: patternAnalysis,
+      crossTimeframeSignals,
+      bestPatterns,
+      confidence: bestPatterns.overallConfidence,
+      recommendedAction: this.generateTradingRecommendation(bestPatterns)
+    };
+  }
+
+  /**
+   * Legacy method for backward compatibility
+   */
+  detectPatterns(digits) {
+    const advanced = this.detectAdvancedPatterns(digits);
+    return {
+      hasPattern: advanced.hasPattern,
+      pattern: advanced.bestPatterns.primary,
+      confidence: advanced.confidence
     };
   }
 
@@ -155,6 +184,398 @@ class StatsAnalyzer {
     }
 
     return { confidence: maxCorrelation, cycle: bestCycle };
+  }
+
+  /**
+   * Analyze volatility clusters in digit sequences
+   */
+  analyzeVolatilityClusters(digits) {
+    if (digits.length < 20) return { confidence: 0, clusters: [] };
+
+    const windowSize = 10;
+    const clusters = [];
+    let currentCluster = { start: 0, volatility: 0, digits: [] };
+
+    for (let i = windowSize; i < digits.length; i++) {
+      const window = digits.slice(i - windowSize, i);
+      const changes = window.slice(1).reduce((sum, digit, idx) =>
+        sum + Math.abs(digit - window[idx]), 0);
+
+      const volatility = changes / (windowSize - 1);
+
+      // Check if volatility significantly changed
+      if (Math.abs(volatility - currentCluster.volatility) > 0.5) {
+        if (currentCluster.digits.length > 0) {
+          clusters.push(currentCluster);
+        }
+        currentCluster = {
+          start: i - windowSize,
+          volatility,
+          digits: [...window]
+        };
+      } else {
+        currentCluster.volatility = (currentCluster.volatility + volatility) / 2;
+        currentCluster.digits = [...window];
+      }
+    }
+
+    if (currentCluster.digits.length > 0) {
+      clusters.push(currentCluster);
+    }
+
+    // Find high volatility clusters (potential breakout signals)
+    const highVolClusters = clusters.filter(c => c.volatility > 1.5);
+
+    return {
+      confidence: highVolClusters.length > 0 ? 0.8 : 0.2,
+      clusters: highVolClusters,
+      avgVolatility: clusters.reduce((sum, c) => sum + c.volatility, 0) / clusters.length
+    };
+  }
+
+  /**
+   * Detect momentum shifts in digit sequences
+   */
+  detectMomentumShifts(digits) {
+    if (digits.length < 15) return { confidence: 0, shifts: [] };
+
+    const shifts = [];
+    const windowSize = 5;
+
+    for (let i = windowSize * 2; i < digits.length; i++) {
+      const prevWindow = digits.slice(i - windowSize * 2, i - windowSize);
+      const currWindow = digits.slice(i - windowSize, i);
+
+      const prevTrend = this.calculateTrendDirection(prevWindow);
+      const currTrend = this.calculateTrendDirection(currWindow);
+
+      // Detect trend changes
+      if (Math.abs(prevTrend - currTrend) > 0.7) {
+        shifts.push({
+          position: i,
+          fromTrend: prevTrend,
+          toTrend: currTrend,
+          magnitude: Math.abs(prevTrend - currTrend)
+        });
+      }
+    }
+
+    const significantShifts = shifts.filter(s => s.magnitude > 0.8);
+
+    return {
+      confidence: significantShifts.length > 0 ? 0.75 : 0.1,
+      shifts: significantShifts,
+      totalShifts: shifts.length
+    };
+  }
+
+  /**
+   * Check for mean reversion opportunities
+   */
+  checkMeanReversion(digits) {
+    if (digits.length < 30) return { confidence: 0, signals: [] };
+
+    const recent = digits.slice(-20);
+    const longTerm = digits.slice(-100);
+    const shortMean = ss.mean(recent);
+    const longMean = ss.mean(longTerm);
+    const shortStd = ss.standardDeviation(recent);
+
+    const deviation = (shortMean - longMean) / (shortStd || 1);
+    const signals = [];
+
+    // Mean reversion signal when deviation is extreme
+    if (Math.abs(deviation) > 2.0) {
+      signals.push({
+        type: deviation > 0 ? 'revert_down' : 'revert_up',
+        deviation: Math.abs(deviation),
+        confidence: Math.min(Math.abs(deviation) / 4, 1.0)
+      });
+    }
+
+    return {
+      confidence: signals.length > 0 ? signals[0].confidence : 0,
+      signals,
+      deviation
+    };
+  }
+
+  /**
+   * Detect breakout patterns in digit sequences
+   */
+  detectBreakoutPatterns(digits) {
+    if (digits.length < 30) return { confidence: 0, breakouts: [] };
+
+    const breakouts = [];
+    const lookback = 20;
+
+    for (let i = lookback; i < digits.length; i++) {
+      const recent = digits.slice(i - lookback, i);
+      const current = digits[i];
+
+      const maxRecent = Math.max(...recent);
+      const minRecent = Math.min(...recent);
+
+      // Check for breakout above resistance
+      if (current > maxRecent) {
+        breakouts.push({
+          type: 'bullish_breakout',
+          level: maxRecent,
+          breakoutValue: current,
+          strength: (current - maxRecent) / (ss.standardDeviation(recent) || 1)
+        });
+      }
+      // Check for breakdown below support
+      else if (current < minRecent) {
+        breakouts.push({
+          type: 'bearish_breakdown',
+          level: minRecent,
+          breakoutValue: current,
+          strength: (minRecent - current) / (ss.standardDeviation(recent) || 1)
+        });
+      }
+    }
+
+    const strongBreakouts = breakouts.filter(b => b.strength > 1.5);
+
+    return {
+      confidence: strongBreakouts.length > 0 ? 0.85 : 0.15,
+      breakouts: strongBreakouts
+    };
+  }
+
+  /**
+   * Analyze fractal patterns (self-similar patterns at different scales)
+   */
+  analyzeFractalPatterns(digits) {
+    if (digits.length < 60) return { confidence: 0, patterns: [] };
+
+    const patterns = [];
+    const scales = [5, 10, 20]; // Different scales to analyze
+
+    for (const scale of scales) {
+      if (digits.length < scale * 3) continue;
+
+      const segments = [];
+      for (let i = 0; i <= digits.length - scale; i += scale) {
+        segments.push(digits.slice(i, i + scale));
+      }
+
+      // Find similar patterns across segments
+      for (let i = 0; i < segments.length - 1; i++) {
+        for (let j = i + 1; j < segments.length; j++) {
+          const similarity = this.calculateSequenceSimilarity(segments[i], segments[j]);
+          if (similarity > 0.8) {
+            patterns.push({
+              scale,
+              segment1: i,
+              segment2: j,
+              similarity,
+              pattern: segments[i]
+            });
+          }
+        }
+      }
+    }
+
+    return {
+      confidence: patterns.length > 0 ? 0.7 : 0.1,
+      patterns: patterns.slice(0, 5) // Top 5 patterns
+    };
+  }
+
+  /**
+   * Analyze cross-timeframe signals for stronger predictions
+   */
+  analyzeCrossTimeframeSignals(patternAnalysis) {
+    const signals = {
+      alignment: 0, // How well patterns align across timeframes
+      strength: 0,  // Overall signal strength
+      direction: null, // bullish/bearish/neutral
+      consistency: 0 // How consistent signals are
+    };
+
+    const timeframes = Object.keys(patternAnalysis);
+    if (timeframes.length < 2) return signals;
+
+    // Check if patterns align across timeframes
+    const directions = timeframes.map(tf => {
+      const patterns = patternAnalysis[tf];
+      return this.extractPatternDirection(patterns);
+    });
+
+    // Calculate alignment score
+    const consistentDirections = directions.filter((dir, idx) =>
+      idx === 0 || dir === directions[0]
+    ).length;
+
+    signals.alignment = consistentDirections / timeframes.length;
+    signals.consistency = signals.alignment;
+    signals.direction = directions[0] !== 'neutral' && signals.alignment > 0.6 ? directions[0] : 'neutral';
+
+    // Calculate strength based on pattern confidence across timeframes
+    const avgConfidence = timeframes.reduce((sum, tf) => {
+      const bestPattern = this.findBestPattern(patternAnalysis[tf]);
+      return sum + (bestPattern ? bestPattern.confidence : 0);
+    }, 0) / timeframes.length;
+
+    signals.strength = avgConfidence * signals.alignment;
+
+    return signals;
+  }
+
+  /**
+   * Find the strongest patterns across all timeframes
+   */
+  findStrongestPatterns(patternAnalysis, crossTimeframeSignals) {
+    const allPatterns = [];
+
+    for (const [timeframe, patterns] of Object.entries(patternAnalysis)) {
+      for (const [patternType, patternData] of Object.entries(patterns)) {
+        if (patternData.confidence > 0.5) {
+          allPatterns.push({
+            timeframe,
+            type: patternType,
+            ...patternData,
+            weightedConfidence: patternData.confidence * (timeframe === '1min' ? 1.0 :
+                                 timeframe === '5min' ? 1.2 : 1.1) // Weight shorter timeframes higher
+          });
+        }
+      }
+    }
+
+    // Sort by weighted confidence
+    allPatterns.sort((a, b) => b.weightedConfidence - a.weightedConfidence);
+
+    return {
+      primary: allPatterns[0] || null,
+      secondary: allPatterns[1] || null,
+      tertiary: allPatterns[2] || null,
+      all: allPatterns.slice(0, 5),
+      overallConfidence: crossTimeframeSignals.strength,
+      direction: crossTimeframeSignals.direction
+    };
+  }
+
+  /**
+   * Generate trading recommendation based on pattern analysis
+   */
+  generateTradingRecommendation(bestPatterns) {
+    if (!bestPatterns.primary || bestPatterns.overallConfidence < 0.6) {
+      return { action: 'hold', confidence: 0, reason: 'Insufficient pattern strength' };
+    }
+
+    const primary = bestPatterns.primary;
+    let action = 'hold';
+    let targetDigit = null;
+    let confidence = bestPatterns.overallConfidence;
+
+    switch (primary.type) {
+      case 'trending':
+        if (primary.direction === 'up') {
+          action = 'bias_high';
+          targetDigit = Math.max(...primary.recent.slice(-3));
+        } else if (primary.direction === 'down') {
+          action = 'bias_low';
+          targetDigit = Math.min(...primary.recent.slice(-3));
+        }
+        break;
+
+      case 'cyclic':
+        if (primary.cycle > 0) {
+          const cyclePos = primary.recent.length % primary.cycle;
+          const cycleHistory = [];
+          for (let i = cyclePos; i < primary.recent.length; i += primary.cycle) {
+            cycleHistory.push(primary.recent[i]);
+          }
+          if (cycleHistory.length > 0) {
+            targetDigit = ss.mode(cycleHistory);
+            action = 'cycle_prediction';
+          }
+        }
+        break;
+
+      case 'breakout':
+        if (primary.breakouts && primary.breakouts.length > 0) {
+          const latest = primary.breakouts[primary.breakouts.length - 1];
+          if (latest.type === 'bullish_breakout') {
+            action = 'momentum_up';
+            targetDigit = Math.max(5, Math.min(9, Math.round(latest.breakoutValue)));
+          } else {
+            action = 'momentum_down';
+            targetDigit = Math.max(0, Math.min(4, Math.round(latest.breakoutValue)));
+          }
+        }
+        break;
+
+      case 'meanReversion':
+        if (primary.signals && primary.signals.length > 0) {
+          const signal = primary.signals[0];
+          if (signal.type === 'revert_down') {
+            action = 'revert_down';
+            targetDigit = Math.max(0, Math.min(4, Math.round(ss.mean(primary.recent.slice(-10)))));
+          } else {
+            action = 'revert_up';
+            targetDigit = Math.max(5, Math.min(9, Math.round(ss.mean(primary.recent.slice(-10)))));
+          }
+        }
+        break;
+    }
+
+    return {
+      action,
+      targetDigit,
+      confidence,
+      pattern: primary.type,
+      timeframe: primary.timeframe,
+      reason: `${primary.type} pattern detected on ${primary.timeframe} timeframe`
+    };
+  }
+
+  // Helper methods
+  calculateTrendDirection(digits) {
+    if (digits.length < 3) return 0;
+    const diffs = digits.slice(1).map((d, i) => d - digits[i]);
+    return diffs.reduce((sum, diff) => sum + diff, 0) / diffs.length;
+  }
+
+  calculateSequenceSimilarity(seq1, seq2) {
+    if (seq1.length !== seq2.length) return 0;
+    let matches = 0;
+    for (let i = 0; i < seq1.length; i++) {
+      if (seq1[i] === seq2[i]) matches++;
+    }
+    return matches / seq1.length;
+  }
+
+  extractPatternDirection(patterns) {
+    // Extract bullish/bearish/neutral direction from patterns
+    const trending = patterns.trending;
+    if (trending && trending.confidence > 0.6) {
+      return trending.direction === 'up' ? 'bullish' : 'bearish';
+    }
+
+    const breakout = patterns.breakout;
+    if (breakout && breakout.confidence > 0.7) {
+      const latest = breakout.breakouts[breakout.breakouts.length - 1];
+      return latest.type === 'bullish_breakout' ? 'bullish' : 'bearish';
+    }
+
+    return 'neutral';
+  }
+
+  findBestPattern(patterns) {
+    let best = null;
+    let maxConf = 0;
+
+    for (const [type, data] of Object.entries(patterns)) {
+      if (data.confidence > maxConf) {
+        maxConf = data.confidence;
+        best = { type, ...data };
+      }
+    }
+
+    return best;
   }
 
   /**
