@@ -137,11 +137,27 @@
                 </div>
    
                 <div class="control-group">
-                    <label for="paperTrading">Paper Trading Mode:</label>
-                    <div style="display: flex; align-items: center; gap: 10px;">
-                        <input type="checkbox" id="paperTrading" style="width: 18px; height: 18px;">
-                        <span style="font-size: 0.9em; color: #666;">Test strategies without risking real money</span>
-                    </div>
+                    <label for="tradingMode">Trading Mode:</label>
+                    <select id="tradingMode">
+                        <option value="demo">Demo Account (Virtual Money)</option>
+                        <option value="live">Live Account (Real Money)</option>
+                    </select>
+                </div>
+
+                <div class="control-group">
+                    <label for="demoApiToken">
+                        🔑 Demo API Token:
+                        <small style="display: block; color: #666; font-weight: normal;">For testing with virtual money</small>
+                    </label>
+                    <input type="password" id="demoApiToken" placeholder="Enter demo account API token">
+                </div>
+
+                <div class="control-group">
+                    <label for="liveApiToken">
+                        🔑 Live API Token:
+                        <small style="display: block; color: #666; font-weight: normal;">For real money trading (use with caution)</small>
+                    </label>
+                    <input type="password" id="liveApiToken" placeholder="Enter live account API token">
                 </div>
    
 

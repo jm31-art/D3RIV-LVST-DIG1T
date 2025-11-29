@@ -64,8 +64,15 @@ if (!apiToken) {
 const CONFIG = {
   // Deriv API settings
   appId: config.DERIV_APP_ID,
-  apiToken: apiToken,
   websocketUrl: config.DERIV_WEBSOCKET_URL,
+
+  // Trading mode settings
+  tradingMode: process.env.TRADING_MODE || 'demo', // 'demo' or 'live'
+  demoApiToken: config.DEMO_API_TOKEN,
+  liveApiToken: config.LIVE_API_TOKEN,
+
+  // Current API token (set based on mode)
+  apiToken: '',
 
   // Trading settings
   symbols: config.DEFAULT_SYMBOLS,
@@ -88,10 +95,25 @@ const CONFIG = {
   useBacktestValidation: config.USE_BACKTEST_VALIDATION,
   backtestWindow: config.BACKTEST_WINDOW_TICKS,
 
-  // Paper trading mode
+  // Paper trading mode (deprecated - use tradingMode instead)
   paperTrading: false,
 
 };
+
+// Set API token based on trading mode
+if (CONFIG.tradingMode === 'live') {
+  CONFIG.apiToken = CONFIG.liveApiToken || apiToken;
+  if (!CONFIG.apiToken) {
+    console.error('Live trading mode requires LIVE_API_TOKEN environment variable.');
+    process.exit(1);
+  }
+} else {
+  CONFIG.apiToken = CONFIG.demoApiToken || apiToken;
+  if (!CONFIG.apiToken) {
+    console.error('Demo trading mode requires DEMO_API_TOKEN environment variable.');
+    process.exit(1);
+  }
+}
 
 /**
  * Main DerivBot class - orchestrates all trading operations
@@ -238,10 +260,18 @@ class DerivBot {
 
   updateConfigFromUI(config) {
     try {
-      // Update API token if provided
-      if (config.apiToken) {
-        CONFIG.apiToken = config.apiToken;
-        process.env.DERIV_API_TOKEN = config.apiToken;
+      // Update trading mode and API tokens
+      if (config.tradingMode) {
+        CONFIG.tradingMode = config.tradingMode;
+        if (config.tradingMode === 'live' && config.liveApiToken) {
+          CONFIG.liveApiToken = config.liveApiToken;
+          CONFIG.apiToken = config.liveApiToken;
+          process.env.LIVE_API_TOKEN = config.liveApiToken;
+        } else if (config.tradingMode === 'demo' && config.demoApiToken) {
+          CONFIG.demoApiToken = config.demoApiToken;
+          CONFIG.apiToken = config.demoApiToken;
+          process.env.DEMO_API_TOKEN = config.demoApiToken;
+        }
       }
 
       // Update other config parameters
@@ -251,19 +281,18 @@ class DerivBot {
       if (config.maxDrawdown) CONFIG.maxDrawdown = config.maxDrawdown;
       if (config.maxConcurrentTrades) CONFIG.maxConcurrentTrades = config.maxConcurrentTrades;
       if (config.symbols) CONFIG.symbols = config.symbols;
-      if (config.paperTrading !== undefined) CONFIG.paperTrading = config.paperTrading;
 
       // Update risk parameters
       risk.updateParameters({
-        maxDrawdown: config.MAX_DRAWDOWN,
-        maxDailyLoss: config.MAX_DAILY_LOSS,
-        maxConsecutiveLosses: config.MAX_CONSECUTIVE_LOSSES
+        maxDrawdown: CONFIG.maxDrawdown,
+        maxDailyLoss: CONFIG.maxDailyLoss,
+        maxConsecutiveLosses: config.MAX_CONSECUTIVE_LOSSES || 5
       });
 
       // Reinitialize portfolio with new symbols
       portfolio.initialize(CONFIG.symbols);
 
-      logger.info('Configuration updated from UI');
+      logger.info(`Configuration updated from UI - Trading Mode: ${CONFIG.tradingMode.toUpperCase()}`);
       this.sendStatusToUI();
     } catch (error) {
       logger.error('Error updating config from UI:', error);
@@ -322,7 +351,8 @@ class DerivBot {
       riskPerTrade: CONFIG.riskPerTrade,
       activeTrades: this.activeTrades.size,
       currentSymbol: CONFIG.symbols[0] || 'None', // Show first symbol as current
-      paperTrading: CONFIG.paperTrading
+      tradingMode: CONFIG.tradingMode,
+      paperTrading: CONFIG.paperTrading // Keep for backward compatibility
     };
 
     this.broadcastToUI(statusMessage);
@@ -349,7 +379,8 @@ class DerivBot {
     const enhancedTradeData = {
       ...tradeData,
       confidence: tradeData.confidence || 0,
-      strategy: tradeData.strategy || CONFIG.strategy
+      strategy: tradeData.strategy || CONFIG.strategy,
+      tradingMode: CONFIG.tradingMode
     };
 
     this.broadcastToUI({
@@ -905,62 +936,51 @@ class DerivBot {
   }
 
   /**
-   * Execute a trade based on the identified opportunity
-   *
-   * This method handles the complete trade execution process:
-   * - Creates and sends the trade request to Deriv API
-   * - Records the trade in the database
-   * - Sets up risk management (trailing stops, partial closes)
-   * - Subscribes to contract updates for monitoring
-   * - Updates performance metrics
-   *
-   * @param {Object} opportunity - Trading opportunity details
-   * @param {string} opportunity.symbol - Trading symbol
-   * @param {number} opportunity.prediction - Predicted digit (0-9)
-   * @param {number} opportunity.stake - Position size in USD
-   * @param {number} opportunity.probability - Prediction confidence (0-100)
-   */
+    * Execute a trade based on the identified opportunity
+    *
+    * This method handles the complete trade execution process:
+    * - Creates and sends the trade request to Deriv API (demo or live account)
+    * - Records the trade in the database
+    * - Sets up risk management (trailing stops, partial closes)
+    * - Subscribes to contract updates for monitoring
+    * - Updates performance metrics
+    *
+    * @param {Object} opportunity - Trading opportunity details
+    * @param {string} opportunity.symbol - Trading symbol
+    * @param {number} opportunity.prediction - Predicted digit (0-9)
+    * @param {number} opportunity.stake - Position size in USD
+    * @param {number} opportunity.probability - Prediction confidence (0-100)
+    */
   async executeTrade(opportunity) {
     try {
-      logger.info(`${CONFIG.paperTrading ? '[PAPER TRADE]' : '[LIVE TRADE]'} Executing trade: ${opportunity.symbol} -> ${opportunity.prediction} ($${opportunity.stake.toFixed(2)})`);
+      const modeText = CONFIG.tradingMode === 'live' ? 'LIVE' : 'DEMO';
+      logger.info(`[${modeText} TRADE] Executing trade: ${opportunity.symbol} -> ${opportunity.prediction} ($${opportunity.stake.toFixed(2)})`);
 
-      let tradeId;
-
-      if (CONFIG.paperTrading) {
-        // Paper trading mode - simulate trade execution
-        tradeId = `paper_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-
-        // Simulate immediate trade confirmation for paper trading
-        logger.info(`Paper trade ${tradeId} simulated successfully`);
-
-      } else {
-        // Live trading mode - send real trade to Deriv
-        // Construct the trade request for Deriv's DIGITDIFF contract
-        // DIGITDIFF pays if the last digit differs from the predicted digit
-        const tradeRequest = {
-          buy: 1,  // Buy contract
-          parameters: {
-            amount: opportunity.stake,        // Stake amount in USD
-            basis: 'stake',                   // Specify amount as stake
-            contract_type: 'DIGITDIFF',       // Last digit difference contract
-            currency: 'USD',                  // Trading currency
-            duration: 1,                      // 1 tick duration
-            duration_unit: 't',               // Duration in ticks
-            symbol: opportunity.symbol,       // Trading symbol (R_10, R_25, etc.)
-            barrier: opportunity.prediction.toString() // Predicted digit as barrier
-          }
-        };
-
-        // Send trade request
-        const response = await this.sendRequestAsync(tradeRequest);
-
-        if (response.error) {
-          logger.error('Trade execution failed:', response.error);
-          return;
+      // Construct the trade request for Deriv's DIGITDIFF contract
+      // DIGITDIFF pays if the last digit differs from the predicted digit
+      const tradeRequest = {
+        buy: 1,  // Buy contract
+        parameters: {
+          amount: opportunity.stake,        // Stake amount in USD
+          basis: 'stake',                   // Specify amount as stake
+          contract_type: 'DIGITDIFF',       // Last digit difference contract
+          currency: 'USD',                  // Trading currency
+          duration: 1,                      // 1 tick duration
+          duration_unit: 't',               // Duration in ticks
+          symbol: opportunity.symbol,       // Trading symbol (R_10, R_25, etc.)
+          barrier: opportunity.prediction.toString() // Predicted digit as barrier
         }
+      };
 
-        tradeId = response.buy.contract_id;
+      // Send trade request to appropriate account (demo or live)
+      const response = await this.sendRequestAsync(tradeRequest);
+
+      if (response.error) {
+        logger.error('Trade execution failed:', response.error);
+        return;
       }
+
+      const tradeId = response.buy.contract_id;
       const tradeRecord = {
         id: tradeId,
         symbol: opportunity.symbol,
@@ -1003,17 +1023,10 @@ class DerivBot {
 
       this.lastTradeTime = Date.now();
 
-      if (CONFIG.paperTrading) {
-        // For paper trading, simulate trade outcome after a short delay
-        setTimeout(() => {
-          this.simulatePaperTradeOutcome(tradeId, tradeRecord);
-        }, 2000); // Simulate 2-second trade duration
-      } else {
-        // Subscribe to contract updates for live trading
-        this.subscribeToContract(tradeId);
-      }
+      // Subscribe to contract updates for monitoring
+      this.subscribeToContract(tradeId);
 
-      logger.info(`Trade ${tradeId} executed successfully`);
+      logger.info(`Trade ${tradeId} executed successfully on ${modeText} account`);
 
     } catch (error) {
       logger.error('Trade execution error:', error);
@@ -1264,37 +1277,6 @@ class DerivBot {
     };
   }
 
-  simulatePaperTradeOutcome(tradeId, tradeRecord) {
-    try {
-      // Get the next tick to determine actual outcome
-      const ticks = db.getRecentTicks(tradeRecord.symbol, 2);
-      if (ticks.length < 2) {
-        logger.warn(`Cannot simulate paper trade ${tradeId}: insufficient tick data`);
-        return;
-      }
-
-      const actualDigit = ticks[1].last_digit; // The tick after the trade
-      const isWin = actualDigit !== tradeRecord.prediction; // DIGITDIFF wins if digits differ
-
-      const profit = isWin ? tradeRecord.stake * 0.8 : -tradeRecord.stake; // 80% payout on win
-      const payout = isWin ? tradeRecord.stake * 1.8 : 0;
-
-      // Simulate contract update
-      const simulatedContract = {
-        contract_id: tradeId,
-        status: isWin ? 'won' : 'lost',
-        profit: profit
-      };
-
-      logger.info(`Paper trade ${tradeId} simulated: predicted ${tradeRecord.prediction}, actual ${actualDigit}, result ${simulatedContract.status}, profit $${profit.toFixed(2)}`);
-
-      // Process the simulated outcome
-      this.handleContractUpdate(simulatedContract);
-
-    } catch (error) {
-      logger.error(`Error simulating paper trade ${tradeId}:`, error);
-    }
-  }
 
 
   async generatePerformanceReport() {
@@ -1408,7 +1390,7 @@ class DerivBot {
         result: status,
         profit: trade.profit,
         timestamp: trade.timestamp,
-        paperTrade: CONFIG.paperTrading
+        tradingMode: CONFIG.tradingMode
       });
 
 

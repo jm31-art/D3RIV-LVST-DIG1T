@@ -7,14 +7,15 @@
   const connectionText = document.getElementById('connection-text');
   const tradingStatus = document.getElementById('trading-status');
   const tradingText = document.getElementById('trading-text');
-  const apiTokenInput = document.getElementById('api-token');
+  const tradingModeSelect = document.getElementById('tradingMode');
+  const demoApiTokenInput = document.getElementById('demoApiToken');
+  const liveApiTokenInput = document.getElementById('liveApiToken');
   const tradingStrategySelect = document.getElementById('trading-strategy');
   const riskPerTradeInput = document.getElementById('risk-per-trade');
   const minProbabilityInput = document.getElementById('min-probability');
   const maxDrawdownInput = document.getElementById('max-drawdown');
   const maxConcurrentTradesInput = document.getElementById('max-concurrent-trades');
   const symbolsSelect = document.getElementById('symbols');
-  const paperTradingCheckbox = document.getElementById('paperTrading');
   const updateConfigBtn = document.getElementById('update-config');
   const startTradingBtn = document.getElementById('start-trading');
   const stopTradingBtn = document.getElementById('stop-trading');
@@ -144,16 +145,16 @@
     tradingEnabled = data.tradingEnabled || false;
 
     if (data.authorized) {
-      const statusText = data.paperTrading ? 'Authorized (Paper Trading)' : 'Authorized';
-      updateConnectionStatus(statusText, 'status-connected');
+      const modeText = data.tradingMode === 'live' ? 'LIVE ACCOUNT' : 'DEMO ACCOUNT';
+      updateConnectionStatus(`Authorized (${modeText})`, 'status-connected');
     } else {
       updateConnectionStatus('Connected (Not Authorized)', 'status-authorizing');
     }
 
     // Update trading status
     if (tradingEnabled) {
-      const tradingText = data.paperTrading ? 'Active (Paper Trading)' : 'Active';
-      updateTradingStatus(tradingText, 'status-connected');
+      const modeText = data.tradingMode === 'live' ? 'Active (LIVE)' : 'Active (DEMO)';
+      updateTradingStatus(modeText, 'status-connected');
     } else {
       updateTradingStatus('Ready', 'status-disconnected');
     }
@@ -210,10 +211,10 @@
 
     const timestamp = new Date(tradeData.timestamp).toLocaleString();
     const profit = tradeData.profit ? `$${tradeData.profit.toFixed(2)}` : 'Pending';
-    const paperTradeIndicator = tradeData.paperTrade ? ' [PAPER]' : '';
+    const modeIndicator = tradeData.tradingMode === 'live' ? ' [LIVE]' : ' [DEMO]';
 
     tradeItem.innerHTML = `
-      <div class="trade-symbol">${tradeData.symbol}${paperTradeIndicator}</div>
+      <div class="trade-symbol">${tradeData.symbol}${modeIndicator}</div>
       <div class="trade-details">
         Prediction: ${tradeData.prediction} | Stake: $${tradeData.stake} | ${timestamp}
       </div>
@@ -243,10 +244,10 @@
     // Show signal information and result
     const signalInfo = tradeData.confidence ? `Signal: ${tradeData.prediction} (${(tradeData.confidence * 100).toFixed(1)}% confidence)` : `Signal: ${tradeData.prediction}`;
     const resultText = tradeData.result === 'won' ? `✅ WIN (+${profit})` : tradeData.result === 'lost' ? `❌ LOSS (${profit})` : '⏳ PENDING';
-    const paperTradeIndicator = tradeData.paperTrade ? ' [PAPER]' : '';
+    const modeIndicator = tradeData.tradingMode === 'live' ? ' [LIVE]' : ' [DEMO]';
 
     tradeItem.innerHTML = `
-      <div class="trade-symbol">${tradeData.symbol}${paperTradeIndicator}</div>
+      <div class="trade-symbol">${tradeData.symbol}${modeIndicator}</div>
       <div class="trade-details">
         ${signalInfo} | Stake: $${tradeData.stake} | ${timestamp}
       </div>
@@ -309,31 +310,31 @@
 
   // Event listeners for UI controls
   if (updateConfigBtn) {
-    updateConfigBtn.addEventListener('click', () => {
-      const config = {
-        type: 'update_config',
-        apiToken: apiTokenInput ? apiTokenInput.value : '',
-        strategy: tradingStrategySelect ? tradingStrategySelect.value : 'ensemble',
-        riskPerTrade: riskPerTradeInput ? parseFloat(riskPerTradeInput.value) : 0.02,
-        minProbability: minProbabilityInput ? parseFloat(minProbabilityInput.value) : 50,
-        maxDrawdown: maxDrawdownInput ? parseFloat(maxDrawdownInput.value) : 0.15,
-        maxConcurrentTrades: maxConcurrentTradesInput ? parseInt(maxConcurrentTradesInput.value) : 1,
-        symbols: symbolsSelect ? Array.from(symbolsSelect.selectedOptions).map(opt => opt.value) : ['R_10', 'R_25', 'R_50', 'R_75', 'R_100'],
-        paperTrading: paperTradingCheckbox ? paperTradingCheckbox.checked : false,
-      };
+   updateConfigBtn.addEventListener('click', () => {
+     const tradingMode = tradingModeSelect ? tradingModeSelect.value : 'demo';
+     const config = {
+       type: 'update_config',
+       tradingMode: tradingMode,
+       demoApiToken: demoApiTokenInput ? demoApiTokenInput.value : '',
+       liveApiToken: liveApiTokenInput ? liveApiTokenInput.value : '',
+       strategy: tradingStrategySelect ? tradingStrategySelect.value : 'ensemble',
+       riskPerTrade: riskPerTradeInput ? parseFloat(riskPerTradeInput.value) : 0.02,
+       minProbability: minProbabilityInput ? parseFloat(minProbabilityInput.value) : 50,
+       maxDrawdown: maxDrawdownInput ? parseFloat(maxDrawdownInput.value) : 0.15,
+       maxConcurrentTrades: maxConcurrentTradesInput ? parseInt(maxConcurrentTradesInput.value) : 1,
+       symbols: symbolsSelect ? Array.from(symbolsSelect.selectedOptions).map(opt => opt.value) : ['R_10', 'R_25', 'R_50', 'R_75', 'R_100'],
+     };
 
-      if (isConnected) {
-        ws.send(JSON.stringify(config));
-        // Show connection message only after manual connect button press
-        if (config.apiToken) {
-          addConnectionMessage('🔌 Bot connected to websocket - API token updated and authorized');
-        }
-        alert('Configuration updated and connected successfully!');
-      } else {
-        alert('Not connected to bot backend');
-      }
-    });
-  }
+     if (isConnected) {
+       ws.send(JSON.stringify(config));
+       const modeText = tradingMode === 'live' ? 'LIVE ACCOUNT' : 'DEMO ACCOUNT';
+       addConnectionMessage(`🔌 Bot connected to ${modeText} - Configuration updated`);
+       alert(`Configuration updated for ${modeText} successfully!`);
+     } else {
+       alert('Not connected to bot backend');
+     }
+   });
+ }
 
   if (startTradingBtn) {
     startTradingBtn.addEventListener('click', () => {

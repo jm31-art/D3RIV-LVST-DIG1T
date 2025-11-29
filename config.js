@@ -6,6 +6,10 @@ module.exports = {
   DERIV_APP_ID: process.env.DERIV_APP_ID || '1089',
   DERIV_WEBSOCKET_URL: 'wss://ws.derivws.com/websockets/v3',
 
+  // Demo account settings
+  DEMO_API_TOKEN: process.env.DEMO_API_TOKEN || '',
+  LIVE_API_TOKEN: process.env.LIVE_API_TOKEN || '',
+
   // Trading settings - Volatility Indices (1s)
   DEFAULT_SYMBOLS: ['R_10', 'R_25', 'R_50', 'R_75', 'R_100'], // 10, 25, 50, 75, 100 index (1s)
   MIN_SAMPLES_REQUIRED: 10, // Minimum samples before trading (very fast start)

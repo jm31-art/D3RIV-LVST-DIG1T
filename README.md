@@ -41,8 +41,8 @@ The bot tracks comprehensive performance indicators:
 
 1. **Clone the repository**
    ```bash
-   git clone <repository-url>
-   cd deriv-last-digit
+   git clone https://github.com/jm31-art/D3RIV-LVST-DIG1T.git
+   cd D3RIV-LVST-DIG1T
    ```
 
 2. **Install dependencies**
@@ -51,9 +51,23 @@ The bot tracks comprehensive performance indicators:
    ```
 
 3. **Configure environment**
-   Create a `.env` file with your Deriv API credentials:
+   Copy `.env.example` to `.env` and configure your settings:
+   ```bash
+   cp .env.example .env
+   ```
+
+   Edit `.env` with your Deriv API credentials:
    ```env
-   DERIV_API_TOKEN=your_api_token_here
+   # Choose trading mode: 'demo' for virtual money testing, 'live' for real money
+   TRADING_MODE=demo
+
+   # Demo account token (for testing with virtual money)
+   DEMO_API_TOKEN=your_demo_account_token_here
+
+   # Live account token (for real money trading - use with extreme caution!)
+   LIVE_API_TOKEN=your_live_account_token_here
+
+   # Deriv App ID (usually 1089)
    DERIV_APP_ID=1089
    ```
 
@@ -61,6 +75,8 @@ The bot tracks comprehensive performance indicators:
    ```bash
    npm start
    ```
+
+   The web dashboard will be available at `http://localhost:3000`
 
 ## 🎯 Usage
 
@@ -91,6 +107,37 @@ Access the advanced web dashboard at `http://localhost:3000`:
 3. **Neural Network**: ML-based pattern recognition
 4. **Ensemble**: Combines all strategies with weighted voting
 5. **Time Series**: Autocorrelation and trend analysis
+6. **Gradient Boosting**: Advanced ensemble learning
+7. **LSTM**: Long Short-Term Memory neural networks
+
+## 🎯 Demo vs Live Trading
+
+The bot supports both demo and live trading modes to help you test strategies safely:
+
+### Demo Trading Mode
+- **Purpose**: Test strategies with virtual money
+- **Risk**: Zero financial risk
+- **Use Case**: Learn bot behavior, optimize parameters, validate strategies
+- **Setup**: Set `TRADING_MODE=demo` and provide `DEMO_API_TOKEN`
+
+### Live Trading Mode
+- **Purpose**: Real money trading with actual profits/losses
+- **Risk**: High financial risk - use with extreme caution
+- **Use Case**: Deploy validated strategies for real trading
+- **Setup**: Set `TRADING_MODE=live` and provide `LIVE_API_TOKEN`
+
+### Recommended Workflow
+1. **Start with Demo**: Use demo account to understand bot behavior
+2. **Optimize Parameters**: Fine-tune risk settings and strategies
+3. **Paper Test**: Monitor performance over extended periods
+4. **Live Deployment**: Switch to live mode only when confident
+5. **Monitor Closely**: Start with small stakes in live trading
+
+### Switching Between Modes
+- Change `TRADING_MODE` in your `.env` file
+- Restart the bot
+- The web dashboard will show current trading mode status
+- All trades are clearly marked as [DEMO] or [LIVE]
 
 ## 🔧 API Reference
 
