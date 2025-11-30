@@ -21,23 +21,157 @@ class RiskManager {
     this.scaleOutStrategies = new Map(); // strategyId -> scale-out configuration
   }
 
-  // Calculate Kelly Criterion stake size
-  calculateKellyStake(winRate, avgWin, avgLoss, currentBalance, fraction = 1.0) {
+  // Enhanced Kelly Criterion with multiple variants
+  calculateKellyStake(winRate, avgWin, avgLoss, currentBalance, fraction = 1.0, variant = 'classic') {
     if (winRate <= 0 || winRate >= 1 || avgLoss <= 0) {
       return currentBalance * 0.01; // 1% of balance as fallback
     }
 
-    // Kelly formula: f = (bp - q) / b
-    // where b = odds (avg win / avg loss), p = win rate, q = loss rate
-    const b = avgWin / avgLoss;
+    const b = avgWin / avgLoss; // Odds ratio
     const p = winRate;
     const q = 1 - p;
 
-    const kellyFraction = (b * p - q) / b;
-    const optimalStake = kellyFraction * fraction * currentBalance;
+    let kellyFraction;
 
-    // Conservative Kelly (half Kelly)
-    return Math.max(0, optimalStake * 0.5);
+    switch (variant) {
+      case 'classic':
+        // Original Kelly: f = (bp - q) / b
+        kellyFraction = (b * p - q) / b;
+        break;
+
+      case 'fractional':
+        // Fractional Kelly (more conservative)
+        kellyFraction = ((b * p - q) / b) * fraction;
+        break;
+
+      case 'robust':
+        // Robust Kelly (accounts for uncertainty)
+        const variance = this.estimateWinRateVariance(winRate, 50); // Assume 50 trades for estimation
+        const adjustedP = Math.max(0.1, Math.min(0.9, p - variance));
+        kellyFraction = (b * adjustedP - q) / b;
+        break;
+
+      case 'dynamic':
+        // Dynamic Kelly based on recent performance
+        const recentPerformance = this.getRecentPerformanceMetrics();
+        const confidenceMultiplier = Math.max(0.5, Math.min(1.5, recentPerformance.consistency));
+        kellyFraction = ((b * p - q) / b) * confidenceMultiplier;
+        break;
+
+      default:
+        kellyFraction = (b * p - q) / b;
+    }
+
+    // Apply safety constraints
+    const optimalStake = kellyFraction * currentBalance;
+    const maxStake = currentBalance * 0.05; // Max 5% of balance
+    const minStake = currentBalance * 0.001; // Min 0.1% of balance
+
+    // Conservative approach: use half Kelly
+    const conservativeStake = Math.max(minStake, Math.min(maxStake, optimalStake * 0.5));
+
+    return conservativeStake;
+  }
+
+  // Calculate advanced Kelly with multiple factors
+  calculateAdvancedKellyStake(symbol, currentBalance, winRate, avgWin, avgLoss, context = {}) {
+    // Get symbol-specific metrics
+    const symbolStats = this.getSymbolPerformanceStats(symbol);
+    const marketRegime = context.marketRegime || 'unknown';
+    const volatility = context.volatility || 0.5;
+
+    // Adjust Kelly based on market conditions
+    let regimeMultiplier = 1.0;
+    switch (marketRegime) {
+      case 'stable_bias':
+        regimeMultiplier = 1.2; // More aggressive in stable conditions
+        break;
+      case 'directional_drift':
+        regimeMultiplier = 1.1;
+        break;
+      case 'chaotic_noisy':
+        regimeMultiplier = 0.6; // Much more conservative in chaos
+        break;
+      case 'random_spikes':
+        regimeMultiplier = 0.5; // Very conservative
+        break;
+      default:
+        regimeMultiplier = 1.0;
+    }
+
+    // Adjust for volatility
+    const volatilityMultiplier = Math.max(0.5, Math.min(1.5, 2.0 - volatility));
+
+    // Adjust for symbol performance
+    const performanceMultiplier = symbolStats ? symbolStats.consistency : 1.0;
+
+    // Calculate base Kelly
+    const baseKelly = this.calculateKellyStake(winRate, avgWin, avgLoss, currentBalance, 1.0, 'fractional');
+
+    // Apply all multipliers
+    const adjustedKelly = baseKelly * regimeMultiplier * volatilityMultiplier * performanceMultiplier;
+
+    // Final safety constraints
+    const finalStake = Math.max(
+      currentBalance * 0.001, // Min 0.1%
+      Math.min(
+        currentBalance * 0.03, // Max 3% of balance
+        adjustedKelly
+      )
+    );
+
+    return {
+      stake: finalStake,
+      baseKelly,
+      multipliers: {
+        regime: regimeMultiplier,
+        volatility: volatilityMultiplier,
+        performance: performanceMultiplier
+      },
+      reasoning: this.generateKellyReasoning(regimeMultiplier, volatilityMultiplier, performanceMultiplier)
+    };
+  }
+
+  // Estimate variance in win rate estimation
+  estimateWinRateVariance(observedWinRate, sampleSize) {
+    // Use binomial distribution variance: p(1-p)/n
+    return Math.sqrt((observedWinRate * (1 - observedWinRate)) / sampleSize);
+  }
+
+  // Get recent performance metrics for dynamic Kelly
+  getRecentPerformanceMetrics() {
+    // Simplified - in practice would analyze recent trades
+    return {
+      consistency: 0.8, // Placeholder
+      volatility: 0.3,
+      trend: 'stable'
+    };
+  }
+
+  // Get symbol-specific performance statistics
+  getSymbolPerformanceStats(symbol) {
+    // Simplified - would track per-symbol metrics
+    return {
+      consistency: 0.75,
+      avgWinRate: 0.55,
+      volatility: 0.4
+    };
+  }
+
+  // Generate reasoning for Kelly stake calculation
+  generateKellyReasoning(regimeMult, volMult, perfMult) {
+    const reasons = [];
+
+    if (regimeMult > 1.1) reasons.push('Favorable market regime allows higher stakes');
+    else if (regimeMult < 0.8) reasons.push('Unfavorable market conditions reduce stake size');
+
+    if (volMult < 0.9) reasons.push('High volatility requires stake reduction');
+    else if (volMult > 1.1) reasons.push('Low volatility allows stake increase');
+
+    if (perfMult > 1.1) reasons.push('Strong recent performance supports higher stakes');
+    else if (perfMult < 0.9) reasons.push('Poor recent performance reduces stake size');
+
+    return reasons;
   }
 
   // Calculate position size based on risk management

@@ -43,6 +43,37 @@ module.exports = {
   WS_RECONNECT_DELAY_MS: 5000,
   WS_REQUEST_TIMEOUT_MS: 10000,
 
+  // Loss cooldown settings
+  LOSS_COOLDOWN_MS: 30000, // 30 seconds cooldown after a loss
+
+  // Stop-loss settings
+  STOP_LOSS_ENABLED: true,
+  MAX_CONSECUTIVE_LOSSES_STOP: 5, // Stop trading after 5 consecutive losses
+  MAX_DAILY_LOSS_STOP: 0.10, // Stop trading after 10% daily loss
+
+  // Execution delay settings
+  EXECUTION_DELAY_ENABLED: true,
+  EXECUTION_DELAY_MS: 500, // 500ms delay before execution to avoid bad ticks
+
+  // Martingale settings
+  MARTINGALE_ENABLED: false, // Disabled by default for safety
+  MARTINGALE_MULTIPLIER: 2.0, // Double stake after loss
+  MARTINGALE_MAX_LEVELS: 3, // Maximum 3 levels of martingale
+
+  // Simulation settings
+  SIMULATION_MODE: false, // Enable simulation mode
+  SIMULATION_BALANCE: 1000, // Starting balance for simulation
+
+  // Rate limiting settings
+  RATE_LIMIT_ENABLED: true,
+  MAX_REQUESTS_PER_MINUTE: 30, // Deriv API rate limit
+  MAX_REQUESTS_PER_HOUR: 100,
+
+  // Retry settings
+  RETRY_ENABLED: true,
+  MAX_RETRIES: 3,
+  RETRY_DELAY_MS: 1000, // Base delay between retries
+
   // Backtesting settings
   DEFAULT_BACKTEST_TRADES: 100,
   BACKTEST_FOLDS: 5,
@@ -56,6 +87,7 @@ module.exports = {
   PAYOUT_MULTIPLIER: 9.0, // 9x payout for DIGITMATCH (when digit matches exactly)
   KELLY_FRACTION: 0.5, // Half Kelly for conservatism
   MAX_STAKE_MULTIPLIER: 0.1, // Max 10% of balance
+  MAX_STAKE: 100.0, // Maximum stake amount in USD
 
   // Statistical settings
   CONFIDENCE_THRESHOLD: 0.15,

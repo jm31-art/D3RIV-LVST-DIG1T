@@ -880,6 +880,155 @@ class StatsAnalyzer {
   }
 
   /**
+   * Advanced Market Regime Detection (variance, entropy, runs)
+   * @param {Array<number>} digits - Array of last digits
+   * @param {number} window - Analysis window size
+   * @returns {Object} Comprehensive regime analysis
+   */
+  detectAdvancedMarketRegime(digits, window = 200) {
+    if (digits.length < window) {
+      return { regime: 'unknown', confidence: 0, metrics: {} };
+    }
+
+    const recent = digits.slice(-window);
+
+    // 1. Calculate digit variance (low variance = stable/bias)
+    const digitVariance = ss.variance(recent);
+    const digitStd = Math.sqrt(digitVariance);
+
+    // 2. Calculate entropy (low entropy = biased market)
+    const entropy = this.calculateShannonEntropy(recent);
+
+    // 3. Calculate runs-based patterns (streak detection)
+    const runsAnalysis = this.analyzeRunsPatterns(recent);
+
+    // 4. Additional metrics
+    const frequencyDistribution = this.calculateDigitDistribution(recent);
+    const concentrationIndex = this.calculateConcentrationIndex(frequencyDistribution);
+
+    // Determine regime based on metrics
+    let regime = 'unknown';
+    let confidence = 0;
+    let tradingAllowed = false;
+
+    // Stable digits bias (good for trading)
+    if (digitVariance < 6.0 && entropy < 3.0 && runsAnalysis.longestRun < 8) {
+      regime = 'stable_bias';
+      confidence = Math.min(1.0, (1 - digitVariance/8) * (1 - entropy/3.3) * 0.9);
+      tradingAllowed = true;
+    }
+    // Chaotic/noisy digits (AVOID trading)
+    else if (digitVariance > 8.0 || entropy > 3.2 || runsAnalysis.longestRun > 12) {
+      regime = 'chaotic_noisy';
+      confidence = Math.min(1.0, (digitVariance/10) * (entropy/3.3) * 0.8);
+      tradingAllowed = false;
+    }
+    // Directional drift
+    else if (Math.abs(this.calculateTrendDirection(recent)) > 0.02) {
+      regime = 'directional_drift';
+      confidence = Math.min(1.0, Math.abs(this.calculateTrendDirection(recent)) * 50);
+      tradingAllowed = true;
+    }
+    // Random spikes
+    else if (runsAnalysis.spikeCount > window * 0.1) {
+      regime = 'random_spikes';
+      confidence = Math.min(1.0, runsAnalysis.spikeCount / (window * 0.2));
+      tradingAllowed = false;
+    }
+
+    return {
+      regime,
+      confidence,
+      tradingAllowed,
+      metrics: {
+        digitVariance,
+        digitStd,
+        entropy,
+        runsAnalysis,
+        concentrationIndex,
+        frequencyDistribution
+      },
+      analysis: {
+        stability: 1 - (digitVariance / 10), // 0-1 scale
+        predictability: 1 - (entropy / 3.3), // 0-1 scale
+        biasStrength: concentrationIndex
+      }
+    };
+  }
+
+  /**
+   * Calculate Shannon entropy for digit distribution
+   */
+  calculateShannonEntropy(digits) {
+    const freq = Array(10).fill(0);
+    digits.forEach(digit => freq[digit]++);
+
+    let entropy = 0;
+    const n = digits.length;
+
+    for (let i = 0; i < 10; i++) {
+      if (freq[i] > 0) {
+        const p = freq[i] / n;
+        entropy -= p * Math.log2(p);
+      }
+    }
+
+    return entropy;
+  }
+
+  /**
+   * Analyze runs patterns (consecutive same digits)
+   */
+  analyzeRunsPatterns(digits) {
+    if (digits.length < 2) return { longestRun: 0, avgRun: 0, spikeCount: 0 };
+
+    let currentRun = 1;
+    let longestRun = 1;
+    let totalRuns = 0;
+    let spikeCount = 0;
+
+    for (let i = 1; i < digits.length; i++) {
+      if (digits[i] === digits[i-1]) {
+        currentRun++;
+        longestRun = Math.max(longestRun, currentRun);
+      } else {
+        totalRuns++;
+        currentRun = 1;
+      }
+
+      // Count spikes (sudden changes > 4)
+      if (Math.abs(digits[i] - digits[i-1]) > 4) {
+        spikeCount++;
+      }
+    }
+
+    return {
+      longestRun,
+      avgRun: digits.length / (totalRuns + 1),
+      spikeCount,
+      totalRuns
+    };
+  }
+
+  /**
+   * Calculate digit distribution
+   */
+  calculateDigitDistribution(digits) {
+    const distribution = Array(10).fill(0);
+    digits.forEach(digit => distribution[digit]++);
+    return distribution.map(count => count / digits.length);
+  }
+
+  /**
+   * Calculate concentration index (how biased the distribution is)
+   */
+  calculateConcentrationIndex(distribution) {
+    const maxProb = Math.max(...distribution);
+    const uniformProb = 1/10; // 0.1
+    return (maxProb - uniformProb) / (1 - uniformProb); // 0-1 scale
+  }
+
+  /**
    * Calculate R-squared for regression
    */
   calculateRSquared(y, x, regression) {
@@ -929,6 +1078,675 @@ class StatsAnalyzer {
       orderFlow: buyPressure - sellPressure,
       marketEfficiency: spreadVolatility > avgSpread * 2 ? 'inefficient' : 'efficient'
     };
+  }
+
+  /**
+   * Bias Exploitation Engine - Track digit frequencies and calculate bias strength
+   * @param {Array<number>} digits - Array of last digits
+   * @param {number} window - Analysis window size
+   * @returns {Object} Bias analysis with strength scores and recommendations
+   */
+  analyzeDigitBias(digits, window = 500) {
+    if (digits.length < window) {
+      return { biasStrength: 0, recommendedDigits: [], confidence: 0 };
+    }
+
+    const recent = digits.slice(-window);
+
+    // Calculate frequency of each digit (0-9)
+    const frequencies = Array(10).fill(0);
+    recent.forEach(digit => frequencies[digit]++);
+
+    // Calculate probabilities
+    const probabilities = frequencies.map(freq => freq / window);
+
+    // Calculate bias strength using concentration index
+    const maxProb = Math.max(...probabilities);
+    const uniformProb = 1/10; // 0.1 for uniform distribution
+    const concentrationIndex = (maxProb - uniformProb) / (1 - uniformProb);
+
+    // Find digits with significant bias (above threshold)
+    const threshold = uniformProb + (concentrationIndex * 0.3); // Dynamic threshold
+    const biasedDigits = [];
+    const strengthScores = [];
+
+    for (let i = 0; i < 10; i++) {
+      if (probabilities[i] > threshold) {
+        biasedDigits.push(i);
+        strengthScores.push({
+          digit: i,
+          probability: probabilities[i],
+          strength: (probabilities[i] - uniformProb) / (maxProb - uniformProb),
+          confidence: Math.min(1.0, (probabilities[i] - uniformProb) * 10)
+        });
+      }
+    }
+
+    // Sort by strength
+    strengthScores.sort((a, b) => b.strength - a.strength);
+
+    // Calculate weighted moving average for trend analysis
+    const wmaPeriod = 50;
+    const weights = [];
+    for (let i = 1; i <= wmaPeriod; i++) {
+      weights.push(i);
+    }
+    const weightSum = weights.reduce((a, b) => a + b, 0);
+
+    const wmaFrequencies = Array(10).fill(0);
+    const recentWindow = recent.slice(-wmaPeriod);
+
+    for (let i = 0; i < recentWindow.length; i++) {
+      const weight = weights[i];
+      wmaFrequencies[recentWindow[i]] += weight;
+    }
+
+    const wmaProbabilities = wmaFrequencies.map(freq => freq / weightSum);
+
+    // Calculate trend direction for biased digits
+    const trendAnalysis = this.calculateBiasTrends(recent, biasedDigits, 20);
+
+    return {
+      biasStrength: concentrationIndex,
+      concentrationIndex,
+      recommendedDigits: strengthScores.slice(0, 3).map(s => s.digit),
+      strengthScores,
+      frequencies,
+      probabilities,
+      wmaProbabilities,
+      trendAnalysis,
+      confidence: concentrationIndex > 0.3 ? Math.min(1.0, concentrationIndex * 2) : 0,
+      tradingSignal: this.generateBiasTradingSignal(strengthScores, trendAnalysis)
+    };
+  }
+
+  /**
+   * Calculate bias trends for specific digits
+   */
+  calculateBiasTrends(digits, targetDigits, windowSize = 20) {
+    const trends = {};
+
+    targetDigits.forEach(digit => {
+      const positions = [];
+      for (let i = 0; i < digits.length; i++) {
+        if (digits[i] === digit) positions.push(i);
+      }
+
+      if (positions.length < 3) {
+        trends[digit] = { trend: 'insufficient_data', strength: 0 };
+        return;
+      }
+
+      // Calculate intervals between occurrences
+      const intervals = [];
+      for (let i = 1; i < positions.length; i++) {
+        intervals.push(positions[i] - positions[i-1]);
+      }
+
+      // Check if intervals are decreasing (increasing frequency)
+      const recentIntervals = intervals.slice(-Math.min(5, intervals.length));
+      const olderIntervals = intervals.slice(-Math.min(10, intervals.length), -5);
+
+      if (recentIntervals.length < 3 || olderIntervals.length < 3) {
+        trends[digit] = { trend: 'stable', strength: 0.5 };
+        return;
+      }
+
+      const recentAvg = recentIntervals.reduce((a, b) => a + b, 0) / recentIntervals.length;
+      const olderAvg = olderIntervals.reduce((a, b) => a + b, 0) / olderIntervals.length;
+
+      const trendRatio = olderAvg / recentAvg; // > 1 means increasing frequency
+
+      if (trendRatio > 1.2) {
+        trends[digit] = { trend: 'increasing', strength: Math.min(1.0, trendRatio - 1) };
+      } else if (trendRatio < 0.8) {
+        trends[digit] = { trend: 'decreasing', strength: Math.min(1.0, 1 - trendRatio) };
+      } else {
+        trends[digit] = { trend: 'stable', strength: 0.5 };
+      }
+    });
+
+    return trends;
+  }
+
+  /**
+   * Generate trading signal based on bias analysis
+   */
+  generateBiasTradingSignal(strengthScores, trendAnalysis) {
+    if (strengthScores.length === 0) {
+      return { signal: 'no_bias', confidence: 0, reason: 'No significant digit bias detected' };
+    }
+
+    const topBias = strengthScores[0];
+    const trend = trendAnalysis[topBias.digit];
+
+    if (topBias.confidence < 0.6) {
+      return { signal: 'weak_bias', confidence: topBias.confidence, reason: 'Bias strength too weak for trading' };
+    }
+
+    if (trend && trend.trend === 'increasing') {
+      return {
+        signal: 'strong_bias',
+        confidence: Math.min(1.0, topBias.confidence * trend.strength),
+        targetDigit: topBias.digit,
+        reason: `Strong bias toward digit ${topBias.digit} with increasing trend`
+      };
+    }
+
+    return {
+      signal: 'moderate_bias',
+      confidence: topBias.confidence * 0.8,
+      targetDigit: topBias.digit,
+      reason: `Moderate bias toward digit ${topBias.digit}`
+    };
+  }
+
+  /**
+   * Probability Fusion Engine - Calculate multiple probability signals
+   * @param {Array<number>} digits - Array of last digits
+   * @param {Object} context - Additional context (ML predictions, etc.)
+   * @returns {Object} Multiple probability signals for fusion
+   */
+  calculateMultipleProbabilitySignals(digits, context = {}) {
+    const signals = {};
+    const window = Math.min(500, digits.length);
+
+    if (digits.length < 50) {
+      return { signals: {}, fusion: { probability: 0, confidence: 0 } };
+    }
+
+    const recent = digits.slice(-window);
+
+    // 1. Digit frequency probability
+    signals.frequency = this.calculateFrequencyProbability(recent);
+
+    // 2. ML model probability (if available)
+    signals.ml = context.mlPrediction ? {
+      probability: context.mlPrediction.probability / 100,
+      confidence: context.mlPrediction.confidence,
+      method: 'ml_model'
+    } : null;
+
+    // 3. Volatility bias signal
+    signals.volatilityBias = this.calculateVolatilityBiasSignal(recent);
+
+    // 4. Trend persistence signal
+    signals.trendPersistence = this.calculateTrendPersistenceSignal(recent);
+
+    // 5. Anti-noise filter signal
+    signals.antiNoise = this.calculateAntiNoiseSignal(recent);
+
+    // 6. Run-length bias signal
+    signals.runLength = this.calculateRunLengthBiasSignal(recent);
+
+    // 7. Pattern-based probability
+    signals.pattern = this.calculatePatternProbabilitySignal(recent);
+
+    // Filter out null signals and calculate fusion
+    const validSignals = Object.entries(signals)
+      .filter(([key, signal]) => signal !== null)
+      .reduce((obj, [key, signal]) => ({ ...obj, [key]: signal }), {});
+
+    const fusion = this.fuseProbabilitySignals(validSignals);
+
+    return {
+      signals: validSignals,
+      fusion,
+      signalCount: Object.keys(validSignals).length
+    };
+  }
+
+  /**
+   * Calculate frequency-based probability
+   */
+  calculateFrequencyProbability(digits) {
+    const freq = Array(10).fill(0);
+    digits.forEach(digit => freq[digit]++);
+
+    const total = digits.length;
+    const probabilities = freq.map(f => f / total);
+
+    const maxProb = Math.max(...probabilities);
+    const predictedDigit = probabilities.indexOf(maxProb);
+
+    return {
+      probabilities,
+      predictedDigit,
+      probability: maxProb,
+      confidence: maxProb > 0.15 ? Math.min(1.0, (maxProb - 0.1) * 5) : 0,
+      method: 'frequency'
+    };
+  }
+
+  /**
+   * Calculate volatility bias signal
+   */
+  calculateVolatilityBiasSignal(digits) {
+    if (digits.length < 20) return null;
+
+    // Calculate digit changes volatility
+    const changes = [];
+    for (let i = 1; i < digits.length; i++) {
+      changes.push(Math.abs(digits[i] - digits[i-1]));
+    }
+
+    const avgChange = changes.reduce((a, b) => a + b, 0) / changes.length;
+    const volatility = ss.standardDeviation(changes);
+
+    // High volatility suggests less predictable digits
+    const predictability = Math.max(0, 1 - volatility / 3);
+
+    return {
+      volatility,
+      avgChange,
+      predictability,
+      probability: predictability,
+      confidence: Math.min(1.0, predictability * 2),
+      method: 'volatility_bias'
+    };
+  }
+
+  /**
+   * Calculate trend persistence signal
+   */
+  calculateTrendPersistenceSignal(digits) {
+    if (digits.length < 30) return null;
+
+    // Analyze recent trend direction
+    const recent = digits.slice(-20);
+    const directions = [];
+
+    for (let i = 1; i < recent.length; i++) {
+      const change = recent[i] - recent[i-1];
+      directions.push(change > 0 ? 1 : change < 0 ? -1 : 0);
+    }
+
+    // Calculate trend persistence (consecutive same directions)
+    let persistence = 0;
+    let currentStreak = 0;
+    let lastDirection = 0;
+
+    for (const direction of directions) {
+      if (direction === lastDirection && direction !== 0) {
+        currentStreak++;
+      } else {
+        persistence += currentStreak;
+        currentStreak = direction !== 0 ? 1 : 0;
+      }
+      lastDirection = direction;
+    }
+    persistence += currentStreak;
+
+    const persistenceRatio = persistence / directions.length;
+
+    return {
+      persistenceRatio,
+      totalDirections: directions.length,
+      probability: persistenceRatio,
+      confidence: Math.min(1.0, persistenceRatio * 3),
+      method: 'trend_persistence'
+    };
+  }
+
+  /**
+   * Calculate anti-noise filter signal
+   */
+  calculateAntiNoiseSignal(digits) {
+    if (digits.length < 50) return null;
+
+    // Detect noise patterns (random spikes, outliers)
+    const changes = [];
+    for (let i = 1; i < digits.length; i++) {
+      changes.push(Math.abs(digits[i] - digits[i-1]));
+    }
+
+    const meanChange = ss.mean(changes);
+    const stdChange = ss.standardDeviation(changes);
+
+    // Count outliers (changes > 2 standard deviations)
+    const outliers = changes.filter(change => change > meanChange + 2 * stdChange).length;
+    const outlierRatio = outliers / changes.length;
+
+    // Low outlier ratio = less noise = more predictable
+    const signalStrength = Math.max(0, 1 - outlierRatio * 5);
+
+    return {
+      outlierRatio,
+      meanChange,
+      stdChange,
+      probability: signalStrength,
+      confidence: Math.min(1.0, signalStrength * 2),
+      method: 'anti_noise'
+    };
+  }
+
+  /**
+   * Calculate run-length bias signal
+   */
+  calculateRunLengthBiasSignal(digits) {
+    if (digits.length < 30) return null;
+
+    // Analyze run lengths (consecutive same digits)
+    const runs = [];
+    let currentRun = 1;
+
+    for (let i = 1; i < digits.length; i++) {
+      if (digits[i] === digits[i-1]) {
+        currentRun++;
+      } else {
+        runs.push(currentRun);
+        currentRun = 1;
+      }
+    }
+    runs.push(currentRun);
+
+    // Calculate run length statistics
+    const avgRunLength = ss.mean(runs);
+    const runVariance = ss.variance(runs);
+
+    // Lower variance in run lengths suggests more predictable patterns
+    const predictability = Math.max(0, 1 - runVariance / 4);
+
+    return {
+      avgRunLength,
+      runVariance,
+      totalRuns: runs.length,
+      probability: predictability,
+      confidence: Math.min(1.0, predictability * 2),
+      method: 'run_length_bias'
+    };
+  }
+
+  /**
+   * Calculate pattern-based probability signal
+   */
+  calculatePatternProbabilitySignal(digits) {
+    if (digits.length < 30) return null;
+
+    // Use existing pattern detection
+    const patterns = this.detectAdvancedPatterns(digits);
+
+    if (!patterns.hasPattern) {
+      return {
+        probability: 0.5,
+        confidence: 0,
+        method: 'pattern_none'
+      };
+    }
+
+    return {
+      probability: patterns.confidence,
+      confidence: patterns.confidence,
+      patternType: patterns.bestPatterns.primary?.type || 'unknown',
+      method: 'pattern_based'
+    };
+  }
+
+  /**
+   * Fuse multiple probability signals into final prediction
+   */
+  fuseProbabilitySignals(signals) {
+    const signalEntries = Object.entries(signals);
+    if (signalEntries.length === 0) {
+      return { probability: 0, confidence: 0, signalsUsed: 0 };
+    }
+
+    // Weight different signals
+    const weights = {
+      frequency: 0.25,
+      ml: 0.30,
+      volatilityBias: 0.15,
+      trendPersistence: 0.10,
+      antiNoise: 0.10,
+      runLength: 0.05,
+      pattern: 0.05
+    };
+
+    let weightedSum = 0;
+    let totalWeight = 0;
+    let confidenceSum = 0;
+
+    signalEntries.forEach(([key, signal]) => {
+      const weight = weights[key] || 0.1;
+      weightedSum += signal.probability * weight;
+      totalWeight += weight;
+      confidenceSum += signal.confidence * weight;
+    });
+
+    const finalProbability = totalWeight > 0 ? weightedSum / totalWeight : 0;
+    const finalConfidence = totalWeight > 0 ? confidenceSum / totalWeight : 0;
+
+    return {
+      probability: finalProbability,
+      confidence: finalConfidence,
+      signalsUsed: signalEntries.length,
+      method: 'fusion'
+    };
+  }
+
+  /**
+   * Anti-Noise Trading Filter - Comprehensive noise detection
+   * @param {Array<number>} digits - Array of last digits
+   * @param {number} window - Analysis window size
+   * @returns {Object} Noise analysis and filtering recommendations
+   */
+  detectAndFilterNoise(digits, window = 100) {
+    if (digits.length < window) {
+      return { noiseLevel: 'unknown', shouldTrade: false, metrics: {} };
+    }
+
+    const recent = digits.slice(-window);
+
+    // Multiple noise detection methods
+    const metrics = {
+      outlierRatio: this.calculateOutlierRatio(recent),
+      volatilitySpikes: this.detectVolatilitySpikes(recent),
+      randomWalkIndex: this.calculateRandomWalkIndex(recent),
+      entropy: this.calculateShannonEntropy(recent),
+      patternConsistency: this.measurePatternConsistency(recent),
+      feedStability: this.assessFeedStability(recent)
+    };
+
+    // Calculate overall noise score (0-1, higher = more noisy)
+    const noiseScore = this.calculateOverallNoiseScore(metrics);
+
+    // Determine noise level and trading recommendation
+    let noiseLevel = 'low';
+    let shouldTrade = true;
+    let reason = '';
+
+    if (noiseScore > 0.8) {
+      noiseLevel = 'extreme';
+      shouldTrade = false;
+      reason = 'Extreme noise detected - market too chaotic';
+    } else if (noiseScore > 0.6) {
+      noiseLevel = 'high';
+      shouldTrade = false;
+      reason = 'High noise levels - avoid trading';
+    } else if (noiseScore > 0.4) {
+      noiseLevel = 'moderate';
+      shouldTrade = true;
+      reason = 'Moderate noise - trade with caution';
+    } else {
+      noiseLevel = 'low';
+      shouldTrade = true;
+      reason = 'Low noise - good trading conditions';
+    }
+
+    return {
+      noiseLevel,
+      shouldTrade,
+      noiseScore,
+      reason,
+      metrics,
+      analysis: {
+        isStable: noiseScore < 0.4,
+        isChaotic: noiseScore > 0.6,
+        confidence: 1 - noiseScore
+      }
+    };
+  }
+
+  /**
+   * Calculate outlier ratio in digit sequence
+   */
+  calculateOutlierRatio(digits) {
+    if (digits.length < 20) return 0;
+
+    const freq = Array(10).fill(0);
+    digits.forEach(d => freq[d]++);
+
+    const expectedFreq = digits.length / 10;
+    const outliers = freq.filter(f => Math.abs(f - expectedFreq) > expectedFreq * 0.8).length;
+
+    return outliers / 10; // Ratio of outlier digits
+  }
+
+  /**
+   * Detect volatility spikes
+   */
+  detectVolatilitySpikes(digits) {
+    if (digits.length < 20) return { count: 0, ratio: 0 };
+
+    const changes = [];
+    for (let i = 1; i < digits.length; i++) {
+      changes.push(Math.abs(digits[i] - digits[i-1]));
+    }
+
+    const meanChange = ss.mean(changes);
+    const stdChange = ss.standardDeviation(changes);
+
+    const spikes = changes.filter(change => change > meanChange + 2 * stdChange).length;
+    const spikeRatio = spikes / changes.length;
+
+    return { count: spikes, ratio: spikeRatio, threshold: meanChange + 2 * stdChange };
+  }
+
+  /**
+   * Calculate random walk index (how random the sequence is)
+   */
+  calculateRandomWalkIndex(digits) {
+    if (digits.length < 30) return 0.5;
+
+    // Compare actual sequence to random sequence properties
+    const actualEntropy = this.calculateShannonEntropy(digits);
+    const maxEntropy = Math.log2(10); // For 10 possible digits
+
+    // Calculate autocorrelation (random walks have low autocorrelation)
+    const autocorr = Math.abs(this.calculateAutocorrelation(digits, 1));
+
+    // Calculate run length variance (random sequences have more uniform runs)
+    const runs = this.analyzeRunsPatterns(digits);
+    const runVariance = runs.avgRun > 0 ? Math.abs(runs.avgRun - 1.1) / 2 : 0; // Expected run length for random is ~1.1
+
+    // Combine metrics
+    const entropyRatio = actualEntropy / maxEntropy;
+    const randomWalkIndex = (entropyRatio + (1 - autocorr) + (1 - runVariance)) / 3;
+
+    return Math.max(0, Math.min(1, randomWalkIndex));
+  }
+
+  /**
+   * Measure pattern consistency
+   */
+  measurePatternConsistency(digits) {
+    if (digits.length < 50) return 0;
+
+    // Check consistency of digit frequencies over time windows
+    const windowSize = 25;
+    const windows = [];
+
+    for (let i = 0; i <= digits.length - windowSize; i += windowSize) {
+      const window = digits.slice(i, i + windowSize);
+      const freq = Array(10).fill(0);
+      window.forEach(d => freq[d]++);
+      windows.push(freq.map(f => f / windowSize));
+    }
+
+    if (windows.length < 2) return 0.5;
+
+    // Calculate consistency between windows
+    let totalDifference = 0;
+    for (let i = 1; i < windows.length; i++) {
+      for (let d = 0; d < 10; d++) {
+        totalDifference += Math.abs(windows[i][d] - windows[i-1][d]);
+      }
+    }
+
+    const avgDifference = totalDifference / ((windows.length - 1) * 10);
+    const consistency = Math.max(0, 1 - avgDifference * 5); // Scale to 0-1
+
+    return consistency;
+  }
+
+  /**
+   * Assess feed stability (detect data feed issues)
+   */
+  assessFeedStability(digits) {
+    if (digits.length < 20) return { stability: 0.5, issues: [] };
+
+    const issues = [];
+
+    // Check for repeated digits (possible feed freeze)
+    let repeats = 0;
+    for (let i = 1; i < digits.length; i++) {
+      if (digits[i] === digits[i-1]) repeats++;
+    }
+    const repeatRatio = repeats / (digits.length - 1);
+
+    if (repeatRatio > 0.3) {
+      issues.push('high_repeat_ratio');
+    }
+
+    // Check for unusual digit distributions
+    const freq = Array(10).fill(0);
+    digits.forEach(d => freq[d]++);
+    const maxFreq = Math.max(...freq);
+    const distributionSkew = maxFreq / (digits.length / 10);
+
+    if (distributionSkew > 3) {
+      issues.push('skewed_distribution');
+    }
+
+    // Calculate stability score
+    const stability = issues.length === 0 ? 0.9 :
+                     issues.length === 1 ? 0.7 : 0.4;
+
+    return { stability, issues, repeatRatio, distributionSkew };
+  }
+
+  /**
+   * Calculate overall noise score from all metrics
+   */
+  calculateOverallNoiseScore(metrics) {
+    const weights = {
+      outlierRatio: 0.2,
+      volatilitySpikes: 0.25,
+      randomWalkIndex: 0.2,
+      entropy: 0.15,
+      patternConsistency: 0.1,
+      feedStability: 0.1
+    };
+
+    // Normalize entropy (higher entropy = more noise)
+    const normalizedEntropy = metrics.entropy / Math.log2(10);
+
+    // Invert pattern consistency (lower consistency = more noise)
+    const noiseFromConsistency = 1 - metrics.patternConsistency;
+
+    // Invert feed stability (lower stability = more noise)
+    const noiseFromStability = 1 - metrics.feedStability.stability;
+
+    const score = (
+      metrics.outlierRatio * weights.outlierRatio +
+      metrics.volatilitySpikes.ratio * weights.volatilitySpikes +
+      metrics.randomWalkIndex * weights.randomWalkIndex +
+      normalizedEntropy * weights.entropy +
+      noiseFromConsistency * weights.patternConsistency +
+      noiseFromStability * weights.feedStability
+    );
+
+    return Math.max(0, Math.min(1, score));
   }
 
   /**
