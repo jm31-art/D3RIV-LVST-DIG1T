@@ -2328,19 +2328,29 @@ class DerivBot {
         this.handleContractUpdate(message.proposal_open_contract);
 
       } else if (message.msg_type === 'balance') {
-        // Balance update
-        if (message.balance && message.balance.balance) {
-          const balance = parseFloat(message.balance.balance);
-          if (!isNaN(balance)) {
-            risk.portfolioStats.totalBalance = balance;
-            risk.portfolioStats.peakBalance = Math.max(risk.portfolioStats.peakBalance, balance);
-            logger.debug(`Balance updated: $${balance.toFixed(2)}`);
-            this.sendPortfolioToUI();
-          } else {
-            logger.warn('Invalid balance value received:', message.balance.balance);
+        // Balance update - handle different response formats
+        let balanceValue = null;
+
+        // Try different balance response formats
+        if (message.balance !== undefined) {
+          // Direct balance value (most common)
+          if (typeof message.balance === 'number') {
+            balanceValue = message.balance;
+          } else if (typeof message.balance === 'string') {
+            balanceValue = parseFloat(message.balance);
+          } else if (typeof message.balance === 'object' && message.balance.balance !== undefined) {
+            // Nested balance format
+            balanceValue = parseFloat(message.balance.balance);
           }
+        }
+
+        if (balanceValue !== null && !isNaN(balanceValue)) {
+          risk.portfolioStats.totalBalance = balanceValue;
+          risk.portfolioStats.peakBalance = Math.max(risk.portfolioStats.peakBalance || 0, balanceValue);
+          logger.info(`✅ Balance updated from WebSocket: $${balanceValue.toFixed(2)}`);
+          this.sendPortfolioToUI();
         } else {
-          logger.warn('Received balance message without balance data');
+          logger.warn('Received balance message without valid balance data:', message);
         }
 
       } else if (message.msg_type === 'buy') {

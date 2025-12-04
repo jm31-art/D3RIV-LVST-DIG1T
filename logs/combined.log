@@ -106,3 +106,11 @@
 {"level":"info","message":"Resuming trading state after reconnection...","service":"deriv-bot","timestamp":"2025-12-04T17:45:20.924Z"}
 {"level":"info","message":"Trading state resumed successfully","service":"deriv-bot","timestamp":"2025-12-04T17:45:20.924Z"}
 {"level":"info","message":"✅ SUCCESS: Fetched real Deriv account balance: $11420.04","service":"deriv-bot","timestamp":"2025-12-04T17:45:21.230Z"}
+{"level":"info","message":"Retraining ML models...","service":"deriv-bot","timestamp":"2025-12-04T18:00:00.597Z"}
+{"level":"info","message":"Retrained ML model for R_10","service":"deriv-bot","timestamp":"2025-12-04T18:00:00.622Z"}
+{"level":"info","message":"Fetching and analyzing news sentiment...","service":"deriv-bot","timestamp":"2025-12-04T18:00:00.622Z"}
+{"level":"info","message":"Analyzed 2 news articles for R_10","service":"deriv-bot","timestamp":"2025-12-04T18:00:00.623Z"}
+{"level":"info","message":"Analyzed 2 news articles for R_25","service":"deriv-bot","timestamp":"2025-12-04T18:00:00.624Z"}
+{"level":"info","message":"Analyzed 2 news articles for R_50","service":"deriv-bot","timestamp":"2025-12-04T18:00:00.624Z"}
+{"level":"info","message":"Analyzed 2 news articles for R_75","service":"deriv-bot","timestamp":"2025-12-04T18:00:00.625Z"}
+{"level":"info","message":"Analyzed 2 news articles for R_100","service":"deriv-bot","timestamp":"2025-12-04T18:00:00.625Z"}
