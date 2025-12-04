@@ -23,15 +23,15 @@ const express = require('express');
 const path = require('path');
 const config = require('./config');
 
-// Import core modules - each handles a specific aspect of the trading system
+// Import core modules - simplified architecture
 const db = require('./db');           // Database operations and data persistence
-const stats = require('./stats');     // Statistical analysis and pattern detection
-const ml = require('./ml');           // Machine learning models and predictions
+const strategies = require('./strategies'); // Chart-based digit prediction strategies
 const risk = require('./risk');       // Risk management and position sizing
 const portfolio = require('./portfolio'); // Portfolio management and optimization
 const backtest = require('./backtest');   // Backtesting engine and strategy validation
-const sentiment = require('./sentiment'); // News sentiment analysis
-const microstructure = require('./microstructure'); // Market microstructure analysis
+const errorHandler = require('./errorHandler'); // Comprehensive error handling
+const performanceMonitor = require('./performanceMonitor'); // Performance monitoring
+const security = require('./security'); // Security and authentication
 
 // Configure logging
 const logger = winston.createLogger({
@@ -133,7 +133,6 @@ class DerivBot {
     this.isConnected = false;          // Connection status to Deriv API
     this.authorized = false;           // Authorization status with Deriv
     this.tradingEnabled = false;       // Manual trading enable/disable flag
-    this.manualOverride = false;       // Manual override for extreme caution mode
 
     // Active trading state
     this.activeTrades = new Map();     // Currently open trades (tradeId -> tradeData)
@@ -234,27 +233,7 @@ class DerivBot {
     });
   }
 
-  handleManualOverride(message) {
-    if (message.action === 'enable') {
-      this.manualOverride = true;
-      logger.warn('🚨 MANUAL OVERRIDE ENABLED: Extreme caution mode activated. All safety measures bypassed.');
-      this.broadcastToUI({
-        type: 'alert',
-        message: 'Manual override enabled. All safety measures are now bypassed.',
-        severity: 'warning'
-      });
-    } else if (message.action === 'disable') {
-      this.manualOverride = false;
-      logger.info('Manual override disabled. Safety measures restored.');
-      this.broadcastToUI({
-        type: 'alert',
-        message: 'Manual override disabled. Safety measures restored.',
-        severity: 'info'
-      });
-    }
-
-    this.sendStatusToUI();
-  }
+  // Manual override removed - contradictory to unified risk management
 
   handleUIMessage(ws, message) {
     switch (message.type) {
@@ -276,9 +255,7 @@ class DerivBot {
       case 'retrain_models':
         this.retrainModelsFromUI();
         break;
-      case 'manual_override':
-        this.handleManualOverride(message);
-        break;
+      // Manual override removed - contradictory to unified risk management
       default:
         logger.warn('Unknown UI message type:', message.type);
     }
@@ -390,8 +367,7 @@ class DerivBot {
       activeTrades: this.activeTrades.size,
       currentSymbol: CONFIG.symbols[0] || 'None', // Show first symbol as current
       tradingMode: CONFIG.tradingMode,
-      paperTrading: CONFIG.paperTrading, // Keep for backward compatibility
-      manualOverride: this.manualOverride // Manual override status
+      paperTrading: CONFIG.paperTrading // Keep for backward compatibility
     };
 
     this.broadcastToUI(statusMessage);
@@ -899,7 +875,7 @@ class DerivBot {
       return null; // Cannot make reliable predictions without adequate data
     }
 
-    // PERFECT CONDITION FILTERING - Only trade when ALL signals align perfectly
+    // UNIFIED RISK MANAGEMENT - Clear, consistent safety checks
     const recentTicks = db.getRecentTicks(symbol, 100);
     if (recentTicks.length < 10) {
       logger.debug(`Not enough recent ticks for ${symbol}: ${recentTicks.length}`);
@@ -907,13 +883,28 @@ class DerivBot {
     }
 
     const recentDigits = recentTicks.map(tick => tick.last_digit);
-    const perfectConditions = this.checkPerfectConditions(symbol, recentDigits);
-    if (!perfectConditions.met) {
-      logger.debug(`Perfect conditions not met: ${perfectConditions.reason}`);
+
+    // Balanced market regime filtering - allow more opportunities
+    const marketRegime = stats.detectMarketRegime(recentDigits, 100);
+    if (marketRegime.regime === 'unknown' || marketRegime.confidence < 0.5) {
+      logger.debug(`Market too unpredictable: ${marketRegime.regime} (${marketRegime.confidence.toFixed(2)} confidence)`);
       return null;
     }
 
-    logger.debug(`Perfect conditions met: ${perfectConditions.reason}`);
+    // Opportunity-seeking: Boost confidence in trending markets
+    const isTrending = marketRegime.regime === 'trending_up' || marketRegime.regime === 'trending_down';
+    if (isTrending && marketRegime.confidence > 0.6) {
+      logger.debug(`Trending market detected - increasing opportunity focus`);
+    }
+
+    // Check unified risk constraints (not "perfect conditions")
+    const riskCheck = this.checkUnifiedRiskConstraints(symbol, recentDigits);
+    if (!riskCheck.canTrade) {
+      logger.debug(`Risk constraints not met: ${riskCheck.reason}`);
+      return null;
+    }
+
+    logger.debug(`Market regime: ${marketRegime.regime}, Risk constraints satisfied: ${riskCheck.reason}`);
 
     // Get digit frequencies for stake calculation
     const { data: digitFreq, totalSamples } = db.getDigitFrequencies(symbol);
@@ -939,16 +930,8 @@ class DerivBot {
     const microstructureAnalysis = microstructure.analyzeOrderFlow(recentTicks, symbol);
     const microstructureSignals = microstructureAnalysis.signals || [];
 
-    // Generate prediction using pattern analysis
-    const prediction = await this.generatePrediction(symbol, {
-      probabilities,
-      recentDigits,
-      totalSamples,
-      currentDigit: recentDigits[recentDigits.length - 1],
-      sentimentBias,
-      advancedPatterns,
-      microstructureSignals
-    });
+    // Generate prediction using simplified chart-based strategies
+    const prediction = strategies.predict(recentDigits, probabilities);
 
     if (!prediction) {
       logger.debug(`No prediction generated for ${symbol}`);
@@ -1548,139 +1531,63 @@ class DerivBot {
     return stake;
   }
 
-  // PERFECT CONDITION FILTERING - Only trade when ALL signals align perfectly
-  checkPerfectConditions(symbol, recentDigits) {
-    // Condition 1: Extreme bias threshold (>90% confidence)
-    const biasAnalysis = stats.analyzeDigitBias(recentDigits, 500);
-    if (biasAnalysis.confidence < 0.9) {
-      return { met: false, reason: `Bias confidence too low: ${biasAnalysis.confidence.toFixed(2)} < 0.9` };
+  // UNIFIED RISK MANAGEMENT - Clear, consistent safety constraints
+  checkUnifiedRiskConstraints(symbol, recentDigits) {
+    // Risk Level 1: Basic statistical significance (minimum data requirement)
+    if (recentDigits.length < 50) {
+      return { canTrade: false, reason: 'Insufficient data for reliable analysis' };
     }
 
-    // Condition 2: Market stability verification (most stable periods)
-    const regimeDigits = db.getRecentTicks(symbol, 200).map(t => t.last_digit);
-    if (regimeDigits.length >= 100) {
-      const regimeAnalysis = stats.detectAdvancedMarketRegime(regimeDigits, 200);
-      if (!regimeAnalysis.tradingAllowed || regimeAnalysis.regime !== 'stable_bias') {
-        return { met: false, reason: `Market not stable: ${regimeAnalysis.regime} regime` };
+    // Risk Level 2: Market regime check (avoid chaotic markets)
+    const regimeAnalysis = stats.detectMarketRegime(recentDigits, 100);
+    if (regimeAnalysis.regime === 'unknown' || regimeAnalysis.confidence < 0.3) {
+      return { canTrade: false, reason: `Unstable market regime: ${regimeAnalysis.regime}` };
+    }
+
+    // Risk Level 3: Bias strength check (require meaningful edge)
+    const biasAnalysis = stats.analyzeFrequencyBias(recentDigits);
+    if (biasAnalysis.confidence < 0.4) {
+      return { canTrade: false, reason: `Insufficient statistical edge: ${biasAnalysis.confidence.toFixed(2)} confidence` };
+    }
+
+    // Risk Level 4: Recent performance check (avoid overtrading losing symbols)
+    const recentTrades = db.getRecentTrades(20).filter(t => t.symbol === symbol);
+    if (recentTrades.length >= 5) {
+      const recentWins = recentTrades.slice(-5).filter(t => t.result === 'won').length;
+      const recentWinRate = recentWins / 5;
+      if (recentWinRate < 0.3) {
+        return { canTrade: false, reason: `Poor recent performance: ${(recentWinRate * 100).toFixed(0)}% win rate` };
       }
     }
 
-    // Condition 3: Noise level verification (ultra-low noise)
-    const noiseAnalysis = stats.detectAndFilterNoise(recentDigits, 100);
-    if (!noiseAnalysis.shouldTrade || noiseAnalysis.noiseScore > 0.1) {
-      return { met: false, reason: `Noise level too high: ${noiseAnalysis.noiseScore.toFixed(2)} > 0.1` };
-    }
-
-    // Condition 4: Multi-timeframe confirmation (all timeframes agree)
-    const shortTermBias = stats.analyzeDigitBias(recentDigits.slice(-50), 50);
-    const mediumTermBias = stats.analyzeDigitBias(recentDigits.slice(-200), 200);
-    if (shortTermBias.confidence < 0.85 || mediumTermBias.confidence < 0.85) {
-      return { met: false, reason: `Timeframe disagreement: short=${shortTermBias.confidence.toFixed(2)}, medium=${mediumTermBias.confidence.toFixed(2)}` };
-    }
-
-    // Condition 5: Consensus prediction (3+ independent methods agree)
-    const consensusResult = this.checkConsensusPrediction(symbol, recentDigits);
-    if (!consensusResult.agreed) {
-      return { met: false, reason: `No prediction consensus: ${consensusResult.agreeingMethods} methods agreed` };
-    }
-
-    // Condition 6: Historical backtest validation (95%+ simulated win rate)
-    const backtestValidation = this.validateWithHistoricalBacktest(symbol);
-    if (!backtestValidation.passed) {
-      return { met: false, reason: `Backtest validation failed: ${backtestValidation.winRate.toFixed(2)}% win rate` };
+    // Risk Level 5: Portfolio-level constraints (diversification)
+    const portfolioRisk = portfolio.assessPortfolioRisk();
+    if (portfolioRisk.riskLevel === 'high' && portfolioRisk.metrics.portfolioVaR > 0.10) {
+      return { canTrade: false, reason: 'Portfolio risk constraints exceeded' };
     }
 
     return {
-      met: true,
-      reason: `All conditions met: bias=${biasAnalysis.confidence.toFixed(2)}, stable regime, low noise=${noiseAnalysis.noiseScore.toFixed(2)}, timeframe agreement, consensus prediction, backtest validated`
+      canTrade: true,
+      reason: `Risk constraints satisfied: ${regimeAnalysis.regime} regime, ${(biasAnalysis.confidence * 100).toFixed(0)}% edge, portfolio risk OK`
     };
   }
 
-  // Check consensus prediction requiring 3+ independent methods to agree
-  checkConsensusPrediction(symbol, recentDigits) {
-    const predictions = [];
-
-    // Method 1: Bias analysis
-    const biasAnalysis = stats.analyzeDigitBias(recentDigits, 500);
-    if (biasAnalysis.recommendedDigits.length > 0) {
-      predictions.push({
-        method: 'bias',
-        digit: biasAnalysis.recommendedDigits[0],
-        confidence: biasAnalysis.confidence
-      });
-    }
-
-    // Method 2: Frequency analysis
-    const { data: digitFreq, totalSamples } = db.getDigitFrequencies(symbol);
-    let maxFreq = 0;
-    let freqDigit = null;
-    for (let digit = 0; digit <= 9; digit++) {
-      const freq = totalSamples > 0 ? (digitFreq[digit] || 0) / totalSamples : 0;
-      if (freq > maxFreq) {
-        maxFreq = freq;
-        freqDigit = digit;
+  // Helper method to count consecutive losses
+  countConsecutiveLosses(trades) {
+    let consecutiveLosses = 0;
+    for (let i = trades.length - 1; i >= 0; i--) {
+      if (trades[i].result === 'lost') {
+        consecutiveLosses++;
+      } else {
+        break;
       }
     }
-    if (freqDigit !== null) {
-      predictions.push({
-        method: 'frequency',
-        digit: freqDigit,
-        confidence: maxFreq
-      });
-    }
-
-    // Method 3: Pattern recognition
-    const patterns = stats.detectAdvancedPatterns(recentDigits);
-    if (patterns.hasPattern && patterns.recommendedAction && patterns.recommendedAction.targetDigit !== null) {
-      predictions.push({
-        method: 'pattern',
-        digit: patterns.recommendedAction.targetDigit,
-        confidence: patterns.recommendedAction.confidence
-      });
-    }
-
-    // Check consensus (at least 3 methods agree on same digit)
-    if (predictions.length < 3) {
-      return { agreed: false, agreeingMethods: predictions.length, digit: null };
-    }
-
-    const digitVotes = {};
-    predictions.forEach(pred => {
-      digitVotes[pred.digit] = (digitVotes[pred.digit] || 0) + 1;
-    });
-
-    const consensusDigit = Object.keys(digitVotes).find(digit => digitVotes[digit] >= 3);
-    const agreed = consensusDigit !== undefined;
-
-    return {
-      agreed,
-      agreeingMethods: agreed ? digitVotes[consensusDigit] : 0,
-      digit: agreed ? parseInt(consensusDigit) : null
-    };
+    return consecutiveLosses;
   }
 
-  // Validate with historical backtest requiring 95%+ simulated win rate
-  validateWithHistoricalBacktest(symbol) {
-    try {
-      // Run quick backtest simulation
-      const backtestResult = backtest.runBacktest(CONFIG.strategy, symbol, {
-        maxTrades: 100,
-        riskPerTrade: 0.01 // Very conservative for validation
-      });
-
-      const winRate = backtestResult.performance ? backtestResult.performance.winRate : 0;
-      const passed = winRate >= 0.95; // Require 95%+ win rate
-
-      return {
-        passed,
-        winRate: winRate * 100,
-        profitFactor: backtestResult.performance ? backtestResult.performance.profitFactor : 0
-      };
-    } catch (error) {
-      logger.warn(`Backtest validation error for ${symbol}:`, error);
-      return { passed: false, winRate: 0, profitFactor: 0 };
-    }
-  }
+  // Removed consensus prediction and historical backtest validation methods
+  // These were part of the old "perfect conditions" system that has been replaced
+  // with unified risk management constraints
 
   // Assess tick quality to avoid bad ticks
   assessTickQuality(symbol) {
@@ -2490,25 +2397,24 @@ class DerivBot {
       // Update last trade result for cooldown logic
       this.lastTradeResult = status;
 
-      // REAL-TIME PERFORMANCE MONITORING: Automatic shutdown on any loss (unless manual override)
-      if (status === 'lost' && !this.manualOverride) {
-        logger.warn(`🚨 AUTOMATIC SHUTDOWN: Trade ${contract_id} resulted in loss. Shutting down trading for safety.`);
-        this.tradingEnabled = false;
-        this.sendStatusToUI();
+      // UNIFIED RISK RESPONSE: Balanced approach to losses
+      if (status === 'lost') {
+        // Check consecutive loss threshold (more reasonable than single loss shutdown)
+        const recentTrades = db.getRecentTrades(10).filter(t => t.symbol === trade.symbol);
+        const consecutiveLosses = this.countConsecutiveLosses(recentTrades);
 
-        // Send alert to UI
-        this.broadcastToUI({
-          type: 'alert',
-          message: 'Trading automatically stopped due to loss. Manual restart required.',
-          severity: 'critical'
-        });
-      } else if (status === 'lost' && this.manualOverride) {
-        logger.warn(`⚠️ MANUAL OVERRIDE: Trade ${contract_id} resulted in loss but manual override is active. Continuing trading.`);
-        this.broadcastToUI({
-          type: 'alert',
-          message: 'Loss occurred but manual override prevented automatic shutdown.',
-          severity: 'warning'
-        });
+        if (consecutiveLosses >= 3) {
+          logger.warn(`⚠️ MULTIPLE CONSECUTIVE LOSSES: ${consecutiveLosses} losses in a row on ${trade.symbol}. Implementing cooldown.`);
+          this.broadcastToUI({
+            type: 'alert',
+            message: `${consecutiveLosses} consecutive losses on ${trade.symbol}. Cooldown period activated.`,
+            severity: 'warning'
+          });
+          // Set cooldown instead of full shutdown
+          this.lastTradeTime = Date.now() + (CONFIG.lossCooldown * 2);
+        } else {
+          logger.debug(`Trade ${contract_id} resulted in loss. Continuing with normal risk management.`);
+        }
       }
 
       // Send trade update to UI

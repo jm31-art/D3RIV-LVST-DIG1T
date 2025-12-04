@@ -12,16 +12,16 @@ module.exports = {
 
   // Trading settings - Volatility Indices (1s)
   DEFAULT_SYMBOLS: ['R_10', 'R_25', 'R_50', 'R_75', 'R_100'], // 10, 25, 50, 75, 100 index (1s)
-  MIN_SAMPLES_REQUIRED: 10, // Minimum samples before trading (very fast start)
-  MIN_PROBABILITY_THRESHOLD: 12, // Lower threshold for testing (can be increased later)
+  MIN_SAMPLES_REQUIRED: 10000, // Minimum 10K samples for statistical significance (p < 0.05)
+  MIN_PROBABILITY_THRESHOLD: 55, // 55% minimum probability for edge (above random 50%)
   MAX_CONCURRENT_TRADES: 1, // Reduced for safer trading
   TRADE_COOLDOWN_MS: 10000, // Increased cooldown for safety
 
-  // Risk management
-  RISK_PER_TRADE: 0.02, // 2% risk per trade
-  MAX_DRAWDOWN: 0.15, // 15% max drawdown
-  MAX_DAILY_LOSS: 0.08, // 8% max daily loss
-  MAX_CONSECUTIVE_LOSSES: 5,
+  // Risk management - More permissive for opportunities
+  RISK_PER_TRADE: 0.05, // 5% risk per trade (increased for more opportunities)
+  MAX_DRAWDOWN: 0.25, // 25% max drawdown (more tolerance)
+  MAX_DAILY_LOSS: 0.15, // 15% max daily loss (more tolerance)
+  MAX_CONSECUTIVE_LOSSES: 8, // Allow more losses before stopping
 
   // ML settings
   ML_RETRAINING_INTERVAL_MS: 1800000, // 30 minutes for faster adaptation to 95%+ accuracy

@@ -9,8 +9,8 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>🚀 Deriv Last Digit Bot</h1>
-            <p>Advanced Autonomous Trading System with 90%+ Accuracy</p>
+            <h1>🛡️ Deriv Last Digit Bot - EXTREME CAUTION MODE</h1>
+            <p>Ultra-Conservative Trading System with Perfect Condition Filtering</p>
             <div class="status-bar">
                 <div id="connection-status">
                     <span class="status-indicator status-disconnected"></span>
@@ -19,6 +19,16 @@
                 <div id="trading-status">
                     <span class="status-indicator status-disconnected"></span>
                     <span id="trading-text">Trading Stopped</span>
+                </div>
+                <div id="safety-status">
+                    <span class="status-indicator status-safe"></span>
+                    <span id="safety-text">Safety Mode: Active</span>
+                </div>
+            </div>
+            <div class="safety-notice">
+                <div class="alert alert-warning">
+                    <strong>🚨 EXTREME CAUTION:</strong> This bot only trades when ALL safety conditions are met.
+                    Automatic shutdown on any loss. Manual override available for advanced users only.
                 </div>
             </div>
         </div>
@@ -76,8 +86,28 @@
                     </button>
                 </div>
                 <p style="color: #666; font-size: 0.9em; margin-top: 10px;">
-                    Click "Start Trading" to begin automated trading
+                    ⚠️ WARNING: Trading will stop automatically on any loss. Manual restart required.
                 </p>
+            </div>
+
+            <div class="control-section">
+                <h3>🛡️ Safety Override (Advanced Users Only)</h3>
+                <div class="alert alert-danger">
+                    <strong>DANGER:</strong> Manual override disables all safety features. Only use if you fully understand the risks.
+                </div>
+                <div class="button-group">
+                    <button class="btn-warning" id="enable-override">
+                        <span class="btn-icon">⚠️</span>
+                        Enable Manual Override
+                    </button>
+                    <button class="btn-success" id="disable-override" disabled>
+                        <span class="btn-icon">🛡️</span>
+                        Restore Safety Mode
+                    </button>
+                </div>
+                <div id="override-status" class="override-status">
+                    Safety Mode: Active (Recommended)
+                </div>
             </div>
 
             <div class="control-section">

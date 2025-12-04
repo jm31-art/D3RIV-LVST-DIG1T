@@ -300,6 +300,8 @@ button {
 .status-connected { background: #27ae60; }
 .status-disconnected { background: #e74c3c; }
 .status-authorizing { background: #f39c12; }
+.status-safe { background: #27ae60; }
+.status-danger { background: #e74c3c; }
 
 .progress-bar {
     width: 100%;
@@ -315,6 +317,111 @@ button {
     transition: width 0.3s ease;
 }
 
+/* Alert System */
+.alert {
+    padding: 15px;
+    margin: 10px 0;
+    border-radius: 8px;
+    border-left: 4px solid;
+    position: relative;
+    animation: slideIn 0.3s ease-out;
+}
+
+.alert-info {
+    background: #d4edda;
+    border-left-color: #28a745;
+    color: #155724;
+}
+
+.alert-warning {
+    background: #fff3cd;
+    border-left-color: #ffc107;
+    color: #856404;
+}
+
+.alert-danger {
+    background: #f8d7da;
+    border-left-color: #dc3545;
+    color: #721c24;
+}
+
+.alert-critical {
+    background: #ffe6e6;
+    border-left-color: #dc3545;
+    color: #721c24;
+    border: 2px solid #dc3545;
+}
+
+.alert-close {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    background: none;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    color: inherit;
+    opacity: 0.7;
+}
+
+.alert-close:hover {
+    opacity: 1;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateY(-20px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+/* Safety Notice */
+.safety-notice {
+    margin-top: 20px;
+}
+
+/* Manual Override Controls */
+.btn-warning {
+    background: #f39c12;
+    color: white;
+}
+
+.btn-warning:hover {
+    background: #e67e22;
+    transform: translateY(-2px);
+}
+
+.override-status {
+    margin-top: 15px;
+    padding: 10px;
+    border-radius: 6px;
+    font-weight: 500;
+    text-align: center;
+}
+
+.override-status.safe {
+    background: #d4edda;
+    color: #155724;
+    border: 1px solid #28a745;
+}
+
+.override-status.danger {
+    background: #f8d7da;
+    color: #721c24;
+    border: 1px solid #dc3545;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.7; }
+    100% { opacity: 1; }
+}
+
 @media (max-width: 768px) {
     .dashboard {
         grid-template-columns: 1fr;
@@ -326,5 +433,13 @@ button {
     }
     .button-group {
         justify-content: center;
+    }
+    .status-bar {
+        flex-direction: column;
+        gap: 10px;
+    }
+    .controls {
+        grid-template-columns: 1fr;
+        gap: 20px;
     }
 }

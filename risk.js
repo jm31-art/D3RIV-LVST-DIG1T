@@ -244,17 +244,28 @@ class RiskManager {
   // Calculate ATR-based position sizing (Average True Range)
   calculateATRPositionSize(symbol, currentBalance, baseRiskPerTrade = 0.02) {
     const ticks = require('./db').getRecentTicks(symbol, 100);
-    if (ticks.length < 14) {
+
+    // Add validation for ticks array
+    if (!Array.isArray(ticks) || ticks.length < 14) {
       return this.calculateVolatilityAdjustedPositionSize(symbol, currentBalance, baseRiskPerTrade);
     }
 
     // Calculate True Range for each period
     const trueRanges = [];
     for (let i = 1; i < ticks.length; i++) {
+      // Validate tick data
+      if (!ticks[i] || !ticks[i-1] || typeof ticks[i].quote !== 'number' || typeof ticks[i-1].quote !== 'number') {
+        continue;
+      }
+
       const high = Math.max(ticks[i].quote, ticks[i-1].quote);
       const low = Math.min(ticks[i].quote, ticks[i-1].quote);
       const trueRange = high - low;
       trueRanges.push(trueRange);
+    }
+
+    if (trueRanges.length < 14) {
+      return this.calculateVolatilityAdjustedPositionSize(symbol, currentBalance, baseRiskPerTrade);
     }
 
     // Calculate ATR (14-period simple moving average)
@@ -265,8 +276,13 @@ class RiskManager {
     const riskAmount = currentBalance * baseRiskPerTrade;
     const positionSize = riskAmount / atr;
 
-    // Normalize based on average price
-    const avgPrice = ticks.slice(-10).reduce((sum, tick) => sum + tick.quote, 0) / 10;
+    // Normalize based on average price with validation
+    const recentTicks = ticks.slice(-10).filter(tick => typeof tick.quote === 'number');
+    if (recentTicks.length === 0) {
+      return { positionSize: Math.max(1, Math.min(riskAmount, currentBalance * 0.03)) };
+    }
+
+    const avgPrice = recentTicks.reduce((sum, tick) => sum + tick.quote, 0) / recentTicks.length;
     const normalizedPositionSize = (positionSize / avgPrice) * currentBalance;
 
     return {

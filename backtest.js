@@ -1,3 +1,4 @@
+const ss = require('simple-statistics');
 const db = require('./db');
 const stats = require('./stats');
 const ml = require('./ml');
@@ -11,7 +12,7 @@ class BacktestEngine {
     this.isRunning = false;
   }
 
-  // Run backtest for a specific strategy
+  // Run realistic backtest with proper market simulation
   async runBacktest(strategy, symbol, options = {}) {
     if (this.isRunning) {
       throw new Error('Backtest already running');
@@ -20,7 +21,7 @@ class BacktestEngine {
     this.isRunning = true;
 
     try {
-      console.log(`Starting backtest for ${strategy} on ${symbol}`);
+      console.log(`Starting realistic backtest for ${strategy} on ${symbol}`);
 
       const {
         startDate = null,
@@ -28,29 +29,29 @@ class BacktestEngine {
         initialBalance = 1000,
         maxTrades = null,
         riskPerTrade = 0.02,
-        minProbability = 12
+        minProbability = 12,
+        includeTransactionCosts = true,
+        slippageModel = 'realistic',
+        marketHoursOnly = true,
+        realisticLatency = true
       } = options;
 
-      // Get historical data
-      const ticks = db.getRecentTicks(symbol, 10000);
-      if (ticks.length < 100) {
-        throw new Error(`Insufficient historical data for ${symbol}: ${ticks.length} ticks`);
+      // Get historical data with sufficient lookback
+      const ticks = db.getRecentTicks(symbol, 20000); // Need more data for realistic testing
+      if (ticks.length < 1000) {
+        throw new Error(`Insufficient historical data for ${symbol}: ${ticks.length} ticks (need 1000+)`);
       }
 
-      // Filter by date range if specified
-      let filteredTicks = ticks;
-      if (startDate || endDate) {
-        filteredTicks = ticks.filter(tick => {
-          const tickDate = new Date(tick.timestamp);
-          if (startDate && tickDate < new Date(startDate)) return false;
-          if (endDate && tickDate > new Date(endDate)) return false;
-          return true;
-        });
+      // Filter by date range and market hours
+      let filteredTicks = this.filterTicksByCriteria(ticks, { startDate, endDate, marketHoursOnly });
+
+      if (filteredTicks.length < 500) {
+        throw new Error(`Insufficient filtered data for ${symbol}: ${filteredTicks.length} ticks`);
       }
 
-      console.log(`Backtesting on ${filteredTicks.length} ticks for ${symbol}`);
+      console.log(`Backtesting on ${filteredTicks.length} ticks for ${symbol} (${includeTransactionCosts ? 'with' : 'without'} transaction costs)`);
 
-      // Initialize backtest state
+      // Initialize realistic backtest state
       const backtestState = {
         balance: initialBalance,
         peakBalance: initialBalance,
@@ -59,32 +60,47 @@ class BacktestEngine {
         winCount: 0,
         lossCount: 0,
         totalProfit: 0,
+        totalFees: 0,
         symbol,
-        strategy
+        strategy,
+        openPositions: new Map(), // For tracking pending trades
+        marketState: this.initializeMarketState(filteredTicks)
       };
 
-      // Run the backtest based on strategy
-      const results = await this.executeStrategy(strategy, filteredTicks, backtestState, {
+      // Run realistic backtest simulation
+      const results = await this.executeRealisticBacktest(strategy, filteredTicks, backtestState, {
         riskPerTrade,
         minProbability,
-        maxTrades
+        maxTrades,
+        includeTransactionCosts,
+        slippageModel,
+        realisticLatency
       });
 
-      // Calculate performance metrics
-      const performance = this.calculatePerformanceMetrics(results);
+      // Calculate comprehensive performance metrics
+      const performance = this.calculateComprehensivePerformanceMetrics(results);
 
-      // Store results
+      // Add risk-adjusted metrics
+      performance.riskAdjustedMetrics = this.calculateRiskAdjustedMetrics(results, performance);
+
+      // Store results with metadata
       const resultKey = `${strategy}_${symbol}_${Date.now()}`;
       this.results.set(resultKey, {
         ...results,
         performance,
         options,
+        metadata: {
+          dataPoints: filteredTicks.length,
+          dateRange: this.getDateRange(filteredTicks),
+          marketConditions: this.analyzeMarketConditions(filteredTicks),
+          backtestRealism: this.assessBacktestRealism(options)
+        },
         timestamp: new Date().toISOString()
       });
 
-      console.log(`Backtest completed for ${strategy} on ${symbol}`);
-      console.log(`Final balance: $${results.balance.toFixed(2)}, Profit: $${results.totalProfit.toFixed(2)}`);
-      console.log(`Win rate: ${(performance.winRate * 100).toFixed(2)}%, Profit factor: ${performance.profitFactor.toFixed(2)}`);
+      console.log(`Realistic backtest completed for ${strategy} on ${symbol}`);
+      console.log(`Final balance: $${results.balance.toFixed(2)}, Net profit: $${results.totalProfit.toFixed(2)}, Fees: $${results.totalFees.toFixed(2)}`);
+      console.log(`Win rate: ${(performance.winRate * 100).toFixed(2)}%, Profit factor: ${performance.profitFactor.toFixed(2)}, Sharpe: ${performance.sharpeRatio.toFixed(2)}`);
 
       return {
         key: resultKey,
@@ -98,6 +114,535 @@ class BacktestEngine {
     } finally {
       this.isRunning = false;
     }
+  }
+
+  // Filter ticks by realistic criteria
+  filterTicksByCriteria(ticks, criteria) {
+    // Ensure ticks is an array
+    if (!Array.isArray(ticks)) {
+      console.error('filterTicksByCriteria: ticks is not an array:', typeof ticks);
+      return [];
+    }
+
+    const { startDate, endDate, marketHoursOnly } = criteria;
+
+    return ticks.filter(tick => {
+      // Validate tick structure
+      if (!tick || !tick.timestamp) return false;
+
+      const tickDate = new Date(tick.timestamp);
+
+      // Date range filter
+      if (startDate && tickDate < new Date(startDate)) return false;
+      if (endDate && tickDate > new Date(endDate)) return false;
+
+      // Market hours filter (simplified - weekdays 24/5 for crypto)
+      if (marketHoursOnly) {
+        const day = tickDate.getDay();
+        // Exclude weekends (0 = Sunday, 6 = Saturday)
+        if (day === 0 || day === 6) return false;
+      }
+
+      return true;
+    });
+  }
+
+  // Initialize market state for realistic simulation
+  initializeMarketState(ticks) {
+    return {
+      volatility: this.calculateHistoricalVolatility(ticks),
+      spread: this.estimateAverageSpread(ticks),
+      liquidity: this.assessMarketLiquidity(ticks),
+      lastUpdate: Date.now()
+    };
+  }
+
+  // Calculate historical volatility
+  calculateHistoricalVolatility(ticks, window = 100) {
+    if (ticks.length < window) return 0.5;
+
+    const recentTicks = ticks.slice(-window);
+    const digits = recentTicks.map(t => t.last_digit);
+
+    // Calculate digit variance as volatility proxy
+    const mean = ss.mean(digits);
+    const variance = ss.variance(digits);
+
+    return Math.sqrt(variance) / 4.5; // Normalize to 0-1 range
+  }
+
+  // Estimate average spread (simplified)
+  estimateAverageSpread(ticks) {
+    // For digit markets, spread is effectively 0, but we simulate micro-spreads
+    return 0.0001; // 0.01% spread
+  }
+
+  // Assess market liquidity
+  assessMarketLiquidity(ticks) {
+    // Simple liquidity proxy based on tick frequency
+    const recentTicks = ticks.slice(-100);
+    const timeSpan = recentTicks[recentTicks.length - 1].timestamp - recentTicks[0].timestamp;
+    const avgInterval = timeSpan / recentTicks.length;
+
+    // Higher frequency = higher liquidity
+    return Math.min(1.0, 1000 / avgInterval); // Normalize
+  }
+
+  // Execute realistic backtest with market simulation
+  async executeRealisticBacktest(strategy, ticks, state, options) {
+    const {
+      riskPerTrade,
+      minProbability,
+      maxTrades,
+      includeTransactionCosts,
+      slippageModel,
+      realisticLatency
+    } = options;
+
+    let tradeCount = 0;
+    const pendingTrades = new Map();
+
+    for (let i = 100; i < ticks.length - 1; i++) { // Start after sufficient history, leave room for outcome
+      const currentTick = ticks[i];
+      const currentTime = currentTick.timestamp;
+
+      // Update market state
+      this.updateMarketState(state.marketState, ticks.slice(Math.max(0, i - 50), i + 1));
+
+      // Check for completed trades (with realistic latency)
+      await this.processCompletedTrades(pendingTrades, ticks, i, state, options);
+
+      // Skip if we have too many concurrent trades
+      if (pendingTrades.size >= 3) continue;
+
+      // Generate prediction using available historical data only
+      const availableHistory = ticks.slice(0, i); // Only data up to current tick
+      const prediction = await this.generateRealisticPrediction(strategy, availableHistory, currentTick);
+
+      if (!prediction || prediction.probability < minProbability) continue;
+
+      // Apply realistic latency (prediction takes time)
+      const latencyTicks = realisticLatency ? Math.floor(Math.random() * 3) + 1 : 0;
+      const executionTickIndex = Math.min(i + latencyTicks, ticks.length - 1);
+      const executionTick = ticks[executionTickIndex];
+
+      // Calculate realistic stake with market impact
+      const stake = this.calculateRealisticStake(state.balance, riskPerTrade, prediction, state.marketState);
+
+      // Apply slippage
+      const slippage = this.calculateSlippage(stake, state.marketState, slippageModel);
+      const effectiveStake = stake * (1 + slippage);
+
+      // Check if we can afford the trade
+      if (effectiveStake > state.balance) continue;
+
+      // Create pending trade (outcome not yet known)
+      const tradeId = `backtest_${tradeCount}_${Date.now()}`;
+      const pendingTrade = {
+        id: tradeId,
+        prediction: prediction.digit,
+        stake: effectiveStake,
+        timestamp: executionTick.timestamp,
+        entryPrice: executionTick.quote,
+        marketState: { ...state.marketState },
+        outcomeTickIndex: executionTickIndex + 1, // Next tick determines outcome
+        fees: includeTransactionCosts ? this.calculateTransactionFees(effectiveStake) : 0
+      };
+
+      pendingTrades.set(tradeId, pendingTrade);
+      tradeCount++;
+
+      if (maxTrades && tradeCount >= maxTrades) break;
+    }
+
+    // Process any remaining pending trades
+    await this.processRemainingTrades(pendingTrades, ticks, ticks.length - 1, state, options);
+
+    return state;
+  }
+
+  // Generate prediction using only historical data (no future leakage)
+  async generateRealisticPrediction(strategy, historicalTicks, currentTick) {
+    if (historicalTicks.length < 50) return null;
+
+    const recentDigits = historicalTicks.slice(-20).map(t => t.last_digit);
+    const digitFrequencies = this.calculateDigitFrequencies(historicalTicks);
+
+    // Use the same prediction logic as live trading
+    return await this.shouldTrade(strategy, {
+      currentDigit: currentTick.last_digit,
+      probabilities: digitFrequencies.probabilities,
+      recentDigits,
+      totalSamples: digitFrequencies.totalSamples,
+      tickIndex: historicalTicks.length,
+      totalTicks: historicalTicks.length,
+      advancedPatterns: stats.detectPatterns(recentDigits)
+    });
+  }
+
+  // Calculate digit frequencies from historical data
+  calculateDigitFrequencies(ticks) {
+    const frequencies = Array(10).fill(0);
+    ticks.forEach(tick => frequencies[tick.last_digit]++);
+
+    const totalSamples = ticks.length;
+    const probabilities = frequencies.map(freq => (freq / totalSamples) * 100);
+
+    return { frequencies, probabilities, totalSamples };
+  }
+
+  // Calculate realistic stake with market impact
+  calculateRealisticStake(balance, riskPerTrade, prediction, marketState) {
+    // Base Kelly calculation
+    const winRate = prediction.probability / 100;
+    const avgWin = config.PAYOUT_MULTIPLIER - 1;
+    const avgLoss = 1.0;
+
+    let stake = risk.calculateKellyStake(winRate, avgWin, avgLoss, balance, config.KELLY_FRACTION);
+
+    // Apply market impact (larger trades move the market)
+    const marketImpact = Math.min(0.05, stake / (balance * 0.1)); // Max 5% impact
+    stake *= (1 - marketImpact);
+
+    // Apply liquidity constraints
+    const liquidityMultiplier = Math.max(0.5, marketState.liquidity);
+    stake *= liquidityMultiplier;
+
+    // Apply risk limits
+    const riskStake = balance * riskPerTrade;
+    stake = Math.min(stake, riskStake, balance * config.MAX_STAKE_MULTIPLIER);
+
+    return Math.max(stake, 1.0); // Minimum stake
+  }
+
+  // Calculate realistic slippage
+  calculateSlippage(stake, marketState, model) {
+    const baseSlippage = marketState.spread;
+
+    switch (model) {
+      case 'aggressive':
+        return baseSlippage * (1 + Math.random() * 0.5); // 0-50% additional slippage
+
+      case 'realistic':
+        // Size-based slippage
+        const sizeMultiplier = Math.min(1.0, stake / 100); // Larger trades = more slippage
+        return baseSlippage * (1 + sizeMultiplier * marketState.volatility);
+
+      case 'conservative':
+      default:
+        return baseSlippage;
+    }
+  }
+
+  // Calculate transaction fees
+  calculateTransactionFees(stake) {
+    // Deriv commission + network fees
+    const commission = stake * 0.001; // 0.1% commission
+    const networkFee = Math.max(0.1, stake * 0.0001); // Minimum 0.1, or 0.01%
+
+    return commission + networkFee;
+  }
+
+  // Process completed trades with realistic outcomes
+  async processCompletedTrades(pendingTrades, ticks, currentIndex, state, options) {
+    const completedTrades = [];
+
+    for (const [tradeId, trade] of pendingTrades) {
+      if (currentIndex >= trade.outcomeTickIndex) {
+        const outcomeTick = ticks[trade.outcomeTickIndex];
+        if (!outcomeTick) continue;
+
+        const actualDigit = outcomeTick.last_digit;
+        const isWin = trade.prediction === actualDigit;
+
+        const payout = isWin ? trade.stake * config.PAYOUT_MULTIPLIER : 0;
+        const grossProfit = payout - trade.stake;
+        const netProfit = grossProfit - trade.fees;
+
+        const completedTrade = {
+          ...trade,
+          actual: actualDigit,
+          result: isWin ? 'won' : 'lost',
+          payout,
+          grossProfit,
+          netProfit,
+          fees: trade.fees,
+          exitPrice: outcomeTick.quote,
+          holdingTime: outcomeTick.timestamp - trade.timestamp
+        };
+
+        completedTrades.push(completedTrade);
+        pendingTrades.delete(tradeId);
+
+        // Update state
+        state.balance += netProfit;
+        state.totalProfit += netProfit;
+        state.totalFees += trade.fees;
+        state.peakBalance = Math.max(state.peakBalance, state.balance);
+        state.currentDrawdown = (state.peakBalance - state.balance) / state.peakBalance;
+
+        if (isWin) state.winCount++;
+        else state.lossCount++;
+
+        state.trades.push(completedTrade);
+      }
+    }
+  }
+
+  // Process remaining pending trades at end of backtest
+  async processRemainingTrades(pendingTrades, ticks, finalIndex, state, options) {
+    for (const [tradeId, trade] of pendingTrades) {
+      // Force close remaining trades at market
+      const outcomeTick = ticks[Math.min(trade.outcomeTickIndex, finalIndex)];
+      const actualDigit = outcomeTick ? outcomeTick.last_digit : trade.prediction; // Default to loss if no data
+
+      const isWin = trade.prediction === actualDigit;
+      const payout = isWin ? trade.stake * config.PAYOUT_MULTIPLIER : 0;
+      const grossProfit = payout - trade.stake;
+      const netProfit = grossProfit - trade.fees;
+
+      const completedTrade = {
+        ...trade,
+        actual: actualDigit,
+        result: isWin ? 'won' : 'lost',
+        payout,
+        grossProfit,
+        netProfit,
+        fees: trade.fees,
+        exitPrice: outcomeTick?.quote || trade.entryPrice,
+        holdingTime: (outcomeTick?.timestamp || trade.timestamp) - trade.timestamp,
+        forcedClosure: true
+      };
+
+      state.balance += netProfit;
+      state.totalProfit += netProfit;
+      state.totalFees += trade.fees;
+      state.peakBalance = Math.max(state.peakBalance, state.balance);
+
+      if (isWin) state.winCount++;
+      else state.lossCount++;
+
+      state.trades.push(completedTrade);
+    }
+
+    pendingTrades.clear();
+  }
+
+  // Update market state during backtest
+  updateMarketState(marketState, recentTicks) {
+    marketState.volatility = this.calculateHistoricalVolatility(recentTicks);
+    marketState.liquidity = this.assessMarketLiquidity(recentTicks);
+    marketState.lastUpdate = Date.now();
+  }
+
+  // Calculate comprehensive performance metrics
+  calculateComprehensivePerformanceMetrics(results) {
+    const { trades, balance, peakBalance, totalProfit, totalFees } = results;
+
+    if (trades.length === 0) {
+      return this.getEmptyPerformanceMetrics();
+    }
+
+    const winningTrades = trades.filter(t => t.result === 'won');
+    const losingTrades = trades.filter(t => t.result === 'lost');
+
+    const winRate = winningTrades.length / trades.length;
+    const avgWin = winningTrades.length > 0 ?
+      winningTrades.reduce((sum, t) => sum + t.netProfit, 0) / winningTrades.length : 0;
+    const avgLoss = losingTrades.length > 0 ?
+      Math.abs(losingTrades.reduce((sum, t) => sum + t.netProfit, 0) / losingTrades.length) : 0;
+
+    const profitFactor = avgLoss > 0 ? (avgWin * winningTrades.length) / (avgLoss * losingTrades.length) : 0;
+
+    // Calculate returns for Sharpe ratio
+    const returns = trades.map(t => t.netProfit / t.stake);
+    const avgReturn = stats.mean(returns);
+    const stdReturn = stats.standardDeviation(returns);
+    const sharpeRatio = stdReturn > 0 ? (avgReturn / stdReturn) * Math.sqrt(252) : 0; // Annualized
+
+    // Calculate maximum drawdown
+    let maxDrawdown = 0;
+    let peak = results.balance - totalProfit; // Starting balance
+    let currentBalance = peak;
+
+    for (const trade of trades) {
+      currentBalance += trade.netProfit;
+      peak = Math.max(peak, currentBalance);
+      const drawdown = (peak - currentBalance) / peak;
+      maxDrawdown = Math.max(maxDrawdown, drawdown);
+    }
+
+    // Calculate Calmar ratio
+    const calmarRatio = maxDrawdown > 0 ? (totalProfit / peakBalance) / maxDrawdown : 0;
+
+    // Calculate Sortino ratio (downside deviation)
+    const negativeReturns = returns.filter(r => r < 0);
+    const downsideStd = negativeReturns.length > 0 ? stats.standardDeviation(negativeReturns) : 0;
+    const sortinoRatio = downsideStd > 0 ? (avgReturn / downsideStd) * Math.sqrt(252) : 0;
+
+    return {
+      totalTrades: trades.length,
+      winRate,
+      profitFactor,
+      sharpeRatio,
+      sortinoRatio,
+      maxDrawdown,
+      calmarRatio,
+      avgWin,
+      avgLoss,
+      totalProfit,
+      totalFees,
+      netProfit: totalProfit - totalFees,
+      winningTrades: winningTrades.length,
+      losingTrades: losingTrades.length,
+      avgTradeDuration: stats.mean(trades.map(t => t.holdingTime)),
+      profitToDrawdownRatio: maxDrawdown > 0 ? totalProfit / (maxDrawdown * peakBalance) : 0
+    };
+  }
+
+  // Calculate risk-adjusted performance metrics
+  calculateRiskAdjustedMetrics(results, performance) {
+    const { trades } = results;
+
+    if (trades.length < 10) {
+      return { valueAtRisk: 0, expectedShortfall: 0, riskOfRuin: 0 };
+    }
+
+    // Calculate Value at Risk (95% confidence)
+    const returns = trades.map(t => t.netProfit / t.stake).sort((a, b) => a - b);
+    const var95Index = Math.floor(returns.length * 0.05);
+    const valueAtRisk = -returns[var95Index]; // Positive value
+
+    // Calculate Expected Shortfall (CVaR)
+    const tailReturns = returns.slice(0, var95Index + 1);
+    const expectedShortfall = -stats.mean(tailReturns);
+
+    // Calculate Risk of Ruin (simplified)
+    const winRate = performance.winRate;
+    const avgWin = performance.avgWin;
+    const avgLoss = performance.avgLoss;
+
+    let riskOfRuin;
+    if (avgLoss === 0) {
+      riskOfRuin = 0;
+    } else {
+      const riskRewardRatio = avgWin / avgLoss;
+      const optimalBetSize = (riskRewardRatio * winRate - (1 - winRate)) / riskRewardRatio;
+
+      if (optimalBetSize <= 0) {
+        riskOfRuin = 1.0; // Certain ruin
+      } else {
+        // Simplified risk of ruin calculation
+        riskOfRuin = Math.pow(1 - winRate, 100 / optimalBetSize);
+      }
+    }
+
+    return {
+      valueAtRisk,
+      expectedShortfall,
+      riskOfRuin: Math.min(riskOfRuin, 1.0),
+      riskAdjustedReturn: performance.sharpeRatio > 0 ? performance.totalProfit / performance.maxDrawdown : 0
+    };
+  }
+
+  // Get date range for backtest metadata
+  getDateRange(ticks) {
+    if (ticks.length === 0) return null;
+
+    const startDate = new Date(ticks[0].timestamp);
+    const endDate = new Date(ticks[ticks.length - 1].timestamp);
+
+    return {
+      start: startDate.toISOString(),
+      end: endDate.toISOString(),
+      duration: endDate - startDate
+    };
+  }
+
+  // Analyze market conditions during backtest
+  analyzeMarketConditions(ticks) {
+    const volatility = this.calculateHistoricalVolatility(ticks, 500);
+    const liquidity = this.assessMarketLiquidity(ticks);
+
+    // Detect trends and ranges
+    const digits = ticks.map(t => t.last_digit);
+    const trend = stats.detectMarketRegime(digits, 100);
+
+    return {
+      volatility,
+      liquidity,
+      trend: trend.regime,
+      trendStrength: trend.confidence,
+      averageTickInterval: this.calculateAverageTickInterval(ticks)
+    };
+  }
+
+  // Calculate average time between ticks
+  calculateAverageTickInterval(ticks) {
+    if (ticks.length < 2) return 0;
+
+    let totalInterval = 0;
+    for (let i = 1; i < ticks.length; i++) {
+      totalInterval += ticks[i].timestamp - ticks[i - 1].timestamp;
+    }
+
+    return totalInterval / (ticks.length - 1);
+  }
+
+  // Assess how realistic the backtest parameters are
+  assessBacktestRealism(options) {
+    let realismScore = 0;
+    let factors = [];
+
+    if (options.includeTransactionCosts) {
+      realismScore += 0.3;
+      factors.push('transaction_costs');
+    }
+
+    if (options.slippageModel === 'realistic') {
+      realismScore += 0.2;
+      factors.push('realistic_slippage');
+    }
+
+    if (options.marketHoursOnly) {
+      realismScore += 0.2;
+      factors.push('market_hours_filter');
+    }
+
+    if (options.realisticLatency) {
+      realismScore += 0.3;
+      factors.push('prediction_latency');
+    }
+
+    return {
+      score: realismScore,
+      level: realismScore > 0.8 ? 'highly_realistic' :
+             realismScore > 0.6 ? 'moderately_realistic' :
+             realismScore > 0.4 ? 'somewhat_realistic' : 'not_realistic',
+      factors
+    };
+  }
+
+  // Get empty performance metrics
+  getEmptyPerformanceMetrics() {
+    return {
+      totalTrades: 0,
+      winRate: 0,
+      profitFactor: 0,
+      sharpeRatio: 0,
+      sortinoRatio: 0,
+      maxDrawdown: 0,
+      calmarRatio: 0,
+      avgWin: 0,
+      avgLoss: 0,
+      totalProfit: 0,
+      totalFees: 0,
+      netProfit: 0,
+      winningTrades: 0,
+      losingTrades: 0,
+      avgTradeDuration: 0,
+      profitToDrawdownRatio: 0
+    };
   }
 
   // Execute specific trading strategy

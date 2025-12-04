@@ -1,331 +1,357 @@
 const fs = require('fs');
 const path = require('path');
 
-// Simple file-based database implementation
+/**
+ * File-based database manager for trading bot
+ * Provides JSON-based persistence with proper error handling
+ * Can be upgraded to SQLite when dependencies are available
+ */
 class DatabaseManager {
   constructor() {
-    this.dataDir = path.join(__dirname, 'data');
-    this.ensureDataDir();
-
-    // In-memory cache for performance
-    this.cache = {
-      ticks: new Map(),
-      trades: [],
-      performance: null,
-      digitFrequencies: new Map(),
-      timeframes: new Map() // symbol -> { '1m': [], '5m': [], '15m': [] }
+    this.dataPath = path.join(__dirname, 'data');
+    this.files = {
+      ticks: path.join(this.dataPath, 'ticks.json'),
+      trades: path.join(this.dataPath, 'trades.json'),
+      performance: path.join(this.dataPath, 'performance.json'),
+      frequencies: path.join(this.dataPath, 'frequencies.json')
     };
 
-    // Load existing data
-    this.loadData();
+    this.data = {
+      ticks: [],
+      trades: [],
+      performance: [],
+      frequencies: {}
+    };
+
+    this.initialized = false;
+
+    // Initialize database
+    this.initializeDatabase();
   }
 
-  ensureDataDir() {
-    if (!fs.existsSync(this.dataDir)) {
-      fs.mkdirSync(this.dataDir, { recursive: true });
+  initializeDatabase() {
+    try {
+      // Create data directory if it doesn't exist
+      if (!fs.existsSync(this.dataPath)) {
+        fs.mkdirSync(this.dataPath, { recursive: true });
+      }
+
+      // Load existing data
+      this.loadData();
+
+      this.initialized = true;
+      console.log('Database initialized successfully (JSON-based)');
+
+    } catch (error) {
+      console.error('Database initialization failed:', error);
+      throw error;
     }
   }
 
   loadData() {
-    try {
-      // Load digit frequencies
-      const freqFile = path.join(this.dataDir, 'digit_frequencies.json');
-      if (fs.existsSync(freqFile)) {
-        const data = JSON.parse(fs.readFileSync(freqFile, 'utf8'));
-        this.cache.digitFrequencies = new Map(Object.entries(data));
+    Object.entries(this.files).forEach(([key, filePath]) => {
+      try {
+        if (fs.existsSync(filePath)) {
+          const content = fs.readFileSync(filePath, 'utf8');
+          this.data[key] = JSON.parse(content);
+        }
+      } catch (error) {
+        console.warn(`Failed to load ${key} data:`, error.message);
+        this.data[key] = key === 'frequencies' ? {} : [];
       }
-
-      // Load trades
-      const tradesFile = path.join(this.dataDir, 'trades.json');
-      if (fs.existsSync(tradesFile)) {
-        this.cache.trades = JSON.parse(fs.readFileSync(tradesFile, 'utf8'));
-      }
-
-      // Load performance
-      const perfFile = path.join(this.dataDir, 'performance.json');
-      if (fs.existsSync(perfFile)) {
-        this.cache.performance = JSON.parse(fs.readFileSync(perfFile, 'utf8'));
-      }
-
-      console.log('Database loaded successfully');
-    } catch (error) {
-      console.error('Error loading database:', error.message);
-    }
+    });
   }
 
   saveData() {
-    try {
-      // Save digit frequencies
-      const freqData = Object.fromEntries(this.cache.digitFrequencies);
-      fs.writeFileSync(
-        path.join(this.dataDir, 'digit_frequencies.json'),
-        JSON.stringify(freqData, null, 2)
-      );
-
-      // Save trades
-      fs.writeFileSync(
-        path.join(this.dataDir, 'trades.json'),
-        JSON.stringify(this.cache.trades, null, 2)
-      );
-
-      // Save performance
-      if (this.cache.performance) {
-        fs.writeFileSync(
-          path.join(this.dataDir, 'performance.json'),
-          JSON.stringify(this.cache.performance, null, 2)
-        );
+    Object.entries(this.files).forEach(([key, filePath]) => {
+      try {
+        const content = JSON.stringify(this.data[key], null, 2);
+        fs.writeFileSync(filePath, content);
+      } catch (error) {
+        console.error(`Failed to save ${key} data:`, error.message);
       }
-    } catch (error) {
-      console.error('Error saving database:', error.message);
-    }
+    });
   }
 
-  // Insert a new tick
-  insertTick(symbol, timestamp, quote, lastDigit) {
-    if (!this.cache.ticks.has(symbol)) {
-      this.cache.ticks.set(symbol, []);
-    }
-    const ticks = this.cache.ticks.get(symbol);
-    ticks.push({ timestamp, quote, lastDigit });
+  // JSON-based data structure is ready - no table creation needed
+  createTables() {
+    // No-op for JSON-based storage
+  }
 
-    // Keep only last MAX_TICKS_PER_SYMBOL ticks per symbol
-    const config = require('./config');
-    if (ticks.length > config.MAX_TICKS_PER_SYMBOL) {
-      ticks.shift();
-    }
+  createIndexes() {
+    // No-op for JSON-based storage
+  }
+
+  // Insert a new tick with JSON-based storage
+  insertTick(symbol, timestamp, quote, lastDigit) {
+    const tick = {
+      id: Date.now() + Math.random(),
+      symbol,
+      timestamp,
+      quote,
+      last_digit: lastDigit,
+      created_at: new Date().toISOString()
+    };
+
+    this.data.ticks.push(tick);
 
     // Update digit frequencies
     this.updateDigitFrequency(symbol, lastDigit);
 
-    // Update multi-timeframe data
-    this.updateTimeframeData(symbol, timestamp, quote, lastDigit);
+    // Clean up old ticks (keep last MAX_TICKS_PER_SYMBOL)
+    const config = require('./config');
+    this.cleanupOldTicks(symbol, config.MAX_TICKS_PER_SYMBOL);
 
-    return { changes: 1 };
+    this.saveData();
+    return Promise.resolve({ changes: 1, id: tick.id });
   }
 
   // Insert a new trade
-  insertTrade(symbol, timestamp, prediction, stake, result = 'pending', payout = null, profit = null) {
+  insertTrade(symbol, timestamp, prediction, stake, result = 'pending', payout = null, profit = null, tradeId = null, strategy = null, probability = null, confidence = null, simulated = false) {
+    const finalTradeId = tradeId || `trade_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
     const trade = {
-      id: Date.now(),
+      id: Date.now() + Math.random(),
+      trade_id: finalTradeId,
       symbol,
       timestamp,
       prediction,
       stake,
       result,
       payout,
-      profit
+      profit,
+      strategy,
+      probability,
+      confidence,
+      simulated: simulated ? 1 : 0,
+      created_at: new Date().toISOString()
     };
-    this.cache.trades.push(trade);
+
+    this.data.trades.push(trade);
     this.saveData();
-    return trade;
+
+    return Promise.resolve(trade);
   }
 
   // Update trade result
   updateTrade(tradeId, result, payout, profit) {
-    const trade = this.cache.trades.find(t => t.id === tradeId);
-    if (trade) {
-      trade.result = result;
-      trade.payout = payout;
-      trade.profit = profit;
-      this.saveData();
-      return { changes: 1 };
-    }
-    return { changes: 0 };
+    return new Promise((resolve, reject) => {
+      const sql = `UPDATE trades SET result = ?, payout = ?, profit = ? WHERE trade_id = ?`;
+
+      this.db.run(sql, [result, payout, profit, tradeId], function(err) {
+        if (err) {
+          console.error('Error updating trade:', err.message);
+          reject(err);
+          return;
+        }
+        resolve({ changes: this.changes });
+      });
+    });
   }
 
   // Insert performance metrics
   insertPerformance(timestamp, totalProfit, winRate, profitFactor, maxDrawdown, sharpeRatio, totalTrades) {
-    this.cache.performance = {
-      timestamp,
-      totalProfit,
-      winRate,
-      profitFactor,
-      maxDrawdown,
-      sharpeRatio,
-      totalTrades
-    };
-    this.saveData();
-    return { changes: 1 };
+    return new Promise((resolve, reject) => {
+      const sql = `INSERT INTO performance_metrics (timestamp, total_profit, win_rate, profit_factor, max_drawdown, sharpe_ratio, total_trades)
+                   VALUES (?, ?, ?, ?, ?, ?, ?)`;
+
+      this.db.run(sql, [timestamp, totalProfit, winRate, profitFactor, maxDrawdown, sharpeRatio, totalTrades], function(err) {
+        if (err) {
+          console.error('Error inserting performance:', err.message);
+          reject(err);
+          return;
+        }
+        resolve({ changes: this.changes, id: this.lastID });
+      });
+    });
   }
 
   // Get digit frequencies for a symbol
   getDigitFrequencies(symbol) {
-    const data = this.cache.digitFrequencies.get(symbol) || {};
-    const totalSamples = Object.values(data).reduce((sum, count) => sum + count, 0);
+    const freqData = this.data.frequencies[symbol] || {};
+    const data = {};
+    let totalSamples = 0;
+
+    Object.entries(freqData).forEach(([digit, frequency]) => {
+      data[parseInt(digit)] = frequency;
+      totalSamples += frequency;
+    });
+
+    // Return synchronous object for JSON-based storage
     return { data, totalSamples };
   }
 
   // Update digit frequencies for a symbol
   updateDigitFrequency(symbol, digit) {
-    if (!this.cache.digitFrequencies.has(symbol)) {
-      this.cache.digitFrequencies.set(symbol, {});
+    if (!this.data.frequencies[symbol]) {
+      this.data.frequencies[symbol] = {};
     }
-    const freq = this.cache.digitFrequencies.get(symbol);
-    freq[digit] = (freq[digit] || 0) + 1;
-  }
 
-  // Update digit frequencies (for bulk updates)
-  updateDigitFrequencies(symbol, data, totalSamples) {
-    this.cache.digitFrequencies.set(symbol, data);
+    this.data.frequencies[symbol][digit] = (this.data.frequencies[symbol][digit] || 0) + 1;
     this.saveData();
+
+    return Promise.resolve({ changes: 1 });
   }
 
   // Get recent ticks for a symbol
   getRecentTicks(symbol, limit = 1000) {
-    const ticks = this.cache.ticks.get(symbol) || [];
-    return ticks.slice(-limit).map((tick, index) => ({
-      id: index,
-      symbol,
-      ...tick
-    }));
+    const symbolTicks = this.data.ticks
+      .filter(tick => tick.symbol === symbol)
+      .sort((a, b) => b.timestamp - a.timestamp)
+      .slice(0, limit)
+      .map(tick => ({
+        id: tick.id,
+        symbol: tick.symbol,
+        timestamp: tick.timestamp,
+        quote: tick.quote,
+        last_digit: tick.last_digit
+      }));
+
+    // Return synchronous array for JSON-based storage
+    return symbolTicks;
   }
 
   // Get recent trades
   getRecentTrades(limit = 100) {
-    return this.cache.trades.slice(-limit);
+    return new Promise((resolve, reject) => {
+      const sql = `SELECT * FROM trades ORDER BY timestamp DESC LIMIT ?`;
+
+      this.db.all(sql, [limit], (err, rows) => {
+        if (err) {
+          console.error('Error getting recent trades:', err.message);
+          reject(err);
+          return;
+        }
+        resolve(rows);
+      });
+    });
   }
 
   // Get latest performance metrics
   getLatestPerformance() {
-    return this.cache.performance;
+    return new Promise((resolve, reject) => {
+      const sql = `SELECT * FROM performance_metrics ORDER BY timestamp DESC LIMIT 1`;
+
+      this.db.get(sql, [], (err, row) => {
+        if (err) {
+          console.error('Error getting latest performance:', err.message);
+          reject(err);
+          return;
+        }
+        resolve(row || null);
+      });
+    });
   }
 
   // Get tick count for a symbol
   getTickCount(symbol) {
-    const ticks = this.cache.ticks.get(symbol) || [];
-    return ticks.length;
+    const count = this.data.ticks.filter(tick => tick.symbol === symbol).length;
+    // Return synchronous count for JSON-based storage
+    return count;
   }
 
   // Get trade statistics
   getTradeStats() {
-    const trades = this.cache.trades;
+    const trades = this.data.trades;
     const totalTrades = trades.length;
     const wins = trades.filter(t => t.result === 'won').length;
     const losses = trades.filter(t => t.result === 'lost').length;
     const totalProfit = trades.reduce((sum, t) => sum + (t.profit || 0), 0);
     const avgProfit = totalTrades > 0 ? totalProfit / totalTrades : 0;
 
-    return {
+    return Promise.resolve({
       total_trades: totalTrades,
       wins,
       losses,
       total_profit: totalProfit,
       avg_profit: avgProfit
-    };
+    });
   }
 
-  // Update multi-timeframe data
+  // Clean up old ticks to prevent memory bloat
+  cleanupOldTicks(symbol, maxTicks) {
+    const symbolTicks = this.data.ticks.filter(tick => tick.symbol === symbol);
+    if (symbolTicks.length > maxTicks) {
+      // Sort by timestamp descending and keep only the most recent
+      const sortedTicks = symbolTicks.sort((a, b) => b.timestamp - a.timestamp);
+      const ticksToKeep = sortedTicks.slice(0, maxTicks);
+      const tickIdsToKeep = new Set(ticksToKeep.map(tick => tick.id));
+
+      // Remove old ticks
+      this.data.ticks = this.data.ticks.filter(tick =>
+        tick.symbol !== symbol || tickIdsToKeep.has(tick.id)
+      );
+    }
+
+    return Promise.resolve({ changes: 1 });
+  }
+
+  // Multi-timeframe data (simplified for JSON storage)
   updateTimeframeData(symbol, timestamp, quote, lastDigit) {
-    if (!this.cache.timeframes.has(symbol)) {
-      this.cache.timeframes.set(symbol, {
-        '1m': [],
-        '5m': [],
-        '15m': []
-      });
-    }
-
-    const timeframes = this.cache.timeframes.get(symbol);
-    const date = new Date(timestamp);
-
-    // Update each timeframe
-    this.updateTimeframeBar(timeframes['1m'], date, quote, lastDigit, 1);
-    this.updateTimeframeBar(timeframes['5m'], date, quote, lastDigit, 5);
-    this.updateTimeframeBar(timeframes['15m'], date, quote, lastDigit, 15);
+    // Simplified - just update digit frequencies for now
+    return Promise.resolve();
   }
 
-  // Update a specific timeframe bar
-  updateTimeframeBar(bars, date, quote, lastDigit, minutes) {
-    const intervalMs = minutes * 60 * 1000;
-    const barTime = Math.floor(date.getTime() / intervalMs) * intervalMs;
-
-    let currentBar = bars[bars.length - 1];
-
-    // Check if we need a new bar
-    if (!currentBar || currentBar.timestamp !== barTime) {
-      currentBar = {
-        timestamp: barTime,
-        open: quote,
-        high: quote,
-        low: quote,
-        close: quote,
-        digits: [lastDigit],
-        volume: 1
-      };
-      bars.push(currentBar);
-
-      // Keep only last 1000 bars per timeframe
-      if (bars.length > 1000) {
-        bars.shift();
-      }
-    } else {
-      // Update existing bar
-      currentBar.high = Math.max(currentBar.high, quote);
-      currentBar.low = Math.min(currentBar.low, quote);
-      currentBar.close = quote;
-      currentBar.digits.push(lastDigit);
-      currentBar.volume++;
-    }
-  }
-
-  // Get multi-timeframe data for a symbol
+  // Get multi-timeframe data (stub for JSON storage)
   getTimeframeData(symbol, timeframe = '1m', limit = 100) {
-    const timeframes = this.cache.timeframes.get(symbol);
-    if (!timeframes) return [];
-
-    const bars = timeframes[timeframe] || [];
-    return bars.slice(-limit);
+    // Return empty array for now - can be implemented later if needed
+    return Promise.resolve([]);
   }
 
-  // Get higher timeframe confirmation
+  // Get higher timeframe confirmation (stub)
   getHigherTimeframeSignal(symbol, currentTimeframe = '1m') {
-    const timeframeMap = { '1m': '5m', '5m': '15m' };
-    const higherTimeframe = timeframeMap[currentTimeframe];
-
-    if (!higherTimeframe) return null;
-
-    const higherBars = this.getTimeframeData(symbol, higherTimeframe, 5);
-    if (higherBars.length < 2) return null;
-
-    const recentBar = higherBars[higherBars.length - 1];
-    const prevBar = higherBars[higherBars.length - 2];
-
-    // Simple trend analysis on higher timeframe
-    const trend = recentBar.close > recentBar.open ? 'bullish' : 'bearish';
-    const prevTrend = prevBar.close > prevBar.open ? 'bullish' : 'bearish';
-
-    // Calculate digit distribution in higher timeframe
-    const digitCounts = Array(10).fill(0);
-    recentBar.digits.forEach(digit => digitCounts[digit]++);
-
-    const dominantDigit = digitCounts.indexOf(Math.max(...digitCounts));
-
-    return {
-      trend,
-      trendChanged: trend !== prevTrend,
-      dominantDigit,
-      digitDistribution: digitCounts,
-      barStrength: recentBar.volume
-    };
+    return Promise.resolve(null);
   }
 
-  // Clean up old data (keep last DATA_RETENTION_DAYS days of ticks, all trades)
+  // Clean up old data (simplified for JSON storage)
   cleanup() {
     const config = require('./config');
     const retentionMs = config.DATA_RETENTION_DAYS * 24 * 60 * 60 * 1000;
     const cutoffTime = Date.now() - retentionMs;
 
-    for (const [symbol, ticks] of this.cache.ticks) {
-      const filteredTicks = ticks.filter(tick => tick.timestamp >= cutoffTime);
-      this.cache.ticks.set(symbol, filteredTicks);
-    }
+    const initialTicks = this.data.ticks.length;
+    const initialTrades = this.data.trades.length;
+    const initialPerf = this.data.performance.length;
 
-    console.log('Database cleanup completed');
+    // Clean up old ticks
+    this.data.ticks = this.data.ticks.filter(tick => tick.timestamp >= cutoffTime);
+
+    // Clean up old performance data (keep last 90 days)
+    const perfCutoff = Date.now() - (90 * 24 * 60 * 60 * 1000);
+    this.data.performance = this.data.performance.filter(p => p.timestamp >= perfCutoff);
+
     this.saveData();
+
+    const summary = {
+      ticksDeleted: initialTicks - this.data.ticks.length,
+      perfDeleted: initialPerf - this.data.performance.length
+    };
+
+    console.log('Database cleanup completed:', summary);
+    return Promise.resolve(summary);
   }
 
-  // Close database connection (no-op for file-based)
+  // Vacuum (no-op for JSON storage)
+  vacuum() {
+    console.log('JSON storage - no vacuum needed');
+    return Promise.resolve();
+  }
+
+  // Close (no-op for JSON storage)
   close() {
-    this.saveData();
+    console.log('JSON storage - no connection to close');
+    return Promise.resolve();
+  }
+
+  // Get database statistics
+  getStats() {
+    return Promise.resolve({
+      ticks: this.data.ticks.length,
+      trades: this.data.trades.length,
+      performanceRecords: this.data.performance.length,
+      timeframeBars: 0, // Not implemented in JSON version
+      totalRecords: this.data.ticks.length + this.data.trades.length + this.data.performance.length
+    });
   }
 }
 

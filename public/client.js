@@ -7,6 +7,8 @@
   const connectionText = document.getElementById('connection-text');
   const tradingStatus = document.getElementById('trading-status');
   const tradingText = document.getElementById('trading-text');
+  const safetyStatus = document.getElementById('safety-status');
+  const safetyText = document.getElementById('safety-text');
   const apiTokenInput = document.getElementById('api-token');
   const tradingStrategySelect = document.getElementById('trading-strategy');
   const riskPerTradeInput = document.getElementById('risk-per-trade');
@@ -17,6 +19,9 @@
   const updateConfigBtn = document.getElementById('update-config');
   const startTradingBtn = document.getElementById('start-trading');
   const stopTradingBtn = document.getElementById('stop-trading');
+  const enableOverrideBtn = document.getElementById('enable-override');
+  const disableOverrideBtn = document.getElementById('disable-override');
+  const overrideStatusEl = document.getElementById('override-status');
 
   // Live trading elements
   const activeTradesEl = document.getElementById('active-trades').querySelector('.metric-value');
@@ -79,6 +84,9 @@
       case 'retraining_complete':
         addConnectionMessage(`Autonomous model retraining completed for ${message.symbol}`);
         break;
+      case 'alert':
+        showAlert(message.message, message.severity || 'info');
+        break;
       case 'error':
         showError(message.message);
         break;
@@ -105,6 +113,32 @@
     }
   }
 
+  // Update safety status indicator
+  function updateSafetyStatus(manualOverride) {
+    if (safetyStatus && safetyText) {
+      const indicator = safetyStatus.querySelector('.status-indicator');
+      if (manualOverride) {
+        indicator.className = 'status-indicator status-danger';
+        safetyText.textContent = 'Safety Mode: DISABLED';
+      } else {
+        indicator.className = 'status-indicator status-safe';
+        safetyText.textContent = 'Safety Mode: Active';
+      }
+    }
+
+    // Update override status text
+    if (overrideStatusEl) {
+      overrideStatusEl.textContent = manualOverride ? 'Manual Override: ACTIVE (DANGER)' : 'Safety Mode: Active (Recommended)';
+      overrideStatusEl.className = manualOverride ? 'override-status danger' : 'override-status safe';
+    }
+
+    // Update override buttons
+    if (enableOverrideBtn && disableOverrideBtn) {
+      enableOverrideBtn.disabled = manualOverride;
+      disableOverrideBtn.disabled = !manualOverride;
+    }
+  }
+
   // Update bot status
   function updateBotStatus(data) {
     botAuthorized = data.authorized || false;
@@ -124,6 +158,9 @@
     } else {
       updateTradingStatus('Ready to Trade', 'status-disconnected');
     }
+
+    // Update safety status
+    updateSafetyStatus(data.manualOverride || false);
 
     // Update live trading status
     updateLiveTradingStatus(data);
@@ -253,6 +290,35 @@
     }
   }
 
+  // Show alert message
+  function showAlert(message, severity = 'info') {
+    console.log(`Bot alert (${severity}):`, message);
+
+    // Create alert element
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${severity}`;
+    alertDiv.innerHTML = `
+      <strong>${severity.toUpperCase()}:</strong> ${message}
+      <button class="alert-close" onclick="this.parentElement.remove()">×</button>
+    `;
+
+    // Insert at top of page
+    const container = document.querySelector('.container');
+    if (container) {
+      container.insertBefore(alertDiv, container.firstChild);
+
+      // Auto-remove after 10 seconds
+      setTimeout(() => {
+        if (alertDiv.parentElement) {
+          alertDiv.remove();
+        }
+      }, 10000);
+    }
+
+    // Also add to trade history
+    addConnectionMessage(`Alert: ${message}`);
+  }
+
   // Show error message
   function showError(message) {
     console.error('Bot error:', message);
@@ -307,6 +373,35 @@
       if (confirm('Are you sure you want to stop trading?')) {
         if (isConnected) {
           ws.send(JSON.stringify({ type: 'stop_trading' }));
+        } else {
+          alert('Not connected to bot backend');
+        }
+      }
+    });
+  }
+
+  // Manual override controls
+  if (enableOverrideBtn) {
+    enableOverrideBtn.addEventListener('click', () => {
+      const confirmed = confirm('⚠️ DANGER: This will disable ALL safety features including automatic shutdown on losses. Are you absolutely sure you want to enable manual override?');
+      if (confirmed) {
+        const reallyConfirmed = confirm('FINAL WARNING: Manual override removes all protections. You could lose your entire balance. Type "I UNDERSTAND" to confirm.');
+        if (reallyConfirmed === 'I UNDERSTAND') {
+          if (isConnected) {
+            ws.send(JSON.stringify({ type: 'manual_override', action: 'enable' }));
+          } else {
+            alert('Not connected to bot backend');
+          }
+        }
+      }
+    });
+  }
+
+  if (disableOverrideBtn) {
+    disableOverrideBtn.addEventListener('click', () => {
+      if (confirm('Restore all safety features?')) {
+        if (isConnected) {
+          ws.send(JSON.stringify({ type: 'manual_override', action: 'disable' }));
         } else {
           alert('Not connected to bot backend');
         }

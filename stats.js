@@ -1,7 +1,10 @@
 const ss = require('simple-statistics');
 
 /**
- * Statistical analysis and time-series processing for digit prediction
+ * Core Statistical Analysis for Digit Prediction
+ *
+ * Simplified and focused implementation providing essential statistical
+ * methods for reliable digit pattern analysis.
  */
 class StatsAnalyzer {
   constructor() {
@@ -10,16 +13,12 @@ class StatsAnalyzer {
 
   /**
    * Calculate autocorrelation for digit sequences
-   * @param {Array<number>} digits - Array of last digits
-   * @param {number} lag - Lag for autocorrelation
-   * @returns {number} Autocorrelation coefficient
    */
   calculateAutocorrelation(digits, lag = 1) {
     if (digits.length < lag + 10) return 0;
 
     const n = digits.length - lag;
     const mean = ss.mean(digits);
-
     let numerator = 0;
     let denominator = 0;
 
@@ -34,67 +33,191 @@ class StatsAnalyzer {
   }
 
   /**
-   * Multi-timeframe pattern recognition for advanced digit prediction
-   * @param {Array<number>} digits - Array of last digits
-   * @param {Object} options - Analysis options
-   * @returns {Object} Comprehensive pattern analysis across timeframes
+   * Simplified pattern detection - focus on proven methods only
    */
-  detectAdvancedPatterns(digits, options = {}) {
+  detectPatterns(digits) {
     if (digits.length < 50) {
-      return { hasPattern: false, patterns: {}, confidence: 0 };
+      return { hasPattern: false, pattern: null, confidence: 0 };
     }
 
-    // Analyze multiple timeframes
-    const timeframes = {
-      '1min': digits.slice(-60),    // ~1 minute (60 ticks)
-      '5min': digits.slice(-300),   // ~5 minutes (300 ticks)
-      '15min': digits.slice(-900)   // ~15 minutes (900 ticks)
+    // Only check for the most reliable patterns
+    const patterns = {
+      frequency: this.analyzeFrequencyBias(digits),
+      trend: this.analyzeTrend(digits),
+      cycles: this.detectCycles(digits)
     };
 
-    const patternAnalysis = {};
+    // Find the strongest pattern
+    let bestPattern = null;
+    let maxConfidence = 0;
 
-    for (const [timeframe, data] of Object.entries(timeframes)) {
-      if (data.length >= 20) {
-        patternAnalysis[timeframe] = {
-          alternating: this.checkAlternatingPattern(data),
-          repeating: this.checkRepeatingPattern(data),
-          trending: this.checkTrendingPattern(data),
-          cyclic: this.checkCyclicPattern(data),
-          volatility: this.analyzeVolatilityClusters(data),
-          momentum: this.detectMomentumShifts(data),
-          meanReversion: this.checkMeanReversion(data),
-          breakout: this.detectBreakoutPatterns(data),
-          fractal: this.analyzeFractalPatterns(data)
-        };
+    for (const [type, analysis] of Object.entries(patterns)) {
+      if (analysis.confidence > maxConfidence) {
+        maxConfidence = analysis.confidence;
+        bestPattern = { type, ...analysis };
       }
     }
 
-    // Cross-timeframe analysis
-    const crossTimeframeSignals = this.analyzeCrossTimeframeSignals(patternAnalysis);
-
-    // Find the strongest overall pattern
-    const bestPatterns = this.findStrongestPatterns(patternAnalysis, crossTimeframeSignals);
-
     return {
-      hasPattern: bestPatterns.overallConfidence > 0.6,
-      patterns: patternAnalysis,
-      crossTimeframeSignals,
-      bestPatterns,
-      confidence: bestPatterns.overallConfidence,
-      recommendedAction: this.generateTradingRecommendation(bestPatterns)
+      hasPattern: maxConfidence > 0.6,
+      pattern: bestPattern,
+      confidence: maxConfidence
     };
   }
 
   /**
-   * Legacy method for backward compatibility
+   * Analyze frequency bias in digits
    */
-  detectPatterns(digits) {
-    const advanced = this.detectAdvancedPatterns(digits);
+  analyzeFrequencyBias(digits) {
+    const freq = Array(10).fill(0);
+    digits.forEach(d => freq[d]++);
+
+    const total = digits.length;
+    const probabilities = freq.map(f => f / total);
+    const maxProb = Math.max(...probabilities);
+    const uniformProb = 0.1; // Expected for random
+
+    const biasStrength = (maxProb - uniformProb) / (1 - uniformProb);
+    const predictedDigit = probabilities.indexOf(maxProb);
+
     return {
-      hasPattern: advanced.hasPattern,
-      pattern: advanced.bestPatterns.primary,
-      confidence: advanced.confidence
+      predictedDigit,
+      probability: maxProb,
+      confidence: Math.min(biasStrength, 1.0),
+      strength: biasStrength
     };
+  }
+
+  /**
+   * Analyze trend in digit sequences
+   */
+  analyzeTrend(digits) {
+    const recent = digits.slice(-20);
+    const diffs = recent.slice(1).map((d, i) => d - recent[i]);
+    const positiveChanges = diffs.filter(d => d > 0).length;
+    const trendStrength = Math.abs(positiveChanges - diffs.length / 2) / (diffs.length / 2);
+
+    return {
+      direction: positiveChanges > diffs.length / 2 ? 'up' : 'down',
+      confidence: trendStrength,
+      strength: trendStrength
+    };
+  }
+
+  /**
+   * Detect simple cycles in digit patterns
+   */
+  detectCycles(digits) {
+    if (digits.length < 30) return { confidence: 0 };
+
+    let bestCycle = 0;
+    let maxCorrelation = 0;
+
+    // Test cycles from 2-8 digits
+    for (let cycle = 2; cycle <= 8; cycle++) {
+      let matches = 0;
+      let total = 0;
+
+      for (let i = cycle; i < digits.length; i++) {
+        if (digits[i] === digits[i - cycle]) matches++;
+        total++;
+      }
+
+      const correlation = total > 0 ? matches / total : 0;
+      if (correlation > maxCorrelation) {
+        maxCorrelation = correlation;
+        bestCycle = cycle;
+      }
+    }
+
+    return {
+      cycle: bestCycle,
+      confidence: maxCorrelation,
+      strength: maxCorrelation
+    };
+  }
+
+  /**
+   * Calculate digit distribution
+   */
+  calculateDigitDistribution(digits) {
+    const distribution = Array(10).fill(0);
+    digits.forEach(digit => distribution[digit]++);
+    return distribution.map(count => count / digits.length);
+  }
+
+  /**
+   * Calculate concentration index (how biased the distribution is)
+   */
+  calculateConcentrationIndex(distribution) {
+    const maxProb = Math.max(...distribution);
+    const uniformProb = 1/10; // 0.1 for uniform distribution
+    return (maxProb - uniformProb) / (1 - uniformProb); // 0-1 scale
+  }
+
+  /**
+   * Analyze market regime (trend vs range)
+   */
+  detectMarketRegime(digits, window = 100) {
+    if (digits.length < window) {
+      return { regime: 'unknown', confidence: 0 };
+    }
+
+    const recent = digits.slice(-window);
+
+    // Calculate trend strength using linear regression
+    const x = Array.from({ length: recent.length }, (_, i) => i);
+    const regression = ss.linearRegression(x.map((val, idx) => [val, recent[idx]]));
+    const slope = regression.m;
+    const rSquared = this.calculateRSquared(recent, x, regression);
+
+    // Calculate volatility (standard deviation)
+    const volatility = ss.standardDeviation(recent);
+
+    // Determine regime based on slope and volatility
+    let regime = 'sideways';
+    let confidence = 0;
+
+    // Strong trend: high slope and high R-squared
+    if (Math.abs(slope) > 0.01 && rSquared > 0.3) {
+      regime = slope > 0 ? 'uptrend' : 'downtrend';
+      confidence = Math.min(1.0, rSquared * 2);
+    }
+    // Ranging market: low slope, moderate volatility
+    else if (volatility > 1.5 && Math.abs(slope) <= 0.01) {
+      regime = 'ranging';
+      confidence = Math.min(1.0, volatility / 3);
+    }
+
+    return {
+      regime,
+      confidence,
+      slope,
+      rSquared,
+      volatility,
+      trendStrength: Math.abs(slope) * rSquared
+    };
+  }
+
+  /**
+   * Calculate R-squared for regression
+   */
+  calculateRSquared(y, x, regression) {
+    const yMean = ss.mean(y);
+    const totalSumSquares = y.reduce((sum, val) => sum + Math.pow(val - yMean, 2), 0);
+    const residualSumSquares = y.reduce((sum, val, idx) => {
+      const predicted = regression.m * x[idx] + regression.b;
+      return sum + Math.pow(val - predicted, 2);
+    }, 0);
+
+    return totalSumSquares > 0 ? 1 - (residualSumSquares / totalSumSquares) : 0;
+  }
+
+  /**
+   * Clear cache
+   */
+  clearCache() {
+    this.cache.clear();
   }
 
   /**
