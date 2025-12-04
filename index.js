@@ -29,6 +29,8 @@ const strategies = require('./strategies'); // Chart-based digit prediction stra
 const risk = require('./risk');       // Risk management and position sizing
 const portfolio = require('./portfolio'); // Portfolio management and optimization
 const backtest = require('./backtest');   // Backtesting engine and strategy validation
+const ml = require('./ml');           // Machine learning models
+const sentiment = require('./sentiment'); // News sentiment analysis
 const errorHandler = require('./errorHandler'); // Comprehensive error handling
 const performanceMonitor = require('./performanceMonitor'); // Performance monitoring
 const security = require('./security'); // Security and authentication
@@ -57,9 +59,29 @@ const logger = winston.createLogger({
 // Startup check: require API token to be present
 const apiToken = process.env.DERIV_API_TOKEN;
 if (!apiToken) {
-  console.error('Missing required environment variable: DERIV_API_TOKEN.\nPlease add DERIV_API_TOKEN to your environment variables or .env file.');
+  console.error('❌ CRITICAL: Missing required environment variable: DERIV_API_TOKEN');
+  console.error('📝 SOLUTION: Add DERIV_API_TOKEN to your environment variables or .env file');
+  console.error('🔗 Get your token from: https://app.deriv.com/account/api-token');
   process.exit(1);
 }
+
+// Environment validation for deployment
+const requiredEnvVars = ['DERIV_API_TOKEN'];
+const missingVars = requiredEnvVars.filter(varName => !process.env[varName]);
+
+if (missingVars.length > 0) {
+  console.error('❌ Missing required environment variables:', missingVars.join(', '));
+  console.error('📝 Please set these in your deployment environment or .env file');
+  process.exit(1);
+}
+
+// Log deployment info
+console.log('🚀 Deriv Bot Deployment Info:');
+console.log(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);
+console.log(`🌐 Port: ${config.WEB_SERVER_PORT}`);
+console.log(`🔑 API Token: ${apiToken.substring(0, 8)}...${apiToken.substring(apiToken.length - 4)}`);
+console.log(`📊 Trading Mode: ${process.env.TRADING_MODE || 'demo'}`);
+console.log('✅ Environment validation passed');
 
 // Bot configuration - using centralized config
 const CONFIG = {
@@ -604,31 +626,80 @@ class DerivBot {
 
   async fetchAccountBalance() {
     try {
+      logger.info('Attempting to fetch real account balance from Deriv...');
+
+      // Try multiple approaches to get balance
       const balanceRequest = {
-        balance: 1,
-        account: 'all' // Get balance for all accounts
+        balance: 1
       };
 
       const response = await this.sendRequestAsync(balanceRequest);
 
       if (response.error) {
-        logger.error('Failed to fetch account balance:', response.error);
-        return;
+        logger.error('Balance API call failed:', response.error);
+
+        // Try alternative approach - some tokens need different parameters
+        if (response.error.code === 'PermissionDenied' || response.error.code === 'InvalidToken') {
+          logger.warn('Standard balance call failed, trying alternative method...');
+
+          // Try without any parameters (some accounts work this way)
+          const altResponse = await this.sendRequestAsync({ balance: 1 });
+
+          if (altResponse.error) {
+            logger.error('Alternative balance call also failed:', altResponse.error);
+            logger.error('CRITICAL: Cannot access account balance. Bot functionality will be limited.');
+            logger.error('Please check your API token permissions in Deriv account settings.');
+            // Don't set a fake balance - let the user know it's broken
+            return false;
+          }
+
+          response = altResponse;
+        } else {
+          logger.error('Balance API returned error:', response.error.message);
+          return false;
+        }
       }
 
-      // Update portfolio with real balance
-      if (response.balance && response.balance.balance) {
-        const realBalance = parseFloat(response.balance.balance);
-        risk.portfolioStats.totalBalance = realBalance;
-        risk.portfolioStats.peakBalance = Math.max(risk.portfolioStats.peakBalance, realBalance);
+      // Process successful balance response
+      if (response.balance) {
+        let balanceValue;
 
-        logger.info(`Fetched real account balance: $${realBalance.toFixed(2)}`);
+        // Handle different balance response formats
+        if (typeof response.balance === 'object' && response.balance.balance) {
+          balanceValue = parseFloat(response.balance.balance);
+        } else if (typeof response.balance === 'number') {
+          balanceValue = response.balance;
+        } else if (typeof response.balance === 'string') {
+          balanceValue = parseFloat(response.balance);
+        } else {
+          logger.error('Unexpected balance response format:', response.balance);
+          return false;
+        }
+
+        if (isNaN(balanceValue)) {
+          logger.error('Invalid balance value received:', response.balance);
+          return false;
+        }
+
+        // Update portfolio with REAL balance
+        risk.portfolioStats.totalBalance = balanceValue;
+        risk.portfolioStats.peakBalance = Math.max(risk.portfolioStats.peakBalance || 0, balanceValue);
+
+        logger.info(`✅ SUCCESS: Fetched real Deriv account balance: $${balanceValue.toFixed(2)}`);
 
         // Send updated balance to UI
         this.sendPortfolioToUI();
+
+        return true;
+      } else {
+        logger.error('Balance response missing balance field:', response);
+        return false;
       }
+
     } catch (error) {
-      logger.error('Error fetching account balance:', error);
+      logger.error('CRITICAL ERROR fetching account balance:', error);
+      logger.error('Bot cannot function properly without account balance information');
+      return false;
     }
   }
 

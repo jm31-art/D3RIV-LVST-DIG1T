@@ -33,7 +33,7 @@ module.exports = {
   BACKTEST_WINDOW_TICKS: 1000, // ticks for backtest validation
 
   // Web server settings
-  WEB_SERVER_PORT: process.env.PORT || 3000,
+  WEB_SERVER_PORT: process.env.PORT || 3001,
 
   // Database settings
   MAX_TICKS_PER_SYMBOL: 10000,

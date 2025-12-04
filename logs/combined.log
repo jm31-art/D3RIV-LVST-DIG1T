@@ -9,3 +9,100 @@
 {"level":"error","message":"Model retraining error: ml is not defined","service":"deriv-bot","stack":"ReferenceError: ml is not defined\n    at DerivBot.retrainModels (/Users/julianna/D3RIV-LVST-DIG1T/index.js:1978:11)\n    at Task._execution (/Users/julianna/D3RIV-LVST-DIG1T/index.js:483:18)\n    at Task.execute (/Users/julianna/D3RIV-LVST-DIG1T/node_modules/node-cron/src/task.js:17:25)\n    at ScheduledTask.now (/Users/julianna/D3RIV-LVST-DIG1T/node_modules/node-cron/src/scheduled-task.js:38:33)\n    at Scheduler.<anonymous> (/Users/julianna/D3RIV-LVST-DIG1T/node_modules/node-cron/src/scheduled-task.js:25:18)\n    at Scheduler.emit (node:events:517:28)\n    at Timeout.matchTime [as _onTimeout] (/Users/julianna/D3RIV-LVST-DIG1T/node_modules/node-cron/src/scheduler.js:30:26)\n    at listOnTimeout (node:internal/timers:569:17)\n    at process.processTimers (node:internal/timers:512:7)","timestamp":"2025-12-04T03:30:00.048Z"}
 {"level":"info","message":"Fetching and analyzing news sentiment...","service":"deriv-bot","timestamp":"2025-12-04T03:30:00.049Z"}
 {"level":"error","message":"News sentiment update error: sentiment is not defined","service":"deriv-bot","stack":"ReferenceError: sentiment is not defined\n    at DerivBot.updateNewsSentiment (/Users/julianna/D3RIV-LVST-DIG1T/index.js:2033:22)\n    at Task._execution (/Users/julianna/D3RIV-LVST-DIG1T/index.js:506:18)\n    at Task.execute (/Users/julianna/D3RIV-LVST-DIG1T/node_modules/node-cron/src/task.js:17:25)\n    at ScheduledTask.now (/Users/julianna/D3RIV-LVST-DIG1T/node_modules/node-cron/src/scheduled-task.js:38:33)\n    at Scheduler.<anonymous> (/Users/julianna/D3RIV-LVST-DIG1T/node_modules/node-cron/src/scheduled-task.js:25:18)\n    at Scheduler.emit (node:events:517:28)\n    at Timeout.matchTime [as _onTimeout] (/Users/julianna/D3RIV-LVST-DIG1T/node_modules/node-cron/src/scheduler.js:30:26)\n    at listOnTimeout (node:internal/timers:569:17)\n    at process.processTimers (node:internal/timers:512:7)","timestamp":"2025-12-04T03:30:00.050Z"}
+{"level":"info","message":"Initializing bot modules...","service":"deriv-bot","timestamp":"2025-12-04T03:46:35.864Z"}
+{"level":"info","message":"Modules initialized successfully","service":"deriv-bot","timestamp":"2025-12-04T03:46:35.870Z"}
+{"level":"info","message":"Connecting to Deriv WebSocket...","service":"deriv-bot","timestamp":"2025-12-04T03:46:35.883Z"}
+{"level":"info","message":"Web interface available at http://localhost:3000","service":"deriv-bot","timestamp":"2025-12-04T03:46:35.949Z"}
+{"level":"info","message":"WebSocket connected successfully (attempt 1)","service":"deriv-bot","timestamp":"2025-12-04T03:46:37.047Z"}
+{"level":"info","message":"Authorization request sent","service":"deriv-bot","timestamp":"2025-12-04T03:46:37.052Z"}
+{"code":"InvalidToken","level":"error","message":"Authorization failed: The token is invalid.","service":"deriv-bot","timestamp":"2025-12-04T03:46:37.354Z"}
+{"level":"info","message":"Shutting down bot...","service":"deriv-bot","timestamp":"2025-12-04T03:58:36.281Z"}
+{"level":"info","message":"Initializing bot modules...","service":"deriv-bot","timestamp":"2025-12-04T16:09:47.442Z"}
+{"level":"info","message":"Modules initialized successfully","service":"deriv-bot","timestamp":"2025-12-04T16:09:47.448Z"}
+{"level":"info","message":"Connecting to Deriv WebSocket...","service":"deriv-bot","timestamp":"2025-12-04T16:09:47.466Z"}
+{"level":"info","message":"Web interface available at http://localhost:3000","service":"deriv-bot","timestamp":"2025-12-04T16:09:47.535Z"}
+{"level":"info","message":"WebSocket connected successfully (attempt 1)","service":"deriv-bot","timestamp":"2025-12-04T16:09:49.620Z"}
+{"level":"info","message":"Authorization request sent","service":"deriv-bot","timestamp":"2025-12-04T16:09:49.625Z"}
+{"level":"info","message":"Successfully authorized - Account type: UNKNOWN","service":"deriv-bot","timestamp":"2025-12-04T16:09:50.062Z"}
+{"level":"info","message":"Resuming trading state after reconnection...","service":"deriv-bot","timestamp":"2025-12-04T16:09:50.064Z"}
+{"level":"info","message":"Trading state resumed successfully","service":"deriv-bot","timestamp":"2025-12-04T16:09:50.064Z"}
+{"level":"warn","message":"Received balance message without balance data","service":"deriv-bot","timestamp":"2025-12-04T16:09:50.376Z"}
+{"code":"PermissionDenied","level":"error","message":"Failed to fetch account balance: Permission denied, balances of all accounts require oauth token","service":"deriv-bot","timestamp":"2025-12-04T16:09:50.378Z"}
+{"level":"info","message":"Shutting down bot...","service":"deriv-bot","timestamp":"2025-12-04T16:15:54.409Z"}
+{"level":"info","message":"Initializing bot modules...","service":"deriv-bot","timestamp":"2025-12-04T16:16:47.325Z"}
+{"level":"info","message":"Modules initialized successfully","service":"deriv-bot","timestamp":"2025-12-04T16:16:47.331Z"}
+{"level":"info","message":"Connecting to Deriv WebSocket...","service":"deriv-bot","timestamp":"2025-12-04T16:16:47.343Z"}
+{"level":"info","message":"Web interface available at http://localhost:3000","service":"deriv-bot","timestamp":"2025-12-04T16:16:47.380Z"}
+{"level":"info","message":"WebSocket connected successfully (attempt 1)","service":"deriv-bot","timestamp":"2025-12-04T16:16:49.331Z"}
+{"level":"info","message":"Authorization request sent","service":"deriv-bot","timestamp":"2025-12-04T16:16:49.335Z"}
+{"level":"info","message":"Successfully authorized - Account type: UNKNOWN","service":"deriv-bot","timestamp":"2025-12-04T16:16:49.768Z"}
+{"level":"info","message":"Resuming trading state after reconnection...","service":"deriv-bot","timestamp":"2025-12-04T16:16:49.770Z"}
+{"level":"info","message":"Trading state resumed successfully","service":"deriv-bot","timestamp":"2025-12-04T16:16:49.770Z"}
+{"level":"info","message":"Fetched real account balance: $11420.04","service":"deriv-bot","timestamp":"2025-12-04T16:16:50.105Z"}
+{"level":"info","message":"Retraining ML models...","service":"deriv-bot","timestamp":"2025-12-04T16:30:00.249Z"}
+{"level":"error","message":"Model retraining error: ml is not defined","service":"deriv-bot","stack":"ReferenceError: ml is not defined\n    at DerivBot.retrainModels (/Users/julianna/D3RIV-LVST-DIG1T/index.js:1987:11)\n    at Task._execution (/Users/julianna/D3RIV-LVST-DIG1T/index.js:483:18)\n    at Task.execute (/Users/julianna/D3RIV-LVST-DIG1T/node_modules/node-cron/src/task.js:17:25)\n    at ScheduledTask.now (/Users/julianna/D3RIV-LVST-DIG1T/node_modules/node-cron/src/scheduled-task.js:38:33)\n    at Scheduler.<anonymous> (/Users/julianna/D3RIV-LVST-DIG1T/node_modules/node-cron/src/scheduled-task.js:25:18)\n    at Scheduler.emit (node:events:508:28)\n    at Timeout.matchTime [as _onTimeout] (/Users/julianna/D3RIV-LVST-DIG1T/node_modules/node-cron/src/scheduler.js:30:26)\n    at listOnTimeout (node:internal/timers:608:17)\n    at process.processTimers (node:internal/timers:543:7)","timestamp":"2025-12-04T16:30:00.259Z"}
+{"level":"info","message":"Fetching and analyzing news sentiment...","service":"deriv-bot","timestamp":"2025-12-04T16:30:00.263Z"}
+{"level":"error","message":"News sentiment update error: sentiment is not defined","service":"deriv-bot","stack":"ReferenceError: sentiment is not defined\n    at DerivBot.updateNewsSentiment (/Users/julianna/D3RIV-LVST-DIG1T/index.js:2042:22)\n    at Task._execution (/Users/julianna/D3RIV-LVST-DIG1T/index.js:506:18)\n    at Task.execute (/Users/julianna/D3RIV-LVST-DIG1T/node_modules/node-cron/src/task.js:17:25)\n    at ScheduledTask.now (/Users/julianna/D3RIV-LVST-DIG1T/node_modules/node-cron/src/scheduled-task.js:38:33)\n    at Scheduler.<anonymous> (/Users/julianna/D3RIV-LVST-DIG1T/node_modules/node-cron/src/scheduled-task.js:25:18)\n    at Scheduler.emit (node:events:508:28)\n    at Timeout.matchTime [as _onTimeout] (/Users/julianna/D3RIV-LVST-DIG1T/node_modules/node-cron/src/scheduler.js:30:26)\n    at listOnTimeout (node:internal/timers:608:17)\n    at process.processTimers (node:internal/timers:543:7)","timestamp":"2025-12-04T16:30:00.263Z"}
+{"level":"info","message":"Shutting down bot...","service":"deriv-bot","timestamp":"2025-12-04T16:34:03.670Z"}
+{"level":"info","message":"Initializing bot modules...","service":"deriv-bot","timestamp":"2025-12-04T16:35:22.196Z"}
+{"level":"info","message":"Modules initialized successfully","service":"deriv-bot","timestamp":"2025-12-04T16:35:22.201Z"}
+{"level":"info","message":"Connecting to Deriv WebSocket...","service":"deriv-bot","timestamp":"2025-12-04T16:35:22.211Z"}
+{"level":"info","message":"Web interface available at http://localhost:3000","service":"deriv-bot","timestamp":"2025-12-04T16:35:22.252Z"}
+{"level":"info","message":"WebSocket connected successfully (attempt 1)","service":"deriv-bot","timestamp":"2025-12-04T16:35:23.196Z"}
+{"level":"info","message":"Authorization request sent","service":"deriv-bot","timestamp":"2025-12-04T16:35:23.199Z"}
+{"level":"info","message":"Successfully authorized - Account type: UNKNOWN","service":"deriv-bot","timestamp":"2025-12-04T16:35:23.670Z"}
+{"level":"info","message":"Attempting to fetch real account balance from Deriv...","service":"deriv-bot","timestamp":"2025-12-04T16:35:23.671Z"}
+{"level":"info","message":"Resuming trading state after reconnection...","service":"deriv-bot","timestamp":"2025-12-04T16:35:23.672Z"}
+{"level":"info","message":"Trading state resumed successfully","service":"deriv-bot","timestamp":"2025-12-04T16:35:23.673Z"}
+{"level":"info","message":"✅ SUCCESS: Fetched real Deriv account balance: $11420.04","service":"deriv-bot","timestamp":"2025-12-04T16:35:23.996Z"}
+{"level":"warn","message":"WebSocket disconnected (code: 1006, reason: )","service":"deriv-bot","timestamp":"2025-12-04T16:38:08.643Z"}
+{"level":"info","message":"Reconnecting in 2500ms (attempt 1)","service":"deriv-bot","timestamp":"2025-12-04T16:38:08.644Z"}
+{"level":"info","message":"Connecting to Deriv WebSocket...","service":"deriv-bot","timestamp":"2025-12-04T16:38:11.145Z"}
+{"level":"info","message":"WebSocket connected successfully (attempt 1)","service":"deriv-bot","timestamp":"2025-12-04T16:38:12.126Z"}
+{"level":"info","message":"Authorization request sent","service":"deriv-bot","timestamp":"2025-12-04T16:38:12.127Z"}
+{"level":"info","message":"Successfully authorized - Account type: UNKNOWN","service":"deriv-bot","timestamp":"2025-12-04T16:38:12.539Z"}
+{"level":"info","message":"Attempting to fetch real account balance from Deriv...","service":"deriv-bot","timestamp":"2025-12-04T16:38:12.540Z"}
+{"level":"info","message":"Resuming trading state after reconnection...","service":"deriv-bot","timestamp":"2025-12-04T16:38:12.541Z"}
+{"level":"info","message":"Trading state resumed successfully","service":"deriv-bot","timestamp":"2025-12-04T16:38:12.541Z"}
+{"level":"info","message":"✅ SUCCESS: Fetched real Deriv account balance: $11420.04","service":"deriv-bot","timestamp":"2025-12-04T16:38:12.879Z"}
+{"level":"info","message":"Initializing bot modules...","service":"deriv-bot","timestamp":"2025-12-04T17:04:17.652Z"}
+{"level":"info","message":"Modules initialized successfully","service":"deriv-bot","timestamp":"2025-12-04T17:04:17.658Z"}
+{"level":"info","message":"Connecting to Deriv WebSocket...","service":"deriv-bot","timestamp":"2025-12-04T17:04:17.668Z"}
+{"level":"info","message":"Web interface available at http://localhost:3000","service":"deriv-bot","timestamp":"2025-12-04T17:04:17.701Z"}
+{"level":"info","message":"WebSocket connected successfully (attempt 1)","service":"deriv-bot","timestamp":"2025-12-04T17:04:19.050Z"}
+{"level":"info","message":"Authorization request sent","service":"deriv-bot","timestamp":"2025-12-04T17:04:19.054Z"}
+{"level":"info","message":"Successfully authorized - Account type: UNKNOWN","service":"deriv-bot","timestamp":"2025-12-04T17:04:19.558Z"}
+{"level":"info","message":"Attempting to fetch real account balance from Deriv...","service":"deriv-bot","timestamp":"2025-12-04T17:04:19.559Z"}
+{"level":"info","message":"Resuming trading state after reconnection...","service":"deriv-bot","timestamp":"2025-12-04T17:04:19.560Z"}
+{"level":"info","message":"Trading state resumed successfully","service":"deriv-bot","timestamp":"2025-12-04T17:04:19.560Z"}
+{"level":"info","message":"✅ SUCCESS: Fetched real Deriv account balance: $11420.04","service":"deriv-bot","timestamp":"2025-12-04T17:04:20.075Z"}
+{"level":"info","message":"Shutting down bot...","service":"deriv-bot","timestamp":"2025-12-04T17:07:47.682Z"}
+{"level":"info","message":"Initializing bot modules...","service":"deriv-bot","timestamp":"2025-12-04T17:08:49.936Z"}
+{"level":"info","message":"Modules initialized successfully","service":"deriv-bot","timestamp":"2025-12-04T17:08:49.941Z"}
+{"level":"info","message":"Connecting to Deriv WebSocket...","service":"deriv-bot","timestamp":"2025-12-04T17:08:49.950Z"}
+{"level":"info","message":"Web interface available at http://localhost:3000","service":"deriv-bot","timestamp":"2025-12-04T17:08:49.985Z"}
+{"level":"info","message":"WebSocket connected successfully (attempt 1)","service":"deriv-bot","timestamp":"2025-12-04T17:08:50.951Z"}
+{"level":"info","message":"Authorization request sent","service":"deriv-bot","timestamp":"2025-12-04T17:08:50.954Z"}
+{"level":"info","message":"Successfully authorized - Account type: UNKNOWN","service":"deriv-bot","timestamp":"2025-12-04T17:08:51.325Z"}
+{"level":"info","message":"Attempting to fetch real account balance from Deriv...","service":"deriv-bot","timestamp":"2025-12-04T17:08:51.326Z"}
+{"level":"info","message":"Resuming trading state after reconnection...","service":"deriv-bot","timestamp":"2025-12-04T17:08:51.328Z"}
+{"level":"info","message":"Trading state resumed successfully","service":"deriv-bot","timestamp":"2025-12-04T17:08:51.329Z"}
+{"level":"info","message":"✅ SUCCESS: Fetched real Deriv account balance: $11420.04","service":"deriv-bot","timestamp":"2025-12-04T17:08:51.633Z"}
+{"level":"info","message":"Retraining ML models...","service":"deriv-bot","timestamp":"2025-12-04T17:30:00.632Z"}
+{"level":"info","message":"Retrained ML model for R_10","service":"deriv-bot","timestamp":"2025-12-04T17:30:00.690Z"}
+{"level":"info","message":"Fetching and analyzing news sentiment...","service":"deriv-bot","timestamp":"2025-12-04T17:30:00.691Z"}
+{"level":"info","message":"Analyzed 2 news articles for R_10","service":"deriv-bot","timestamp":"2025-12-04T17:30:00.693Z"}
+{"level":"info","message":"Analyzed 2 news articles for R_25","service":"deriv-bot","timestamp":"2025-12-04T17:30:00.694Z"}
+{"level":"info","message":"Analyzed 2 news articles for R_50","service":"deriv-bot","timestamp":"2025-12-04T17:30:00.695Z"}
+{"level":"info","message":"Analyzed 2 news articles for R_75","service":"deriv-bot","timestamp":"2025-12-04T17:30:00.696Z"}
+{"level":"info","message":"Analyzed 2 news articles for R_100","service":"deriv-bot","timestamp":"2025-12-04T17:30:00.697Z"}
+{"level":"warn","message":"WebSocket disconnected (code: 1006, reason: )","service":"deriv-bot","timestamp":"2025-12-04T17:45:16.718Z"}
+{"level":"info","message":"Reconnecting in 2500ms (attempt 1)","service":"deriv-bot","timestamp":"2025-12-04T17:45:16.718Z"}
+{"level":"info","message":"Connecting to Deriv WebSocket...","service":"deriv-bot","timestamp":"2025-12-04T17:45:19.220Z"}
+{"level":"info","message":"WebSocket connected successfully (attempt 1)","service":"deriv-bot","timestamp":"2025-12-04T17:45:20.562Z"}
+{"level":"info","message":"Authorization request sent","service":"deriv-bot","timestamp":"2025-12-04T17:45:20.562Z"}
+{"level":"info","message":"Successfully authorized - Account type: UNKNOWN","service":"deriv-bot","timestamp":"2025-12-04T17:45:20.922Z"}
+{"level":"info","message":"Attempting to fetch real account balance from Deriv...","service":"deriv-bot","timestamp":"2025-12-04T17:45:20.923Z"}
+{"level":"info","message":"Resuming trading state after reconnection...","service":"deriv-bot","timestamp":"2025-12-04T17:45:20.924Z"}
+{"level":"info","message":"Trading state resumed successfully","service":"deriv-bot","timestamp":"2025-12-04T17:45:20.924Z"}
+{"level":"info","message":"✅ SUCCESS: Fetched real Deriv account balance: $11420.04","service":"deriv-bot","timestamp":"2025-12-04T17:45:21.230Z"}
