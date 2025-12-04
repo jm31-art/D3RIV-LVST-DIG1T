@@ -223,15 +223,16 @@ class DerivBot {
     this.wss = new WebSocket.Server({ server });
 
     this.wss.on('connection', (ws) => {
-      logger.info('UI client connected');
+      logger.info('✅ UI client connected successfully');
       this.uiClients.add(ws);
 
-      // Send initial status
+      // Send initial status immediately
       this.sendStatusToUI();
 
       ws.on('message', (message) => {
         try {
           const data = JSON.parse(message.toString());
+          logger.debug('Received UI message:', data.type);
           this.handleUIMessage(ws, data);
         } catch (error) {
           logger.error('Error parsing UI message:', error);
@@ -249,6 +250,9 @@ class DerivBot {
       });
     });
 
+    // Log WebSocket server status
+    logger.info('WebSocket server initialized and listening for UI connections');
+
     // Start server
     server.listen(config.WEB_SERVER_PORT, () => {
       logger.info(`Web interface available at http://localhost:${config.WEB_SERVER_PORT}`);
@@ -258,23 +262,31 @@ class DerivBot {
   // Manual override removed - contradictory to unified risk management
 
   handleUIMessage(ws, message) {
+    logger.info(`🔄 Processing UI message: ${message.type}`);
+
     switch (message.type) {
       case 'get_status':
+        logger.info('📊 Sending status update to UI');
         this.sendStatusToUI();
         break;
       case 'update_config':
+        logger.info('⚙️ Updating configuration from UI');
         this.updateConfigFromUI(message);
         break;
       case 'start_trading':
+        logger.info('🚀 START TRADING command received from UI');
         this.startTrading();
         break;
       case 'stop_trading':
+        logger.info('⏹️ STOP TRADING command received from UI');
         this.stopTrading();
         break;
       case 'run_backtest':
+        logger.info('📈 Running backtest from UI');
         this.runBacktestFromUI();
         break;
       case 'retrain_models':
+        logger.info('🧠 Retraining models from UI');
         this.retrainModelsFromUI();
         break;
       // Manual override removed - contradictory to unified risk management
@@ -704,26 +716,37 @@ class DerivBot {
   }
 
   async startTrading() {
+    logger.info('🔍 Checking trading prerequisites...');
+    logger.info(`Authorized: ${this.authorized}, Connected: ${this.isConnected}`);
+
     if (!this.authorized) {
-      logger.warn('Cannot start trading: not authorized');
+      logger.warn('❌ Cannot start trading: not authorized with Deriv');
       return;
     }
 
-    logger.info(`🚀 Starting ${CONFIG.tradingMode.toUpperCase()} trading...`);
+    if (!this.isConnected) {
+      logger.warn('❌ Cannot start trading: not connected to Deriv WebSocket');
+      return;
+    }
+
+    logger.info(`🚀 STARTING ${CONFIG.tradingMode.toUpperCase()} TRADING...`);
     this.tradingEnabled = true;
 
     // Subscribe to tick data for all symbols
+    logger.info(`📡 Subscribing to tick data for symbols: ${CONFIG.symbols.join(', ')}`);
     for (const symbol of CONFIG.symbols) {
       await this.subscribeToTicks(symbol);
     }
 
     // Start the trading loop
+    logger.info('🔄 Initializing trading loop...');
     this.startTradingLoop();
 
     // Send status update to UI
     this.sendStatusToUI();
 
-    logger.info(`Trading started - monitoring ${CONFIG.symbols.length} symbols`);
+    logger.info(`✅ TRADING STARTED - Monitoring ${CONFIG.symbols.length} symbols for opportunities`);
+    logger.info('🎯 Bot is now actively looking for trading opportunities...');
   }
 
   async subscribeToTicks(symbol) {
