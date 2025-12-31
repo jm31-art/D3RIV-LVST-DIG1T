@@ -1,95 +1,92 @@
 // derivBot.js
-require('dotenv').config();
+process.env.NODE_OPTIONS = '--max-old-space-size=512';
 const WebSocket = require('ws');
+require('dotenv').config();
+const db = require('./db');
+const strategies = require('./strategies');
+const risk = require('./risk');
+const config = require('./config');
+const ml = require('./ml');
+const nodemailer = require('nodemailer');
 
-class DerivBot {
-  constructor() {
-    this.ws = null;
-    this.isConnected = false;
-    this.authorized = false;
-    this.activeTrades = new Map();
-    this.balance = 1000; // default starting balance
-    this.profitToday = 0;
-    this.status = 'Idle';
-    this.pendingRequests = {};
-  }
-
-  connect() {
-    if (this.isConnected) return;
-    this.ws = new WebSocket(`wss://ws.derivws.com/websockets/v3?app_id=${process.env.DERIV_APP_ID || 1089}`);
-    
-    this.ws.on('open', () => {
-      this.isConnected = true;
-      this.status = 'Connected';
-      this.authorize();
-    });
-
-    this.ws.on('message', (data) => {
-      try {
-        const msg = JSON.parse(data.toString());
-        this.handleMessage(msg);
-      } catch (err) {
-        console.error('Failed to parse message', err);
-      }
-    });
-
-    this.ws.on('close', () => {
-      this.isConnected = false;
-      this.authorized = false;
-      this.status = 'Disconnected';
-      setTimeout(() => this.connect(), 5000); // reconnect after 5s
-    });
-
-    this.ws.on('error', (err) => {
-      console.error('WebSocket error', err);
-    });
-  }
-
-  authorize() {
-    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
-    const authReq = { authorize: process.env.DERIV_API_TOKEN };
-    this.sendRequest(authReq);
-  }
-
-  start() {
-    if (!this.authorized) return;
-    this.status = 'Running';
-    // Example: simple trade simulation every 5s
-    this.tradeInterval = setInterval(() => this.simulateTrade(), 5000);
-  }
-
-  stop() {
-    this.status = 'Idle';
-    clearInterval(this.tradeInterval);
-  }
-
-  simulateTrade() {
-    // Simulate a trade with random profit/loss
-    const profit = (Math.random() - 0.5) * 10; // -5 to +5
-    this.profitToday += profit;
-    this.balance += profit;
-  }
-
-  handleMessage(msg) {
-    if (msg.msg_type === 'authorize' && !msg.error) {
-      this.authorized = true;
-      this.status = 'Idle';
-    }
-  }
-
-  sendRequest(req) {
-    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
-    const reqId = Date.now();
-    this.ws.send(JSON.stringify({ ...req, req_id: reqId }));
-  }
-
-  getStatus() {
-    return {
-      balance: this.balance.toFixed(2),
-      profitToday: this.profitToday.toFixed(2),
-      status: this.status,
-    };
-  }
+async function sendAlert(message) {
+  let transporter = nodemailer.createTransporter({ service: 'gmail', auth: { user: 'your@gmail.com', pass: 'app_pass' } });
+  await transporter.sendMail({ from: 'bot@gmail.com', to: 'you@gmail.com', subject: 'Bot Alert', text: message });
 }
 
-module.exports = DerivBot;
+let tradesToday = 0;
+let totalProfit = 0;
+let requestQueue = [];
+
+const wsUrl = `wss://ws.derivws.com/websockets/v3?app_id=${process.env.DERIV_APP_ID}`;
+let ws;
+let reconnectMs = 1000;
+
+function connect() {
+  ws = new WebSocket(wsUrl);
+  ws.on('open', () => {
+    reconnectMs = 1000;
+    ws.send(JSON.stringify({ authorize: process.env.DEMO_API_TOKEN }));
+    ws.send(JSON.stringify({ balance: 1, subscribe: 1 }));
+    ws.send(JSON.stringify({ ticks: '1HZ100V', subscribe: 1 }));
+  });
+  ws.on('close', () => setTimeout(connect, reconnectMs = Math.min(reconnectMs * 2, 60000)));
+  ws.on('error', (err) => {
+    if (err.message.includes('rate')) setTimeout(connect, 60000);
+  });
+  ws.on('message', (data) => {
+    let msg = JSON.parse(data);
+    if (msg.msg_type === 'authorize') console.log('Demo Auth:', msg.authorize ? 'Success' : 'Fail');
+    if (msg.msg_type === 'balance') {
+      console.log('Demo Funds:', msg.balance.balance);
+      risk.updateBalance(parseFloat(msg.balance.balance));
+    }
+    if (msg.msg_type === 'tick') {
+      db.addTick(msg.tick.symbol, msg.tick.last_digit, msg.tick.quote);
+      let ticks = db.getHistoricalTicks(msg.tick.symbol, 100);
+      let pred = strategies.getEnsemblePrediction(ticks, 0.5, 0.5); // placeholder
+      let vol = strategies.calculateVol(ticks);
+      if (vol < 0.5 && pred > config.confThreshold && tradesToday < config.maxTradesDay) {
+        let stake = risk.getStake(1, true, 0);
+        let type = pred % 2 === 0 ? 'even' : 'odd'; // for VIX
+        strategies.proposeContract(ws, type, msg.tick.symbol, stake, 5);
+      }
+    }
+    if (msg.msg_type === 'proposal') {
+      if (msg.proposal.ask_price < 10) { // arbitrary
+        queuedSend({ buy: msg.proposal.id, price: msg.proposal.ask_price });
+      }
+    }
+    if (msg.msg_type === 'buy') {
+      tradesToday++;
+      console.log('Trade executed');
+      console.log('Trade logged for compliance:', tradesToday);
+      if (tradesToday > 100 && totalProfit > 0.05 * risk.getStake(1, true, 0) * 100) sendAlert('Target hit');
+    }
+    if (msg.msg_type === 'pong') console.log('Latency OK');
+    if (msg.error) {
+      console.error('Error:', msg.error.message);
+      if (msg.error.code === 'RateLimit') {
+        console.warn('Backoff');
+        setTimeout(() => { if (requestQueue.length) ws.send(requestQueue.shift()); }, 1000);
+      }
+    }
+  });
+}
+
+connect();
+
+setInterval(() => ws.send(JSON.stringify({ ping: 1 })), 30000);
+
+function queuedSend(payload) {
+  requestQueue.push(JSON.stringify(payload));
+  if (requestQueue.length === 1) ws.send(requestQueue.shift());
+}
+
+// For Render: server setup
+const express = require('express');
+const app = express();
+app.get('/', (req, res) => res.send('Bot running'));
+app.listen(process.env.PORT || 3000, () => console.log('On port', process.env.PORT || 3000));
+
+// Test: npm start, check logs for auth/balance. Trades use demo funds if authorized

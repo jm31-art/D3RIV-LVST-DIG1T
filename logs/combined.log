@@ -134,3 +134,11 @@
 {"level":"info","message":"Analyzed 2 news articles for R_50","service":"deriv-bot","timestamp":"2025-12-04T20:00:00.350Z"}
 {"level":"info","message":"Analyzed 2 news articles for R_75","service":"deriv-bot","timestamp":"2025-12-04T20:00:00.351Z"}
 {"level":"info","message":"Analyzed 2 news articles for R_100","service":"deriv-bot","timestamp":"2025-12-04T20:00:00.351Z"}
+{"level":"info","message":"Retraining ML models...","service":"deriv-bot","timestamp":"2025-12-04T20:30:00.408Z"}
+{"level":"info","message":"Retrained ML model for R_10","service":"deriv-bot","timestamp":"2025-12-04T20:30:00.433Z"}
+{"level":"info","message":"Fetching and analyzing news sentiment...","service":"deriv-bot","timestamp":"2025-12-04T20:30:00.433Z"}
+{"level":"info","message":"Analyzed 2 news articles for R_10","service":"deriv-bot","timestamp":"2025-12-04T20:30:00.434Z"}
+{"level":"info","message":"Analyzed 2 news articles for R_25","service":"deriv-bot","timestamp":"2025-12-04T20:30:00.435Z"}
+{"level":"info","message":"Analyzed 2 news articles for R_50","service":"deriv-bot","timestamp":"2025-12-04T20:30:00.436Z"}
+{"level":"info","message":"Analyzed 2 news articles for R_75","service":"deriv-bot","timestamp":"2025-12-04T20:30:00.436Z"}
+{"level":"info","message":"Analyzed 2 news articles for R_100","service":"deriv-bot","timestamp":"2025-12-04T20:30:00.437Z"}
