@@ -26,42 +26,55 @@ let derivWs;
 let reconnectMs = 1000;
 
 function connectDeriv() {
-  derivWs = new WebSocket(`wss://ws.derivws.com/websockets/v3?app_id=${process.env.DERIV_APP_ID}`);
+  const wsUrl = `wss://ws.derivws.com/websockets/v3?app_id=${process.env.DERIV_APP_ID || 1089}`;
+  console.log('WS connecting to', wsUrl);
+  derivWs = new WebSocket(wsUrl);
   derivWs.on('open', () => {
+    console.log('WS opened');
     reconnectMs = 1000;
     derivWs.send(JSON.stringify({ authorize: process.env.DEMO_API_TOKEN }));
     derivWs.send(JSON.stringify({ balance: 1, subscribe: 1 }));
-    derivWs.send(JSON.stringify({ ticks: '1HZ100V', subscribe: 1 }));
+    derivWs.send(JSON.stringify({ ticks: 'R_10', subscribe: 1 }));
     derivWs.send(JSON.stringify({ get_settings: 1 }));
   });
-  derivWs.on('close', () => setTimeout(connectDeriv, reconnectMs = Math.min(reconnectMs * 2, 60000)));
+  derivWs.on('close', () => {
+    console.log('WS closed');
+    setTimeout(connectDeriv, reconnectMs = Math.min(reconnectMs * 2, 60000));
+  });
   derivWs.on('error', (err) => {
+    console.log('WS error:', err.message);
     if (err.message.includes('rate')) setTimeout(connectDeriv, 60000);
   });
   derivWs.on('message', (data) => {
     let msg = JSON.parse(data);
-    if (msg.msg_type === 'authorize' && msg.authorize) {
-      console.log('Demo authorized - placing test trade');
-      // Simple Rise/Fall on R_10 (low vol, quick 5-tick contract)
-      const proposal = {
-        proposal: 1,
-        amount: 1,  // $1 stake (demo safe)
-        basis: 'stake',
-        contract_type: 'CALL',  // Rise
-        currency: 'USD',
-        duration: 5,
-        duration_unit: 't',
-        symbol: 'R_10'
-      };
-      derivWs.send(JSON.stringify(proposal));
+    console.log('Deriv WS message:', msg.msg_type, msg.error ? 'Error:' + JSON.stringify(msg.error) : '');
+    if (msg.msg_type === 'authorize') {
+      if (msg.authorize) {
+        console.log('Demo authorized - placing test trade');
+        // Simple Rise/Fall on frxEURUSD (common demo symbol, quick 5-tick contract)
+        const proposal = {
+          proposal: 1,
+          amount: 1,  // $1 stake (demo safe)
+          basis: 'stake',
+          contract_type: 'CALL',  // Rise
+          currency: 'USD',
+          duration: 5,
+          duration_unit: 't',
+          symbol: 'frxEURUSD'
+        };
+        derivWs.send(JSON.stringify(proposal));
 
-      // Subscribe to open contracts for outcomes
-      derivWs.send(JSON.stringify({ proposal_open_contract: 1, subscribe: 1 }));
+        // Subscribe to open contracts for outcomes
+        derivWs.send(JSON.stringify({ proposal_open_contract: 1, subscribe: 1 }));
 
-      // Subscribe to ticks for ongoing trading
-      derivWs.send(JSON.stringify({ ticks: 'R_10', subscribe: 1 }));
+        // Subscribe to ticks for ongoing trading
+        derivWs.send(JSON.stringify({ ticks: 'frxEURUSD', subscribe: 1 }));
 
-      io.emit('status', 'Authorized. Test trade placed...');
+        io.emit('status', 'Authorized. Test trade placed...');
+      } else {
+        console.log('Authorization failed');
+        io.emit('status', 'Authorization failed. Check DEMO_API_TOKEN.');
+      }
     }
     if (msg.msg_type === 'balance') {
       console.log('Demo Funds:', msg.balance.balance);
