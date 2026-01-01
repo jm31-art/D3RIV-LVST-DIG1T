@@ -1,5 +1,4 @@
 // strategies.js
-const sentiment = require('./sentiment');
 const microstructure = require('./microstructure');
 
 function proposeContract(ws, type, symbol, amount, duration, barrier=null) {
@@ -12,11 +11,30 @@ function proposeContract(ws, type, symbol, amount, duration, barrier=null) {
   ws.send(JSON.stringify(payload));
 }
 
-function getEnsemblePrediction(ticks, ml, markov) {
+function getEnsemblePrediction(ticks, mlPred, markovPred) {
   try {
-    let sent = sentiment.analyzeSentiment(ticks) === 'bull' ? 1 : 0;
-    let micro = microstructure.analyzeMicrostructure(ticks).pattern === 'up' ? 1 : 0;
-    return 0.4 * ml + 0.3 * markov + 0.15 * sent + 0.15 * micro;
+    // Updated ensemble prediction – sentiment component fully removed
+    // Weights rebalanced: higher emphasis on ML and microstructure for better signal
+    const mlWeight = 0.45;
+    const markovWeight = 0.35;
+    const microstructureWeight = 0.20;
+
+    let microstructureScore = microstructure.analyzeMicrostructure(ticks).pattern === 'up' ? 1 : 0;
+
+    let ensemblePred =
+      (mlPred * mlWeight) +
+      (markovPred * markovWeight) +
+      (microstructureScore * microstructureWeight);
+
+    // Optional: Add small TA boost if using RSI/MA filters
+    const shortMA = calculateMA(ticks, 6);
+    const longMA = calculateMA(ticks, 21);
+    const rsi = calculateRSI(ticks);
+    if (shortMA > longMA && rsi < 70) {
+      ensemblePred += 0.05;  // Slight confidence boost on trend alignment
+    }
+
+    return ensemblePred;
   } catch (e) {
     console.error('Strat error:', e);
     return 0.5; // default
