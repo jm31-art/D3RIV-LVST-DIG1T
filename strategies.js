@@ -47,4 +47,20 @@ function calculateVol(ticks) {
   return Math.sqrt(prices.reduce((sum, p) => sum + (p - mean) ** 2, 0) / prices.length);
 }
 
-module.exports = { proposeContract, getEnsemblePrediction, calculateVol };
+function calculateMA(ticks, period = 10) {
+  return ticks.slice(-period).reduce((sum, t) => sum + t.price, 0) / period;
+}
+
+function calculateRSI(ticks, period = 14) {
+  let gains = 0, losses = 0;
+  for (let i = 1; i < period; i++) {
+    let diff = ticks[i].price - ticks[i-1].price;
+    if (diff > 0) gains += diff; else losses += -diff;
+  }
+  let rs = (gains / period) / (losses / period);
+  return 100 - (100 / (1 + rs));
+}
+
+function getMaxTrades(conf) { return conf > 0.8 ? 100 : 50; }
+
+module.exports = { proposeContract, getEnsemblePrediction, calculateVol, calculateMA, calculateRSI, getMaxTrades, confThreshold: 0.55 };

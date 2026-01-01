@@ -40,10 +40,28 @@ function connectDeriv() {
   });
   derivWs.on('message', (data) => {
     let msg = JSON.parse(data);
-    if (msg.msg_type === 'authorize') {
-      console.log('Demo Auth:', msg.authorize ? 'Success' : 'Fail');
-      io.emit('status', 'Authorized. Starting bot...');
-      startBotTrading();
+    if (msg.msg_type === 'authorize' && msg.authorize) {
+      console.log('Demo authorized - placing test trade');
+      // Simple Rise/Fall on R_10 (low vol, quick 5-tick contract)
+      const proposal = {
+        proposal: 1,
+        amount: 1,  // $1 stake (demo safe)
+        basis: 'stake',
+        contract_type: 'CALL',  // Rise
+        currency: 'USD',
+        duration: 5,
+        duration_unit: 't',
+        symbol: 'R_10'
+      };
+      derivWs.send(JSON.stringify(proposal));
+
+      // Subscribe to open contracts for outcomes
+      derivWs.send(JSON.stringify({ proposal_open_contract: 1, subscribe: 1 }));
+
+      // Subscribe to ticks for ongoing trading
+      derivWs.send(JSON.stringify({ ticks: 'R_10', subscribe: 1 }));
+
+      io.emit('status', 'Authorized. Test trade placed...');
     }
     if (msg.msg_type === 'balance') {
       console.log('Demo Funds:', msg.balance.balance);
@@ -60,23 +78,28 @@ function connectDeriv() {
         strategies.proposeContract(derivWs, type, msg.tick.symbol, stake, 5);
       }
     }
+    // Enhanced trade logging (catches proposal response + contract updates)
     if (msg.msg_type === 'proposal') {
-      if (msg.proposal.ask_price < 10) {
-        queuedSend({ buy: msg.proposal.id, price: msg.proposal.ask_price });
-      }
+      // Auto-buy on proposal (for immediate trade)
+      derivWs.send(JSON.stringify({ buy: msg.proposal.id, price: msg.proposal.ask_price }));
     }
+
     if (msg.msg_type === 'buy') {
-      tradesToday++;
-      console.log('Trade executed');
+      console.log('Trade bought:', msg.buy.contract_id);
+    }
+
+    if (msg.msg_type === 'proposal_open_contract') {
+      const profit = msg.proposal_open_contract.profit || 0;
       const tradeLog = {
         time: new Date().toISOString(),
-        symbol: '1HZ100V',
-        type: 'demo',
-        stake: 1,
-        outcome: 'Executed',
-        amount: 0
+        symbol: msg.proposal_open_contract.symbol || 'R_10',
+        type: msg.proposal_open_contract.contract_type || 'CALL',
+        stake: msg.proposal_open_contract.buy_price || 1,
+        outcome: profit > 0 ? 'Profit' : (msg.proposal_open_contract.is_sold ? 'Loss' : 'Open'),
+        amount: profit
       };
-      io.emit('trade_log', tradeLog);
+      io.emit('trade_log', tradeLog);  // Send to UI table
+      console.log('Trade update:', tradeLog);
     }
     if (msg.msg_type === 'pong') console.log('Latency OK');
     if (msg.msg_type === 'website_status' && msg.website_status.uptime < 99) console.log('Low uptime');
