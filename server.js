@@ -26,7 +26,7 @@ let derivWs;
 let reconnectMs = 1000;
 
 function connectDeriv() {
-  const wsUrl = `wss://ws.derivws.com/websockets/v3?app_id=${process.env.DERIV_APP_ID || 1089}`;
+  const wsUrl = `wss://ws.binaryws.com/websockets/v3?app_id=${process.env.DERIV_APP_ID || 110873}`;
   console.log('WS connecting to', wsUrl);
   derivWs = new WebSocket(wsUrl);
   derivWs.on('open', () => {
@@ -51,7 +51,7 @@ function connectDeriv() {
     if (msg.msg_type === 'authorize') {
       if (msg.authorize) {
         console.log('Demo authorized - placing test trade');
-        // Simple Rise/Fall on frxEURUSD (common demo symbol, quick 5-tick contract)
+        // Simple Rise/Fall on R_10 (volatility index, quick 5-tick contract)
         const proposal = {
           proposal: 1,
           amount: 1,  // $1 stake (demo safe)
@@ -60,7 +60,7 @@ function connectDeriv() {
           currency: 'USD',
           duration: 5,
           duration_unit: 't',
-          symbol: 'frxEURUSD'
+          symbol: 'R_10'
         };
         derivWs.send(JSON.stringify(proposal));
 
@@ -68,7 +68,7 @@ function connectDeriv() {
         derivWs.send(JSON.stringify({ proposal_open_contract: 1, subscribe: 1 }));
 
         // Subscribe to ticks for ongoing trading
-        derivWs.send(JSON.stringify({ ticks: 'frxEURUSD', subscribe: 1 }));
+        derivWs.send(JSON.stringify({ ticks: 'R_10', subscribe: 1 }));
 
         io.emit('status', 'Authorized. Test trade placed...');
       } else {
